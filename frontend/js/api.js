@@ -42,6 +42,8 @@ window.API = {
     return apiFetch('/api/activity' + (qs ? '?' + qs : ''));
   },
   getAgentSoul: (id) => apiFetch(`/api/agents/${id}/soul`),
+  getAgentSkills: (id) => apiFetch(`/api/agents/${id}/skills`),
+  getStreamFiltered: (agentId, limit = 50) => apiFetch(`/api/openclaw/stream?agent_id=${encodeURIComponent(agentId)}&limit=${limit}`),
   getDashboardStats: () => apiFetch('/api/dashboard/stats'),
 
   // Branding

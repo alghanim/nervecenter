@@ -275,6 +275,8 @@ func (h *OpenClawHandler) GetAgentSoul(w http.ResponseWriter, r *http.Request) {
 		{"SOUL.md", &resp.Soul},
 		{"AGENTS.md", &resp.Agents},
 		{"MEMORY.md", &resp.Memory},
+		{"HEARTBEAT.md", &resp.Heartbeat},
+		{"TOOLS.md", &resp.Tools},
 	}
 
 	for _, ft := range targets {
@@ -304,6 +306,96 @@ func (h *OpenClawHandler) GetAgentSoul(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, resp)
+}
+
+// GetAgentSkills handles GET /api/agents/{id}/skills
+// Returns list of skills from global ~/.openclaw/skills/ directory.
+func (h *OpenClawHandler) GetAgentSkills(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	ca := config.GetAgentByID(id)
+	if ca == nil {
+		ca = config.GetAgent(id)
+	}
+	if ca == nil {
+		http.Error(w, "Agent not found", http.StatusNotFound)
+		return
+	}
+
+	openClawDir := config.GetOpenClawDir()
+	var skills []SkillInfo
+
+	// Read from global skills directory
+	globalSkillsDir := filepath.Join(openClawDir, "skills")
+	entries, err := os.ReadDir(globalSkillsDir)
+	if err == nil {
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			skillMDPath := filepath.Join(globalSkillsDir, e.Name(), "SKILL.md")
+			data, readErr := os.ReadFile(skillMDPath)
+			description := ""
+			if readErr == nil {
+				lines := strings.Split(string(data), "\n")
+				// Use first non-empty, non-heading line as description
+				for _, line := range lines {
+					trimmed := strings.TrimSpace(line)
+					if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+						continue
+					}
+					description = trimmed
+					break
+				}
+				// Fall back to the heading title
+				if description == "" && len(lines) > 0 {
+					description = strings.TrimPrefix(strings.TrimSpace(lines[0]), "# ")
+				}
+			}
+			skills = append(skills, SkillInfo{
+				Name:        e.Name(),
+				Description: description,
+			})
+		}
+	}
+
+	// Also check agent-specific workspace skills dir
+	agentID := ca.ID
+	workspaceSkillsDir := filepath.Join(openClawDir, "workspace-"+agentID, "skills")
+	agentEntries, err := os.ReadDir(workspaceSkillsDir)
+	if err == nil {
+		for _, e := range agentEntries {
+			if !e.IsDir() {
+				continue
+			}
+			skillMDPath := filepath.Join(workspaceSkillsDir, e.Name(), "SKILL.md")
+			data, readErr := os.ReadFile(skillMDPath)
+			description := ""
+			if readErr == nil {
+				lines := strings.Split(string(data), "\n")
+				for _, line := range lines {
+					trimmed := strings.TrimSpace(line)
+					if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+						continue
+					}
+					description = trimmed
+					break
+				}
+				if description == "" && len(lines) > 0 {
+					description = strings.TrimPrefix(strings.TrimSpace(lines[0]), "# ")
+				}
+			}
+			skills = append(skills, SkillInfo{
+				Name:        e.Name(),
+				Description: description,
+			})
+		}
+	}
+
+	if skills == nil {
+		skills = []SkillInfo{}
+	}
+	writeJSON(w, skills)
 }
 
 // --- Core logic ---
@@ -474,10 +566,15 @@ func getOCAgentDetail(agent OCAgent) OCAgentDetail {
 	return detail
 }
 
-func getOCStream(limit int) []OCStreamEntry {
+func getOCStream(limit int, agentFilter string) []OCStreamEntry {
 	var all []OCStreamEntry
 
 	for _, ca := range config.GetAgents() {
+		// Filter by agent_id or name if requested
+		if agentFilter != "" && ca.ID != agentFilter && ca.Name != agentFilter &&
+			!strings.EqualFold(ca.ID, agentFilter) && !strings.EqualFold(ca.Name, agentFilter) {
+			continue
+		}
 		agent := agentFromConfig(ca)
 		latestJSONL, _ := findLatestJSONLForAgent(agent)
 		if latestJSONL == "" {

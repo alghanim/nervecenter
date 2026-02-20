@@ -114,15 +114,15 @@ Pages.activity = {
     Utils.showLoading(container, 'Loading activity...');
 
     try {
-      // Use openclaw stream for global, activity API for per-agent
+      // Use openclaw stream for both global and per-agent (stream has richer data)
       let items;
       if (!agentId) {
         const stream = await API.getStream(50);
         items = stream.map(s => this._streamToItem(s));
       } else {
-        // Use activity API filtered by agent
-        const activity = await API.getActivity({ agent_id: agentId });
-        items = activity.map(a => this._activityToItem(a));
+        // Use stream filtered by agent_id for per-agent view
+        const stream = await API.getStreamFiltered(agentId, 50);
+        items = stream.map(s => this._streamToItem(s));
       }
 
       if (items.length === 0) {

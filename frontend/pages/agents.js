@@ -137,7 +137,9 @@ Pages.agents = {
       <div class="tab-bar">
         <button class="tab active" data-tab="soul" onclick="Pages.agents._switchTab('soul', ${JSON.stringify(agentId)})">Soul</button>
         <button class="tab" data-tab="memory" onclick="Pages.agents._switchTab('memory', ${JSON.stringify(agentId)})">Memory</button>
+        <button class="tab" data-tab="heartbeat" onclick="Pages.agents._switchTab('heartbeat', ${JSON.stringify(agentId)})">Heartbeat</button>
         <button class="tab" data-tab="agents_md" onclick="Pages.agents._switchTab('agents_md', ${JSON.stringify(agentId)})">Agents.md</button>
+        <button class="tab" data-tab="skills" onclick="Pages.agents._switchTab('skills', ${JSON.stringify(agentId)})">Skills</button>
         <button class="tab" data-tab="activity" onclick="Pages.agents._switchTab('activity', ${JSON.stringify(agentId)})">Activity</button>
       </div>
 
@@ -164,6 +166,11 @@ Pages.agents = {
       return;
     }
 
+    if (tab === 'skills') {
+      await this._loadSkillsTab(el, agentId);
+      return;
+    }
+
     Utils.showLoading(el, 'Loading...');
 
     try {
@@ -171,21 +178,28 @@ Pages.agents = {
 
       let fileData = null;
       let fileName = '';
+      let emptyMsg = '';
 
       if (tab === 'soul') {
         fileData = soul.soul;
         fileName = 'SOUL.md';
+        emptyMsg = 'No soul file found';
       } else if (tab === 'memory') {
         fileData = soul.memory;
         fileName = 'MEMORY.md';
+        emptyMsg = 'No memory file yet';
+      } else if (tab === 'heartbeat') {
+        fileData = soul.heartbeat;
+        fileName = 'HEARTBEAT.md';
+        emptyMsg = 'No heartbeat configured';
       } else if (tab === 'agents_md') {
         fileData = soul.agents;
         fileName = 'AGENTS.md';
+        emptyMsg = 'No AGENTS.md found';
       }
 
       if (!fileData) {
-        const errMsg = soul.errors && soul.errors[fileName];
-        Utils.showEmpty(el, '📄', `${fileName} not found`, errMsg || 'File not available');
+        Utils.showEmpty(el, '📄', emptyMsg, fileName + ' not available for this agent');
         return;
       }
 
@@ -201,7 +215,46 @@ Pages.agents = {
           <button class="content-timestamp-refresh" onclick="Pages.agents._loadTab(${JSON.stringify(tab)}, ${JSON.stringify(agentId)})" title="Refresh">↻</button>
         </div>`;
     } catch (e) {
-      Utils.showEmpty(el, '⚠️', 'Failed to load soul data', e.message);
+      Utils.showEmpty(el, '⚠️', 'Failed to load data', e.message);
+    }
+  },
+
+  async _loadSkillsTab(el, agentId) {
+    Utils.showLoading(el, 'Loading skills...');
+    try {
+      const [skills, soul] = await Promise.all([
+        API.getAgentSkills(agentId),
+        API.getAgentSoul(agentId)
+      ]);
+
+      let html = '';
+
+      // Render TOOLS.md if present
+      if (soul.tools && soul.tools.content) {
+        const toolsHtml = DOMPurify.sanitize(marked.parse(soul.tools.content));
+        html += `<div class="markdown-body" style="margin-bottom:24px">${toolsHtml}</div>`;
+      }
+
+      // Render skills list
+      if (skills && skills.length > 0) {
+        html += `<h3 style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">Available Skills</h3>`;
+        html += `<div style="display:flex;flex-direction:column;gap:8px">`;
+        skills.forEach(skill => {
+          html += `
+            <div style="background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;padding:12px 16px;display:flex;align-items:baseline;gap:12px">
+              <span style="font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-primary);min-width:160px">${Utils.esc(skill.name)}</span>
+              <span style="font-size:13px;color:var(--text-secondary)">${Utils.esc(skill.description || 'No description')}</span>
+            </div>`;
+        });
+        html += `</div>`;
+      } else if (!soul.tools) {
+        Utils.showEmpty(el, '🛠️', 'No skills found', 'No skills directory or TOOLS.md found for this agent');
+        return;
+      }
+
+      el.innerHTML = html;
+    } catch (e) {
+      Utils.showEmpty(el, '⚠️', 'Failed to load skills', e.message);
     }
   },
 

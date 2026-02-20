@@ -94,6 +94,9 @@ func main() {
 	// Soul endpoint — reads live workspace files
 	api.HandleFunc("/agents/{id}/soul", openclawHandler.GetAgentSoul).Methods("GET")
 
+	// Skills endpoint — reads global + agent-specific skills
+	api.HandleFunc("/agents/{id}/skills", openclawHandler.GetAgentSkills).Methods("GET")
+
 	// Activity
 	api.HandleFunc("/activity", activityHandler.GetActivity).Methods("GET")
 
