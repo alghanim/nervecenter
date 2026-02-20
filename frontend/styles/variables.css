@@ -1,0 +1,61 @@
+/* AgentBoard — CSS Custom Properties */
+/* Following Prism's UX Spec §2 */
+/* Note: fonts loaded via <link> in index.html */
+
+:root {
+  /* BACKGROUND */
+  --bg-primary:    #0A0A0F;
+  --bg-secondary:  #12121A;
+  --bg-tertiary:   #1A1A25;
+  --bg-elevated:   #222230;
+
+  /* BORDERS */
+  --border-subtle: #2A2A3A;
+  --border-focus:  #3A3A50;
+
+  /* TEXT */
+  --text-primary:   #E8E8ED;
+  --text-secondary: #8888A0;
+  --text-tertiary:  #55556A;
+
+  /* ACCENT */
+  --accent:       #B5CC18;
+  --accent-hover: #C8DD30;
+  --accent-muted: rgba(181, 204, 24, 0.12);
+
+  /* STATUS */
+  --status-online:  #22C55E;
+  --status-busy:    #F59E0B;
+  --status-offline: #55556A;
+  --status-error:   #EF4444;
+
+  /* TEAM COLORS */
+  --team-command:     #8B5CF6;
+  --team-engineering: #3B82F6;
+  --team-creative:    #EC4899;
+  --team-ops:         #F59E0B;
+
+  /* TYPOGRAPHY */
+  --font-display: 'JetBrains Mono', monospace;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* TEXT SCALE */
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  24px;
+  --text-3xl:  32px;
+  --text-4xl:  40px;
+
+  /* SHADOWS */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.35);
+
+  /* SIDEBAR */
+  --sidebar-width:    240px;
+  --sidebar-collapsed: 64px;
+}

@@ -1,0 +1,326 @@
+/* AgentBoard — Shell & Layout */
+/* Prism's UX Spec §1 */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════
+   APP SHELL
+═══════════════════════════ */
+#app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════
+   SIDEBAR
+═══════════════════════════ */
+#sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease;
+  overflow: hidden;
+  position: relative;
+  z-index: 50;
+}
+
+#sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+/* Sidebar header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  height: 64px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font: 700 var(--text-lg)/24px var(--font-display);
+  color: var(--accent);
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+#sidebar.collapsed .sidebar-title {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Hamburger toggle */
+.sidebar-toggle {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Nav */
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-section {
+  margin-bottom: 4px;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 8px 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font: 500 var(--text-base)/20px var(--font-body);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-decoration: none;
+  user-select: none;
+}
+
+.nav-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.nav-item .nav-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.nav-item .nav-label {
+  transition: opacity 0.15s;
+}
+
+#sidebar.collapsed .nav-label {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar footer (settings) */
+.sidebar-footer {
+  padding: 8px 8px 16px;
+  border-top: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+/* ═══════════════════════════
+   MAIN CONTENT
+═══════════════════════════ */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Page header */
+#page-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.page-header-title {
+  font: 700 var(--text-2xl)/32px var(--font-display);
+  color: var(--text-primary);
+}
+
+.page-breadcrumb {
+  font: 400 var(--text-sm)/18px var(--font-body);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-breadcrumb span { color: var(--text-secondary); }
+.page-breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+.page-breadcrumb a:hover { text-decoration: underline; }
+
+/* Content area */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+/* ═══════════════════════════
+   LOADING / ERROR STATES
+═══════════════════════════ */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  color: var(--text-secondary);
+  font: 400 var(--text-base)/22px var(--font-body);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-title {
+  font: 600 var(--text-lg)/24px var(--font-body);
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state-desc {
+  font: 400 var(--text-sm)/18px var(--font-body);
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════ */
+
+/* 960–1279px: Collapse sidebar */
+@media (max-width: 1279px) and (min-width: 960px) {
+  #sidebar {
+    width: var(--sidebar-collapsed);
+  }
+  #sidebar .sidebar-title,
+  #sidebar .nav-label {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ≤959px: Drawer sidebar */
+@media (max-width: 959px) {
+  #sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 200;
+  }
+
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  #sidebar.collapsed {
+    width: var(--sidebar-width);
+  }
+
+  #sidebar.collapsed .sidebar-title,
+  #sidebar.collapsed .nav-label {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #main {
+    width: 100%;
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 199;
+    display: none;
+  }
+  .mobile-overlay.visible {
+    display: block;
+  }
+
+  #content {
+    padding: 16px;
+  }
+}
