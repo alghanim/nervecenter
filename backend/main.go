@@ -116,6 +116,9 @@ func main() {
 	api.HandleFunc("/analytics/throughput", analyticsHandler.GetThroughput).Methods("GET")
 	api.HandleFunc("/analytics/team", analyticsHandler.GetTeamAnalytics).Methods("GET")
 	api.HandleFunc("/analytics/export/csv", analyticsHandler.ExportCSV).Methods("GET")
+	api.HandleFunc("/analytics/tokens", analyticsHandler.GetTokens).Methods("GET")
+	api.HandleFunc("/analytics/tokens/timeline", analyticsHandler.GetTokensTimeline).Methods("GET")
+	api.HandleFunc("/analytics/cost/summary", analyticsHandler.GetCostSummary).Methods("GET")
 
 	// Structure (hierarchy from config)
 	api.HandleFunc("/structure", openclawHandler.GetStructure).Methods("GET")
