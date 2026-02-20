@@ -263,6 +263,90 @@ html, body {
 }
 
 /* ═══════════════════════════
+   MOBILE HAMBURGER BUTTON
+   (shown only on ≤959px)
+═══════════════════════════ */
+.mobile-menu-btn {
+  display: none; /* hidden on desktop */
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  margin-right: 4px;
+}
+.mobile-menu-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════
+   MOBILE BOTTOM NAVIGATION
+═══════════════════════════ */
+#mobile-bottom-nav {
+  display: none; /* hidden on desktop */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  z-index: 150;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  height: 100%;
+  text-decoration: none;
+  color: var(--text-tertiary);
+  font: 500 10px/13px var(--font-body);
+  transition: color 0.15s;
+  padding: 4px 2px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  transform: scale(1.15);
+}
+
+.bottom-nav-icon {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.bottom-nav-label {
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  max-width: 44px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════
    RESPONSIVE BREAKPOINTS
 ═══════════════════════════ */
 
@@ -278,8 +362,18 @@ html, body {
   }
 }
 
-/* ≤959px: Drawer sidebar */
+/* ≤959px: Drawer sidebar + bottom nav */
 @media (max-width: 959px) {
+  /* Show mobile hamburger in header */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Show bottom nav bar */
+  #mobile-bottom-nav {
+    display: flex;
+  }
+
   #sidebar {
     position: fixed;
     left: 0;
@@ -322,5 +416,14 @@ html, body {
 
   #content {
     padding: 16px;
+    /* leave room for fixed bottom nav */
+    padding-bottom: 72px;
+  }
+}
+
+/* ≤768px: tighten header padding */
+@media (max-width: 768px) {
+  #page-header {
+    padding: 0 12px;
   }
 }

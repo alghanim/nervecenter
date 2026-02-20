@@ -83,6 +83,14 @@
   <div id="main">
     <!-- Page Header -->
     <header id="page-header">
+      <!-- Mobile hamburger (only visible on ≤959px) -->
+      <button id="mobileMenuBtn" class="mobile-menu-btn" title="Open navigation" aria-label="Open navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="2" y="4"  width="16" height="2" rx="1" fill="currentColor"/>
+          <rect x="2" y="9"  width="16" height="2" rx="1" fill="currentColor"/>
+          <rect x="2" y="14" width="16" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
       <span class="page-header-title" id="pageTitle">◉ Dashboard</span>
       <div class="page-breadcrumb" id="pageBreadcrumb" style="display:none"></div>
       <div class="page-header-actions" style="margin-left:auto;display:flex;align-items:center;gap:8px">
@@ -100,6 +108,38 @@
   </div>
 
 </div>
+
+<!-- ══════════ MOBILE BOTTOM NAV ══════════ -->
+<nav id="mobile-bottom-nav" aria-label="Mobile navigation">
+  <a class="bottom-nav-item" data-bottom-nav="dashboard" href="#dashboard">
+    <span class="bottom-nav-icon">◉</span>
+    <span class="bottom-nav-label">Home</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="agents" href="#agents">
+    <span class="bottom-nav-icon">👥</span>
+    <span class="bottom-nav-label">Agents</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="org-chart" href="#org-chart">
+    <span class="bottom-nav-icon">🗺️</span>
+    <span class="bottom-nav-label">Org</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="kanban" href="#kanban">
+    <span class="bottom-nav-icon">📋</span>
+    <span class="bottom-nav-label">Kanban</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="activity" href="#activity">
+    <span class="bottom-nav-icon">📡</span>
+    <span class="bottom-nav-label">Activity</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="reports" href="#reports">
+    <span class="bottom-nav-icon">📊</span>
+    <span class="bottom-nav-label">Reports</span>
+  </a>
+  <a class="bottom-nav-item" data-bottom-nav="settings" href="#settings">
+    <span class="bottom-nav-icon">⚙️</span>
+    <span class="bottom-nav-label">Settings</span>
+  </a>
+</nav>
 
 <!-- JS: Core -->
 <script src="js/api.js"></script>

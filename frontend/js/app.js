@@ -108,18 +108,31 @@ window.Branding = (function () {
     // Init theme & branding in parallel
     await Promise.all([Theme.init(), Branding.init()]);
 
-    // Sidebar toggle
+    // Sidebar toggle (desktop collapse)
     const toggleBtn = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     if (toggleBtn && sidebar) {
       toggleBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        // On mobile
-        sidebar.classList.toggle('mobile-open');
-        const overlay = document.getElementById('mobileOverlay');
-        if (overlay) {
-          overlay.classList.toggle('visible', sidebar.classList.contains('mobile-open'));
+        // On mobile, also toggle drawer
+        if (window.innerWidth <= 959) {
+          sidebar.classList.toggle('mobile-open');
+          const overlay = document.getElementById('mobileOverlay');
+          if (overlay) {
+            overlay.classList.toggle('visible', sidebar.classList.contains('mobile-open'));
+          }
         }
+      });
+    }
+
+    // Mobile hamburger button (in page header)
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    if (mobileMenuBtn && sidebar) {
+      mobileMenuBtn.addEventListener('click', () => {
+        sidebar.classList.add('mobile-open');
+        sidebar.classList.remove('collapsed');
+        const overlay = document.getElementById('mobileOverlay');
+        if (overlay) overlay.classList.add('visible');
       });
     }
 
@@ -132,11 +145,19 @@ window.Branding = (function () {
       });
     }
 
-    // Nav clicks
+    // Sidebar nav clicks
     document.querySelectorAll('[data-nav]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.preventDefault();
         navigate(el.dataset.nav);
+      });
+    });
+
+    // Bottom nav clicks
+    document.querySelectorAll('[data-bottom-nav]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate(el.dataset.bottomNav);
       });
     });
 
@@ -169,9 +190,15 @@ window.Branding = (function () {
 
     const pageKey = main.toLowerCase().replace(' ', '-');
 
-    // Update nav active state
+    // Update sidebar nav active state
     document.querySelectorAll('[data-nav]').forEach(el => {
       const navKey = el.dataset.nav.split('/')[0];
+      el.classList.toggle('active', navKey === pageKey);
+    });
+
+    // Update bottom nav active state
+    document.querySelectorAll('[data-bottom-nav]').forEach(el => {
+      const navKey = el.dataset.bottomNav.split('/')[0];
       el.classList.toggle('active', navKey === pageKey);
     });
 
