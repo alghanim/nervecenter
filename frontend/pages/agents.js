@@ -135,12 +135,12 @@ Pages.agents = {
       </div>
 
       <div class="tab-bar">
-        <button class="tab active" data-tab="soul" onclick="Pages.agents._switchTab('soul', ${JSON.stringify(agentId)})">Soul</button>
-        <button class="tab" data-tab="memory" onclick="Pages.agents._switchTab('memory', ${JSON.stringify(agentId)})">Memory</button>
-        <button class="tab" data-tab="heartbeat" onclick="Pages.agents._switchTab('heartbeat', ${JSON.stringify(agentId)})">Heartbeat</button>
-        <button class="tab" data-tab="agents_md" onclick="Pages.agents._switchTab('agents_md', ${JSON.stringify(agentId)})">Agents.md</button>
-        <button class="tab" data-tab="skills" onclick="Pages.agents._switchTab('skills', ${JSON.stringify(agentId)})">Skills</button>
-        <button class="tab" data-tab="activity" onclick="Pages.agents._switchTab('activity', ${JSON.stringify(agentId)})">Activity</button>
+        <button class="tab active" data-tab="soul" onclick=\"Pages.agents._switchTab('soul', '${agentId}')\">Soul</button>
+        <button class="tab" data-tab="memory" onclick=\"Pages.agents._switchTab('memory', '${agentId}')\">Memory</button>
+        <button class="tab" data-tab="heartbeat" onclick=\"Pages.agents._switchTab('heartbeat', '${agentId}')\">Heartbeat</button>
+        <button class="tab" data-tab="agents_md" onclick=\"Pages.agents._switchTab('agents_md', '${agentId}')\">Agents.md</button>
+        <button class="tab" data-tab="skills" onclick=\"Pages.agents._switchTab('skills', '${agentId}')\">Skills</button>
+        <button class="tab" data-tab="activity" onclick=\"Pages.agents._switchTab('activity', '${agentId}')\">Activity</button>
       </div>
 
       <div id="agentTabContent"></div>`;
@@ -212,7 +212,7 @@ Pages.agents = {
           <span class="content-timestamp-text" id="tsText_${tab}" title="${modTime ? Utils.absTime(fileData.modified) : ''}">
             ${modTime ? 'Updated ' + Utils.relTime(fileData.modified) : ''}
           </span>
-          <button class="content-timestamp-refresh" onclick="Pages.agents._loadTab(${JSON.stringify(tab)}, ${JSON.stringify(agentId)})" title="Refresh">↻</button>
+          <button class="content-timestamp-refresh" onclick=\"Pages.agents._loadTab('${tab}', '${agentId}')\" title="Refresh">↻</button>
         </div>`;
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load data', e.message);
