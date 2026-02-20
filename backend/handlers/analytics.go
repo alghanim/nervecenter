@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/alghanim/agentboard/backend/db"
@@ -92,16 +93,24 @@ func (h *AnalyticsHandler) GetAgentAnalytics(w http.ResponseWriter, r *http.Requ
 
 // GetThroughput handles GET /api/analytics/throughput
 func (h *AnalyticsHandler) GetThroughput(w http.ResponseWriter, r *http.Request) {
+	daysStr := r.URL.Query().Get("days")
+	days := 30
+	if daysStr != "" {
+		if v, err := strconv.Atoi(daysStr); err == nil && v > 0 && v <= 365 {
+			days = v
+		}
+	}
+
 	rows, err := db.DB.Query(`
 		SELECT d::date AS date, COALESCE(t.cnt, 0) AS count
-		FROM generate_series(NOW() - INTERVAL '29 days', NOW(), '1 day') d
+		FROM generate_series(NOW() - ($1 || ' days')::interval, NOW(), '1 day') d
 		LEFT JOIN (
 			SELECT completed_at::date AS day, COUNT(*) AS cnt
-			FROM tasks WHERE status = 'done' AND completed_at >= NOW() - INTERVAL '30 days'
+			FROM tasks WHERE status = 'done' AND completed_at >= NOW() - ($1 || ' days')::interval
 			GROUP BY day
 		) t ON t.day = d::date
 		ORDER BY date
-	`)
+	`, days)
 	if err != nil {
 		respondError(w, 500, err.Error())
 		return

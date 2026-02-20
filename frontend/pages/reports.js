@@ -117,11 +117,11 @@ Pages.reports = {
           <div class="kpi-label">Completed This Week</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-number">${stats.avg_completion_time ?? '—'}</div>
+          <div class="kpi-number">${stats.avg_completion_time ?? (stats.avg_completion_hours != null ? stats.avg_completion_hours + 'h' : '—')}</div>
           <div class="kpi-label">Avg Completion Time</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-number">${stats.active_agents_today ?? '—'}</div>
+          <div class="kpi-number">${stats.active_agents_today ?? stats.agents_active_today ?? '—'}</div>
           <div class="kpi-label">Active Agents Today</div>
         </div>`;
     } catch (e) {
@@ -228,6 +228,14 @@ Pages.reports = {
     const el = document.getElementById('chartAgents');
     if (!el) return;
     el.innerHTML = '';
+
+    // Normalize API response: backend returns {display_name, tasks_completed} shape
+    if (Array.isArray(data) && data.length > 0 && data[0].display_name !== undefined) {
+      data = data.map(d => ({
+        agent: d.display_name || d.id || 'Unknown',
+        count: d.tasks_completed || 0,
+      }));
+    }
 
     // Compute from tasks if API data missing
     if (!data || !Array.isArray(data) || data.length === 0) {
