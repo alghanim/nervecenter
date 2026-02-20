@@ -134,6 +134,29 @@ Connect to `ws://localhost:8891/ws/stream` to receive real-time events:
 }
 ```
 
+## Connecting Your Agents to the Kanban
+
+To make your agents automatically pick up and complete tasks from AgentBoard, add the following instruction to each agent's `HEARTBEAT.md` or `AGENTS.md`:
+
+```
+## Kanban Integration
+
+At each heartbeat, check AgentBoard for tasks assigned to you:
+
+1. GET http://localhost:8891/api/tasks?assignee=YOUR_AGENT_ID&status=todo
+2. If tasks exist, pick the highest priority one:
+   POST http://localhost:8891/api/tasks/{id}/transition  {"status": "in-progress"}
+3. Complete the work described in the task title/description
+4. Mark it done:
+   POST http://localhost:8891/api/tasks/{id}/transition  {"status": "done"}
+5. Optionally leave a comment:
+   POST http://localhost:8891/api/tasks/{id}/comments  {"content": "Done. Here's what I did: ..."}
+
+Replace YOUR_AGENT_ID with your agent's id from agents.yaml (e.g. "forge", "pixel").
+```
+
+> **Tip:** You can also subscribe to `ws://localhost:8891/ws/stream` for real-time task events instead of polling.
+
 ## Development
 
 ```bash
