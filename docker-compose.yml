@@ -31,7 +31,7 @@ services:
       OPENCLAW_DIR: /data/openclaw
       FRONTEND_DIR: /app/frontend
     volumes:
-      - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:ro
+      - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:rw
       - ./agents.yaml:/app/agents.yaml:ro
       - ./frontend:/app/frontend:ro
       - .:/app/repo:ro

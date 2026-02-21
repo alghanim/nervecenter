@@ -121,6 +121,7 @@ func CreateAlertRule(w http.ResponseWriter, r *http.Request) {
 	if webhookID.Valid {
 		rule.NotifyWebhookID = &webhookID.String
 	}
+	go LogAudit("user", "alert_rule_created", "alert_rule", rule.ID, map[string]interface{}{"name": rule.Name, "condition_type": rule.ConditionType})
 	respondJSON(w, http.StatusCreated, rule)
 }
 
@@ -210,6 +211,7 @@ func DeleteAlertRule(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusNotFound, "rule not found")
 		return
 	}
+	go LogAudit("user", "alert_rule_deleted", "alert_rule", id, nil)
 	respondJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 

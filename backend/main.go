@@ -195,6 +195,9 @@ func main() {
 	api.HandleFunc("/alerts/history/{id}/acknowledge", handlers.AcknowledgeAlert).Methods("POST")
 	api.HandleFunc("/alerts/unacknowledged-count", handlers.GetAlertUnacknowledgedCount).Methods("GET")
 
+	// Audit Log
+	api.HandleFunc("/audit", handlers.GetAuditLog).Methods("GET")
+
 	// Dependency Graph
 	api.HandleFunc("/graph/dependencies", handlers.GetDependencyGraph).Methods("GET")
 

@@ -8,6 +8,7 @@ Pages.agents = {
   _refreshTimer: null,
   _currentAgentId: null,
   _currentTab: 'soul',
+  _selected: new Set(),
 
   async render(container, subView) {
     this._currentAgentId = subView || null;
@@ -170,6 +171,11 @@ Pages.agents = {
       return;
     }
 
+    if (tab === 'timeline') {
+      await this._loadTimelineTab(el, agentId);
+      return;
+    }
+
     Utils.showLoading(el, 'Loading...');
 
     try {
@@ -177,23 +183,28 @@ Pages.agents = {
 
       let fileData = null;
       let fileName = '';
+      let fileKey = '';
       let emptyMsg = '';
 
       if (tab === 'soul') {
         fileData = soul.soul;
         fileName = 'SOUL.md';
+        fileKey = 'soul';
         emptyMsg = 'No soul file found';
       } else if (tab === 'memory') {
         fileData = soul.memory;
         fileName = 'MEMORY.md';
+        fileKey = 'memory';
         emptyMsg = 'No memory file yet';
       } else if (tab === 'heartbeat') {
         fileData = soul.heartbeat;
         fileName = 'HEARTBEAT.md';
+        fileKey = 'heartbeat';
         emptyMsg = 'No heartbeat configured';
       } else if (tab === 'agents_md') {
         fileData = soul.agents;
         fileName = 'AGENTS.md';
+        fileKey = 'agents';
         emptyMsg = 'No AGENTS.md found';
       }
 
@@ -202,22 +213,193 @@ Pages.agents = {
         return;
       }
 
-      const html = DOMPurify.sanitize(marked.parse(fileData.content || ''));
+      const rawContent = fileData.content || '';
+      const html = DOMPurify.sanitize(marked.parse(rawContent));
       const modTime = fileData.modified ? new Date(fileData.modified) : null;
 
       el.innerHTML = `
-        <div class="markdown-body" id="mdBody_${tab}">${html}</div>
+        <div style="position:relative">
+          <div style="position:absolute;top:0;right:0;display:flex;gap:6px;z-index:10">
+            <button class="btn-icon" id="editBtn_${tab}" onclick="Pages.agents._startEdit('${tab}','${agentId}','${fileKey}')" title="Edit ${fileName}" aria-label="Edit">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5L11.5 4.5L5 11H3V9L9.5 2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="markdown-body" id="mdBody_${tab}">${html}</div>
+        </div>
         <div class="content-timestamp">
           <span class="content-timestamp-text" id="tsText_${tab}" title="${modTime ? Utils.absTime(fileData.modified) : ''}">
             ${modTime ? 'Updated ' + Utils.relTime(fileData.modified) : ''}
           </span>
-          <button class="content-timestamp-refresh" onclick=\"Pages.agents._loadTab('${tab}', '${agentId}')\" title="Refresh" aria-label="Refresh">
+          <button class="content-timestamp-refresh" onclick="Pages.agents._loadTab('${tab}', '${agentId}')" title="Refresh" aria-label="Refresh">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 6A4.5 4.5 0 106 1.5a4.5 4.5 0 00-3.2 1.3L1.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 1.5V4H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>`;
+
+      // Store raw content for edit mode
+      el.dataset.rawContent = rawContent;
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load data', e.message);
     }
+  },
+
+  _startEdit(tab, agentId, fileKey) {
+    const el = document.getElementById('agentTabContent');
+    if (!el) return;
+    const rawContent = el.dataset.rawContent || '';
+
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em">Editing ${fileKey.toUpperCase()}.md</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="Pages.agents._cancelEdit('${tab}','${agentId}')" style="font-size:13px;padding:5px 12px">Cancel</button>
+            <button class="btn-primary" id="saveBtn_${tab}" onclick="Pages.agents._saveEdit('${tab}','${agentId}','${fileKey}')" style="font-size:13px;padding:5px 12px">💾 Save</button>
+          </div>
+        </div>
+        <textarea id="editArea_${tab}" style="width:100%;min-height:500px;font-family:var(--font-mono,monospace);font-size:13px;line-height:1.6;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:12px;color:var(--text-primary);resize:vertical;box-sizing:border-box;outline:none" spellcheck="false"></textarea>
+      </div>`;
+
+    const ta = document.getElementById(`editArea_${tab}`);
+    if (ta) ta.value = rawContent;
+  },
+
+  _cancelEdit(tab, agentId) {
+    this._loadTab(tab, agentId);
+  },
+
+  async _saveEdit(tab, agentId, fileKey) {
+    const ta = document.getElementById(`editArea_${tab}`);
+    const saveBtn = document.getElementById(`saveBtn_${tab}`);
+    if (!ta || !saveBtn) return;
+
+    const content = ta.value;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    try {
+      await API.updateAgentSoul(agentId, fileKey, content);
+      this._showToast('✅ Saved successfully', 'success');
+      this._loadTab(tab, agentId);
+    } catch (e) {
+      this._showToast('❌ Save failed: ' + e.message, 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Save';
+    }
+  },
+
+  _showToast(message, type = 'success') {
+    const existing = document.getElementById('agentToast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'agentToast';
+    toast.style.cssText = `
+      position:fixed;bottom:24px;right:24px;z-index:9999;
+      padding:12px 18px;border-radius:8px;font-size:14px;font-weight:500;
+      background:${type === 'success' ? 'var(--success,#22c55e)' : 'var(--danger,#ef4444)'};
+      color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.25);
+      animation:slideInToast 0.2s ease;pointer-events:none;
+    `;
+    toast.textContent = message;
+
+    // Add animation keyframes if not already present
+    if (!document.getElementById('toastStyles')) {
+      const style = document.createElement('style');
+      style.id = 'toastStyles';
+      style.textContent = '@keyframes slideInToast{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}';
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  },
+
+  async _loadTimelineTab(el, agentId) {
+    Utils.showLoading(el, 'Loading timeline...');
+
+    let events;
+    try {
+      events = await API.getAgentTimeline(agentId, 24);
+    } catch (e) {
+      Utils.showEmpty(el, '⚠️', 'Failed to load timeline', e.message);
+      return;
+    }
+
+    if (!events || events.length === 0) {
+      Utils.showEmpty(el, '🕐', 'No timeline events', 'No activity found in the last 24 hours');
+      return;
+    }
+
+    const typeConfig = {
+      response:  { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)',  label: 'Response', icon: '💬' },
+      tool_call: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   label: 'Tool',     icon: '🔧' },
+      error:     { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   label: 'Error',    icon: '❌' },
+      task:      { color: '#a855f7', bg: 'rgba(168,85,247,0.1)',  label: 'Task',     icon: '📋' },
+    };
+
+    const now = Date.now();
+
+    function relTime(isoStr) {
+      const ms = now - new Date(isoStr).getTime();
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return 'just now';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function absTime(isoStr) {
+      return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const reversedEvents = [...events].reverse(); // most recent first
+
+    const rows = reversedEvents.map((ev, i) => {
+      const cfg = typeConfig[ev.type] || typeConfig.response;
+      const safeTitle = Utils.esc(ev.title || '');
+      const safeDetail = Utils.esc(ev.detail || '');
+      const rel = relTime(ev.timestamp);
+      const abs = absTime(ev.timestamp);
+      return `
+        <div class="tl-event" data-idx="${i}" style="display:flex;gap:16px;padding:10px 0;cursor:pointer;align-items:flex-start" onclick="Pages.agents._toggleTimelineEvent(this)">
+          <div style="display:flex;flex-direction:column;align-items:center;min-width:52px;padding-top:2px">
+            <span style="font-size:11px;color:var(--text-tertiary);white-space:nowrap" title="${Utils.esc(ev.timestamp)}">${rel}</span>
+            <span style="font-size:10px;color:var(--text-tertiary);opacity:0.7">${abs}</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0">
+            <div style="width:2px;background:${cfg.color};border-radius:2px;min-height:40px;flex-shrink:0;margin-top:4px;opacity:0.6"></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:12px;background:${cfg.bg};color:${cfg.color};text-transform:uppercase;letter-spacing:0.05em">${cfg.label}</span>
+                <span style="font-size:13px;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${safeTitle}</span>
+              </div>
+              <div class="tl-detail" style="display:none;margin-top:6px;padding:8px 10px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;font-size:12px;color:var(--text-secondary);font-family:var(--font-mono,monospace);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto">${safeDetail}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="padding:4px 0 0 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span style="font-size:13px;color:var(--text-secondary)">${events.length} events in the last 24h</span>
+          <div style="display:flex;gap:8px">
+            ${Object.entries(typeConfig).map(([k,v]) => `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${v.bg};color:${v.color};font-weight:600">${v.icon} ${v.label}</span>`).join('')}
+          </div>
+        </div>
+        <div style="border-left:2px solid var(--border-default);padding-left:0;margin-left:52px">
+          ${rows}
+        </div>
+      </div>`;
+  },
+
+  _toggleTimelineEvent(el) {
+    const detail = el.querySelector('.tl-detail');
+    if (!detail) return;
+    const isVisible = detail.style.display !== 'none';
+    detail.style.display = isVisible ? 'none' : 'block';
   },
 
   async _loadSkillsTab(el, agentId) {

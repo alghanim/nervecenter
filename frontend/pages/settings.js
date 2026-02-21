@@ -6,10 +6,12 @@ Pages.settings = {
   _webhooks: [],
   _showWebhookForm: false,
   _editingWebhookId: null,
+  _auditRefreshTimer: null,
+  _auditActionFilter: '',
 
   async render(container) {
     container.innerHTML = `
-      <div style="max-width:640px">
+      <div style="max-width:800px">
         <div class="settings-section">
           <div class="settings-section-title">Connection</div>
           <div id="settingsConnection">
@@ -39,6 +41,28 @@ Pages.settings = {
           <div id="webhookForm" style="display:none"></div>
         </div>
         <div class="settings-section">
+          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span>Audit Log</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="auditActionFilter" onchange="Pages.settings._onAuditFilterChange()" style="font-size:12px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:3px 8px;color:var(--text-primary);cursor:pointer">
+                <option value="">All actions</option>
+                <option value="agent_paused">agent_paused</option>
+                <option value="agent_resumed">agent_resumed</option>
+                <option value="agent_killed">agent_killed</option>
+                <option value="task_transitioned">task_transitioned</option>
+                <option value="webhook_created">webhook_created</option>
+                <option value="webhook_deleted">webhook_deleted</option>
+                <option value="alert_rule_created">alert_rule_created</option>
+                <option value="alert_rule_deleted">alert_rule_deleted</option>
+              </select>
+              <button class="btn-secondary" onclick="Pages.settings._loadAuditLog()" style="font-size:12px;padding:3px 8px" title="Refresh">↺ Refresh</button>
+            </div>
+          </div>
+          <div id="settingsAuditLog">
+            <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
+          </div>
+        </div>
+        <div class="settings-section">
           <div class="settings-section-title">About</div>
           <div class="settings-row">
             <span class="settings-key">product</span>
@@ -61,7 +85,11 @@ Pages.settings = {
       this._loadBranding(),
       this._loadAgents(),
       this._loadWebhooks(),
+      this._loadAuditLog(),
     ]);
+
+    // Auto-refresh audit log every 30s
+    this._auditRefreshTimer = setInterval(() => this._loadAuditLog(), 30000);
   },
 
   async _loadConnection() {
@@ -303,5 +331,77 @@ Pages.settings = {
     if (btn) btn.textContent = '🔔 Test';
   },
 
-  destroy() {}
+  _onAuditFilterChange() {
+    const sel = document.getElementById('auditActionFilter');
+    this._auditActionFilter = sel ? sel.value : '';
+    this._loadAuditLog();
+  },
+
+  async _loadAuditLog() {
+    const el = document.getElementById('settingsAuditLog');
+    if (!el) return;
+    try {
+      const params = { limit: 100 };
+      if (this._auditActionFilter) params.action = this._auditActionFilter;
+      const logs = await API.getAuditLog(params);
+      this._renderAuditLog(el, logs);
+    } catch (e) {
+      el.innerHTML = `<div style="color:var(--danger,#ef4444);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
+    }
+  },
+
+  _renderAuditLog(el, logs) {
+    if (!logs || logs.length === 0) {
+      el.innerHTML = `<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0">No audit log entries yet. Actions like pause/resume/kill, webhook changes, and task transitions will appear here.</div>`;
+      return;
+    }
+
+    const ACTION_COLORS = {
+      agent_paused:        'var(--warning, #f59e0b)',
+      agent_resumed:       'var(--success, #22c55e)',
+      agent_killed:        'var(--danger, #ef4444)',
+      task_transitioned:   'var(--accent, #6366f1)',
+      webhook_created:     'var(--text-secondary)',
+      webhook_deleted:     'var(--danger, #ef4444)',
+      alert_rule_created:  'var(--text-secondary)',
+      alert_rule_deleted:  'var(--danger, #ef4444)',
+    };
+
+    el.innerHTML = `
+      <div style="overflow-x:auto;margin-top:4px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="color:var(--text-tertiary);text-align:left;border-bottom:1px solid var(--border-default)">
+              <th style="padding:6px 8px;font-weight:600;white-space:nowrap">Timestamp</th>
+              <th style="padding:6px 8px;font-weight:600">Action</th>
+              <th style="padding:6px 8px;font-weight:600">Entity</th>
+              <th style="padding:6px 8px;font-weight:600">ID</th>
+              <th style="padding:6px 8px;font-weight:600">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map(entry => {
+              const color = ACTION_COLORS[entry.action] || 'var(--text-secondary)';
+              const ts = new Date(entry.timestamp);
+              const tsStr = Utils.relTime ? Utils.relTime(entry.timestamp) : ts.toLocaleString();
+              const tsAbs = Utils.absTime ? Utils.absTime(entry.timestamp) : ts.toISOString();
+              const details = entry.details ? JSON.stringify(entry.details, null, 0).replace(/"/g, '').replace(/[{}]/g, '').replace(/,/g, ', ') : '';
+              return `
+                <tr style="border-bottom:1px solid var(--border-default);transition:background 0.1s" onmouseover="this.style.background='var(--bg-surface)'" onmouseout="this.style.background=''">
+                  <td style="padding:6px 8px;color:var(--text-tertiary);white-space:nowrap" title="${Utils.esc(tsAbs)}">${Utils.esc(tsStr)}</td>
+                  <td style="padding:6px 8px;white-space:nowrap"><span style="color:${color};font-family:var(--font-display)">${Utils.esc(entry.action)}</span></td>
+                  <td style="padding:6px 8px;color:var(--text-secondary)">${Utils.esc(entry.entity_type || '')}</td>
+                  <td style="padding:6px 8px;color:var(--text-tertiary);font-family:var(--font-display);font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${Utils.esc(entry.entity_id || '')}">${Utils.esc(entry.entity_id || '')}</td>
+                  <td style="padding:6px 8px;color:var(--text-secondary);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${Utils.esc(details)}">${Utils.esc(details)}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  destroy() {
+    if (this._auditRefreshTimer) clearInterval(this._auditRefreshTimer);
+    this._auditRefreshTimer = null;
+  }
 };

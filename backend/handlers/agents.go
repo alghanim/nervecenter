@@ -200,6 +200,7 @@ func (h *AgentHandler) PauseAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logActivity(id, "agent_paused", "", map[string]string{"previous_status": currentStatus})
+	go LogAudit("user", "agent_paused", "agent", id, map[string]interface{}{"previous_status": currentStatus})
 	go TriggerWebhooks("agent_paused", map[string]interface{}{
 		"event":    "agent_paused",
 		"agent_id": id,
@@ -224,6 +225,7 @@ func (h *AgentHandler) ResumeAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logActivity(id, "agent_resumed", "", map[string]string{"previous_status": currentStatus})
+	go LogAudit("user", "agent_resumed", "agent", id, map[string]interface{}{"previous_status": currentStatus})
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Agent resumed"})
 }
 
@@ -244,6 +246,7 @@ func (h *AgentHandler) KillAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logActivity(id, "agent_killed", "", map[string]string{"previous_status": currentStatus})
+	go LogAudit("user", "agent_killed", "agent", id, map[string]interface{}{"previous_status": currentStatus})
 	go TriggerWebhooks("agent_killed", map[string]interface{}{
 		"event":    "agent_killed",
 		"agent_id": id,

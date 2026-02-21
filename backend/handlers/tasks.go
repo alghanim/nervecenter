@@ -342,6 +342,9 @@ func (h *TaskHandler) TransitionTask(w http.ResponseWriter, r *http.Request) {
 	logActivity(changedBy, "task_transitioned", id, map[string]string{
 		"from": currentStatus, "to": data.Status,
 	})
+	go LogAudit(changedBy, "task_transitioned", "task", id, map[string]interface{}{
+		"from": currentStatus, "to": data.Status,
+	})
 	h.Hub.Broadcast("task_transitioned", map[string]string{"task_id": id, "status": data.Status})
 
 	// Trigger webhooks for terminal task statuses

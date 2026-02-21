@@ -83,6 +83,7 @@ func (h *WebhookHandler) CreateWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go LogAudit("user", "webhook_created", "webhook", wh.ID, map[string]interface{}{"name": wh.Name, "url": wh.URL})
 	respondJSON(w, http.StatusCreated, wh)
 }
 
@@ -140,6 +141,7 @@ func (h *WebhookHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusNotFound, "Webhook not found")
 		return
 	}
+	go LogAudit("user", "webhook_deleted", "webhook", id, nil)
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Webhook deleted"})
 }
 

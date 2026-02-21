@@ -160,4 +160,10 @@ window.API = {
 
   // Dependency Graph
   getGraphDependencies: () => apiFetch('/api/graph/dependencies'),
+
+  // Audit Log
+  getAuditLog: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch('/api/audit' + (qs ? '?' + qs : ''));
+  },
 };

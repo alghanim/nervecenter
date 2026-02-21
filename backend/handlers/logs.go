@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alghanim/agentboard/backend/config"
 )
 
 // LogsHandler serves /api/logs, /api/logs/search, /api/logs/files
@@ -115,7 +117,7 @@ func (h *LogsHandler) SearchLogs(w http.ResponseWriter, r *http.Request) {
 
 // GetLogFiles handles GET /api/logs/files — returns agent list with session counts
 func (h *LogsHandler) GetLogFiles(w http.ResponseWriter, r *http.Request) {
-	agentsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "agents")
+	agentsDir := filepath.Join(config.GetOpenClawDir(), "agents")
 	agentDirs, err := os.ReadDir(agentsDir)
 	if err != nil {
 		respondJSON(w, http.StatusOK, []LogFileInfo{})
@@ -204,7 +206,7 @@ func (h *LogsHandler) GetLogFiles(w http.ResponseWriter, r *http.Request) {
 
 // scanSessionLogs reads ~/.openclaw/agents/*/sessions/*.jsonl and returns matching entries.
 func scanSessionLogs(agentFilter, searchTerm, levelFilter string, limit int) []SessionEntry {
-	agentsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "agents")
+	agentsDir := filepath.Join(config.GetOpenClawDir(), "agents")
 	agentDirs, err := os.ReadDir(agentsDir)
 	if err != nil {
 		return nil
