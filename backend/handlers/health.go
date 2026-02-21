@@ -98,11 +98,9 @@ func (h *HealthHandler) SetAutoRestart(w http.ResponseWriter, r *http.Request) {
 func computeAgentHealth(id string) AgentHealth {
 	var status string
 	var autoRestart bool
-	var lastActive *time.Time
 
-	row := db.DB.QueryRow(`SELECT status, COALESCE(auto_restart, false), last_active FROM agents WHERE id = $1`, id)
-	var lastActiveNullable *time.Time
-	err := row.Scan(&status, &autoRestart, &lastActiveNullable)
+	row := db.DB.QueryRow(`SELECT status, COALESCE(auto_restart, false) FROM agents WHERE id = $1`, id)
+	err := row.Scan(&status, &autoRestart)
 	if err != nil {
 		return AgentHealth{
 			AgentID: id,
@@ -113,30 +111,45 @@ func computeAgentHealth(id string) AgentHealth {
 			},
 		}
 	}
-	lastActive = lastActiveNullable
+
+	// Get last activity from activity_log (the real "last seen")
+	var lastActivity *time.Time
+	actRow := db.DB.QueryRow(`SELECT MAX(created_at) FROM activity_log WHERE agent_id = $1`, id)
+	actRow.Scan(&lastActivity)
 
 	checks := []HealthCheck{}
 	now := time.Now()
 
-	// Check 1: Heartbeat recency
-	heartbeatPassed := true
-	heartbeatMsg := "Heartbeat is recent"
-	if lastActive == nil {
-		heartbeatPassed = false
-		heartbeatMsg = "No heartbeat recorded"
+	// Check 1: Recent Activity (replaces heartbeat)
+	activityPassed := true
+	activityMsg := ""
+	if lastActivity == nil {
+		// No activity at all — neutral state, not failure
+		activityPassed = true
+		activityMsg = "No activity recorded"
 	} else {
-		age := now.Sub(*lastActive)
-		if age > 15*time.Minute {
-			heartbeatPassed = false
-			heartbeatMsg = fmt.Sprintf("Last heartbeat %.0f minutes ago (threshold: 15m)", age.Minutes())
-		} else if age > 5*time.Minute {
-			heartbeatPassed = false
-			heartbeatMsg = fmt.Sprintf("Last heartbeat %.0f minutes ago (threshold: 5m for healthy)", age.Minutes())
-		} else {
-			heartbeatMsg = fmt.Sprintf("Last heartbeat %.0f seconds ago", age.Seconds())
+		age := now.Sub(*lastActivity)
+		switch {
+		case age < 15*time.Minute:
+			activityPassed = true
+			activityMsg = fmt.Sprintf("Active %d minutes ago", int(age.Minutes()))
+			if age < time.Minute {
+				activityMsg = fmt.Sprintf("Active %d seconds ago", int(age.Seconds()))
+			}
+		case age < 24*time.Hour:
+			activityPassed = true
+			if age < time.Hour {
+				activityMsg = fmt.Sprintf("Last active %d minutes ago", int(age.Minutes()))
+			} else {
+				activityMsg = fmt.Sprintf("Last active %d hours ago", int(age.Hours()))
+			}
+		default:
+			activityPassed = false
+			days := int(age.Hours() / 24)
+			activityMsg = fmt.Sprintf("Last active %d days ago", days)
 		}
 	}
-	checks = append(checks, HealthCheck{Name: "heartbeat", Passed: heartbeatPassed, Message: heartbeatMsg})
+	checks = append(checks, HealthCheck{Name: "recent_activity", Passed: activityPassed, Message: activityMsg})
 
 	// Check 2: Status is valid (not killed/paused)
 	statusOK := status != "killed" && status != "paused"
@@ -169,13 +182,22 @@ func computeAgentHealth(id string) AgentHealth {
 	}
 	checks = append(checks, HealthCheck{Name: "kill_signal", Passed: killPassed, Message: killMsg})
 
-	// Determine overall health
-	healthy := heartbeatPassed && statusOK
+	// Determine overall health: healthy unless killed/paused or inactive >24h
+	healthy := activityPassed && statusOK
+
+	// Use the agent's DB status directly for consistency with header badge
+	// Only override if there's a real problem
+	displayStatus := status
+	if status == "offline" && lastActivity != nil && now.Sub(*lastActivity) < 24*time.Hour {
+		// Agent has recent activity but status says offline — show as idle instead
+		displayStatus = "idle"
+		db.DB.Exec(`UPDATE agents SET status = 'idle' WHERE id = $1 AND status = 'offline'`, id)
+	}
 
 	return AgentHealth{
 		AgentID:     id,
-		Status:      status,
-		LastSeen:    lastActive,
+		Status:      displayStatus,
+		LastSeen:    lastActivity,
 		Healthy:     healthy,
 		Checks:      checks,
 		AutoRestart: autoRestart,
@@ -184,28 +206,24 @@ func computeAgentHealth(id string) AgentHealth {
 
 // determineStatusFromHealth returns the new status to set (or "" if no change needed)
 func determineStatusFromHealth(health AgentHealth) string {
-	// Only auto-downgrade agents that are "online" or "degraded"
-	if health.Status != "online" && health.Status != "degraded" {
+	// Only auto-downgrade agents that are "online" or "degraded" or "idle"
+	if health.Status != "online" && health.Status != "degraded" && health.Status != "idle" {
 		return ""
 	}
 
-	// Find heartbeat check
-	var heartbeatAge time.Duration
-	for _, c := range health.Checks {
-		if c.Name == "heartbeat" && !c.Passed {
-			// Parse from last_seen
-			if health.LastSeen != nil {
-				heartbeatAge = time.Since(*health.LastSeen)
-			}
+	if health.LastSeen == nil {
+		// No activity ever — set to idle (not offline)
+		if health.Status != "idle" {
+			return "idle"
 		}
+		return ""
 	}
 
-	if health.LastSeen == nil || heartbeatAge > 15*time.Minute {
+	age := time.Since(*health.LastSeen)
+	if age > 24*time.Hour {
 		return "offline"
 	}
-	if heartbeatAge > 5*time.Minute && health.Status == "online" {
-		return "degraded"
-	}
+	// Within 24h — keep current status, don't downgrade
 	return ""
 }
 
