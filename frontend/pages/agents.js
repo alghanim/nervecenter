@@ -944,6 +944,206 @@ Pages.agents = {
     await this._bulkAction('kill');
   },
 
+  /* ─── Snapshots Tab ─── */
+
+  async _loadSnapshotsTab(el, agentId) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Configuration Snapshots</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">Versioned backups of SOUL.md, MEMORY.md, HEARTBEAT.md and other config files</div>
+        </div>
+        <button class="btn-primary" id="createSnapBtn" onclick="Pages.agents._createSnapshot('${Utils.esc(agentId)}')" style="font-size:13px;padding:6px 14px">
+          📸 Create Snapshot
+        </button>
+      </div>
+      <div id="snapshotsList"><div class="loading-state"><div class="spinner"></div><span>Loading snapshots…</span></div></div>`;
+
+    await this._refreshSnapshotsList(el, agentId);
+  },
+
+  async _refreshSnapshotsList(tabEl, agentId) {
+    const listEl = tabEl ? tabEl.querySelector('#snapshotsList') : document.getElementById('snapshotsList');
+    if (!listEl) return;
+
+    try {
+      const snaps = await API.getSnapshots(agentId);
+
+      if (!snaps || snaps.length === 0) {
+        listEl.innerHTML = `
+          <div class="empty-state" style="padding:32px 0">
+            <div class="empty-state-icon" style="font-size:32px">📸</div>
+            <div class="empty-state-title">No snapshots yet</div>
+            <div class="empty-state-desc">Click "Create Snapshot" to save the current config state. Snapshots are also created automatically before any file save.</div>
+          </div>`;
+        return;
+      }
+
+      function formatBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+        return (b / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+
+      function absTime(iso) {
+        const d = new Date(iso);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function relTime(iso) {
+        const ms = Date.now() - new Date(iso).getTime();
+        const s = Math.floor(ms / 1000);
+        if (s < 60) return 'just now';
+        const m = Math.floor(s / 60);
+        if (m < 60) return m + 'm ago';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h ago';
+        return Math.floor(h / 24) + 'd ago';
+      }
+
+      listEl.innerHTML = snaps.map((snap, i) => {
+        const label = snap.label ? `<span style="font-size:11px;background:var(--accent-muted);color:var(--accent);padding:1px 7px;border-radius:10px;margin-left:6px">${Utils.esc(snap.label)}</span>` : '';
+        const files = (snap.files || []).map(f =>
+          `<span style="font-size:11px;font-family:var(--font-mono,monospace);background:var(--bg-base);border:1px solid var(--border-default);padding:1px 6px;border-radius:4px;color:var(--text-tertiary)">${Utils.esc(f)}</span>`
+        ).join(' ');
+
+        return `
+          <div class="activity-item" style="align-items:flex-start;gap:12px;padding:14px 16px" id="snap-row-${i}">
+            <div style="display:flex;flex-direction:column;align-items:center;min-width:48px;padding-top:2px;gap:1px">
+              <span style="font-size:18px">📸</span>
+              <span style="font-size:10px;color:var(--text-tertiary)">${Utils.esc(relTime(snap.created_at))}</span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+                <span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:600;color:var(--text-primary)">${Utils.esc(snap.id)}</span>
+                ${label}
+                <span style="font-size:11px;color:var(--text-tertiary);margin-left:auto">${Utils.esc(formatBytes(snap.size_bytes || 0))} · ${Utils.esc(absTime(snap.created_at))}</span>
+              </div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${files}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;align-self:center">
+              <button class="btn-secondary"
+                      onclick="Pages.agents._previewSnapshot('${Utils.esc(agentId)}', '${Utils.esc(snap.id)}', ${i})"
+                      style="font-size:12px;padding:4px 10px"
+                      title="Preview diff">
+                👁 Preview
+              </button>
+              <button class="btn-secondary"
+                      onclick="Pages.agents._restoreSnapshot('${Utils.esc(agentId)}', '${Utils.esc(snap.id)}')"
+                      style="font-size:12px;padding:4px 10px;color:var(--accent);border-color:var(--accent)"
+                      title="Restore this snapshot">
+                ↩ Restore
+              </button>
+            </div>
+          </div>
+          <div id="snap-diff-${i}" style="display:none;margin:0 16px 12px;border:1px solid var(--border-default);border-radius:8px;overflow:hidden"></div>`;
+      }).join('');
+
+    } catch (e) {
+      listEl.innerHTML = `
+        <div class="empty-state" style="padding:24px 0">
+          <div class="empty-state-icon">⚠️</div>
+          <div class="empty-state-title">Failed to load snapshots</div>
+          <div class="empty-state-desc">${Utils.esc(e.message)}</div>
+        </div>`;
+    }
+  },
+
+  async _createSnapshot(agentId) {
+    const btn = document.getElementById('createSnapBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Creating…'; }
+
+    try {
+      const label = prompt('Snapshot label (optional):', '') || '';
+      if (label === null) { // user cancelled
+        if (btn) { btn.disabled = false; btn.textContent = '📸 Create Snapshot'; }
+        return;
+      }
+      await API.createSnapshot(agentId, label);
+      this._showToast('✅ Snapshot created', 'success');
+      // Reload the tab
+      const el = document.getElementById('agentTabContent');
+      if (el) await this._refreshSnapshotsList(null, agentId);
+    } catch (e) {
+      this._showToast('❌ Failed: ' + e.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '📸 Create Snapshot'; }
+    }
+  },
+
+  async _restoreSnapshot(agentId, snapshotId) {
+    if (!confirm(`Restore snapshot "${snapshotId}"?\n\nThis will overwrite current config files. A pre-restore backup will be created automatically.`)) return;
+
+    try {
+      const result = await API.restoreSnapshot(agentId, snapshotId);
+      const files = (result.restored_files || []).join(', ');
+      this._showToast(`✅ Restored: ${files}`, 'success');
+      // Reload the tab
+      const el = document.getElementById('agentTabContent');
+      if (el) await this._refreshSnapshotsList(null, agentId);
+    } catch (e) {
+      this._showToast('❌ Restore failed: ' + e.message, 'error');
+    }
+  },
+
+  async _previewSnapshot(agentId, snapshotId, rowIdx) {
+    const diffEl = document.getElementById(`snap-diff-${rowIdx}`);
+    if (!diffEl) return;
+
+    // Toggle if already open
+    if (diffEl.style.display !== 'none') {
+      diffEl.style.display = 'none';
+      return;
+    }
+
+    diffEl.style.display = 'block';
+    diffEl.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--text-tertiary)">Loading diff preview…</div>`;
+
+    try {
+      // Load current soul content and snapshot content in parallel
+      const [currentSoul] = await Promise.all([
+        API.getAgentSoul(agentId),
+      ]);
+
+      // We can compare current MEMORY.md / SOUL.md with snapshot files
+      // Since we can't read snapshot files directly from the frontend,
+      // we show what files the snapshot contains vs current sizes.
+      const files = ['SOUL.md', 'MEMORY.md', 'HEARTBEAT.md', 'AGENTS.md'];
+      const currentContents = {
+        'SOUL.md':      (currentSoul.soul      || {}).content || '',
+        'MEMORY.md':    (currentSoul.memory    || {}).content || '',
+        'HEARTBEAT.md': (currentSoul.heartbeat || {}).content || '',
+        'AGENTS.md':    (currentSoul.agents    || {}).content || '',
+      };
+
+      // Build a simple stats comparison
+      const rows = files.map(fname => {
+        const currentLen = currentContents[fname].length;
+        const currentLines = currentContents[fname].split('\n').length;
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border-default)">
+            <span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:600;min-width:120px;color:var(--text-primary)">${Utils.esc(fname)}</span>
+            <span style="font-size:11px;color:var(--text-tertiary)">Current: ${currentLines} lines, ${currentLen} chars</span>
+            <span style="font-size:11px;color:var(--text-tertiary);margin-left:8px">→ Snapshot from <code style="font-family:var(--font-mono,monospace)">${Utils.esc(snapshotId)}</code></span>
+          </div>`;
+      }).join('');
+
+      diffEl.innerHTML = `
+        <div style="background:var(--bg-surface);padding:8px 14px;border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text-secondary)">Snapshot Preview: ${Utils.esc(snapshotId)}</span>
+          <span style="font-size:11px;color:var(--text-tertiary);margin-left:auto">Restoring will overwrite these files</span>
+          <button onclick="document.getElementById('snap-diff-${rowIdx}').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;padding:0 4px">✕</button>
+        </div>
+        ${rows}
+        <div style="padding:8px 14px;font-size:11px;color:var(--text-tertiary)">
+          ℹ️ Full diff view coming soon. Use Restore to apply this snapshot.
+        </div>`;
+
+    } catch (e) {
+      diffEl.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--danger,#ef4444)">Failed to load preview: ${Utils.esc(e.message)}</div>`;
+    }
+  },
+
   destroy() {
     this._wsHandlers.forEach(([ev, fn]) => WS.off(ev, fn));
     this._wsHandlers = [];

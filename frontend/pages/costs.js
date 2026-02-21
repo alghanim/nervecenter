@@ -52,6 +52,11 @@ Pages.costs = {
           </div>
         </div>
 
+        <!-- Forecast Section -->
+        <div id="costsForecastSection">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+
         <!-- Timeline Chart with controls -->
         <div class="chart-card">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
@@ -153,6 +158,7 @@ Pages.costs = {
     await Promise.all([
       this._loadKPIs(),
       this._loadAgentTable(),
+      this._loadForecast(),
       this._loadTimeline(),
     ]);
   },
@@ -433,6 +439,152 @@ Pages.costs = {
         crosshair.attr('display', 'none');
         tooltip.style('display', 'none');
       });
+  },
+
+  /* ─── Cost Forecast Section ─── */
+
+  async _loadForecast() {
+    const el = document.getElementById('costsForecastSection');
+    if (!el) return;
+
+    try {
+      const data = await API.getCostForecast();
+      if (!data) { el.innerHTML = ''; return; }
+
+      const f = data;
+      const fmtUSD = this._fmtUSD.bind(this);
+
+      // Trend config
+      const absTPct = Math.abs(f.trend_pct || 0);
+      let trendIcon = '→';
+      let trendColor = '#22c55e';
+      let trendBg = 'rgba(34,197,94,0.1)';
+      if (f.trend === 'increasing') {
+        trendIcon = '↑';
+        if (absTPct > 50) {
+          trendColor = '#ef4444'; trendBg = 'rgba(239,68,68,0.1)';
+        } else if (absTPct > 10) {
+          trendColor = '#f59e0b'; trendBg = 'rgba(245,158,11,0.1)';
+        } else {
+          trendColor = '#22c55e'; trendBg = 'rgba(34,197,94,0.1)';
+        }
+      } else if (f.trend === 'decreasing') {
+        trendIcon = '↓';
+        trendColor = '#22c55e'; trendBg = 'rgba(34,197,94,0.1)';
+      }
+
+      const trendLabel = `${trendIcon} ${f.trend_pct > 0 ? '+' : ''}${(f.trend_pct||0).toFixed(1)}%`;
+
+      // Per-agent table rows
+      const agentForecasts = Array.isArray(f.agent_forecasts) ? f.agent_forecasts : [];
+      const agentRows = agentForecasts.map(af => {
+        const ap = Math.abs(af.trend_pct || 0);
+        let atColor = '#22c55e';
+        let atIcon = '→';
+        if (af.trend_pct > 10) {
+          atIcon = '↑';
+          atColor = ap > 50 ? '#ef4444' : '#f59e0b';
+        } else if (af.trend_pct < -10) {
+          atIcon = '↓'; atColor = '#22c55e';
+        }
+        return `
+          <tr>
+            <td style="color:var(--text-primary)">${Utils.esc(af.agent_id)}</td>
+            <td class="cost">${fmtUSD(af.current_daily_avg)}</td>
+            <td class="cost">${fmtUSD(af.projected_monthly)}</td>
+            <td>
+              <span style="
+                display:inline-flex;align-items:center;gap:4px;
+                padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;
+                color:${atColor};background:${atColor}22;
+              ">
+                ${atIcon} ${af.trend_pct > 0 ? '+' : ''}${(af.trend_pct||0).toFixed(1)}%
+              </span>
+            </td>
+          </tr>`;
+      }).join('') || '<tr><td colspan="4" style="color:var(--text-tertiary);text-align:center;padding:20px">No per-agent data yet</td></tr>';
+
+      // Mini CSS bar chart from daily history
+      const history = Array.isArray(f.daily_history) ? f.daily_history.slice(-14) : [];
+      const maxCost = Math.max(...history.map(d => d.cost || 0), 0.001);
+      const barChart = history.length > 0 ? `
+        <div style="display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:12px">
+          ${history.map(d => {
+            const pct = Math.max(2, Math.round(((d.cost||0) / maxCost) * 100));
+            const isToday = d.date === new Date().toISOString().slice(0, 10);
+            return `
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px" title="${d.date}: ${fmtUSD(d.cost)}">
+                <div style="
+                  width:100%;height:${pct}%;min-height:2px;
+                  background:${isToday ? 'var(--accent,#B5CC18)' : 'rgba(181,204,24,0.4)'};
+                  border-radius:3px 3px 0 0;transition:height 0.3s ease;
+                "></div>
+              </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-tertiary);margin-top:4px">
+          <span>${history[0] ? history[0].date.slice(5) : ''}</span>
+          <span style="font-size:10px">Last 14 days</span>
+          <span>${history[history.length-1] ? history[history.length-1].date.slice(5) : ''}</span>
+        </div>` : '<div style="color:var(--text-tertiary);font-size:13px;padding:12px 0">No history data yet</div>';
+
+      el.innerHTML = `
+        <div class="chart-card">
+          <div class="chart-card__title">💡 Cost Forecast</div>
+
+          <!-- KPI row -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin:16px 0">
+
+            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Daily Avg</div>
+              <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.current_daily_avg)}</div>
+            </div>
+
+            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Projected Weekly</div>
+              <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.projected_weekly)}</div>
+            </div>
+
+            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Projected Monthly</div>
+              <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.projected_monthly)}</div>
+            </div>
+
+            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Trend (vs prior week)</div>
+              <div style="font-size:1.4rem;font-weight:700;color:${trendColor};background:${trendBg};display:inline-block;padding:4px 10px;border-radius:8px">${trendLabel}</div>
+              <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;text-transform:capitalize">${Utils.esc(f.trend)}</div>
+            </div>
+
+          </div>
+
+          <!-- 14-day bar chart -->
+          <div style="margin:0 0 20px">
+            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Daily Spend (last 14 days)</div>
+            ${barChart}
+          </div>
+
+          <!-- Per-agent forecast table -->
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Per-Agent Forecast</div>
+          <div style="overflow-x:auto">
+            <table class="costs-table">
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Daily Avg</th>
+                  <th>Projected Monthly</th>
+                  <th>Trend</th>
+                </tr>
+              </thead>
+              <tbody>${agentRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+
+    } catch (e) {
+      const el2 = document.getElementById('costsForecastSection');
+      if (el2) el2.innerHTML = `<div class="chart-card"><div style="color:var(--danger,#ef4444);padding:16px;">Failed to load forecast: ${Utils.esc(e.message)}</div></div>`;
+    }
   },
 
   destroy() {

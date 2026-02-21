@@ -18,6 +18,10 @@ var defaultEnvironments = []Environment{
 }
 
 func envsFilePath() string {
+	// Check for OPENCLAW_DIR env var first (used in Docker)
+	if dir := os.Getenv("OPENCLAW_DIR"); dir != "" {
+		return filepath.Join(dir, "agentboard-envs.json")
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = "/root"

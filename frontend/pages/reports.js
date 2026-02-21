@@ -5,10 +5,69 @@ window.Pages = window.Pages || {};
 Pages.reports = {
   _range: 7,
   _charts: [],
+  _reportPeriod: 'weekly',
 
   async render(container) {
     container.innerHTML = `
       <div class="reports-page">
+
+        <!-- ═══════════════════════════════════════════
+             EXECUTIVE SUMMARY SECTION
+        ═══════════════════════════════════════════ -->
+        <div id="execSummarySection" style="margin-bottom:36px;">
+          <!-- Header row -->
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+            <div style="flex:1;min-width:0;">
+              <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                📊 <span>Executive Summary</span>
+              </h2>
+              <div id="reportGeneratedAt" style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">Loading…</div>
+            </div>
+            <!-- Period toggle -->
+            <div style="display:flex;gap:0;border:1px solid var(--border-default);border-radius:8px;overflow:hidden;">
+              <button id="toggleWeekly" class="period-toggle-btn period-toggle-btn--active" onclick="Pages.reports._setPeriod('weekly')"
+                style="padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;
+                       background:var(--accent);color:#000;transition:all 150ms;">Weekly</button>
+              <button id="toggleDaily" class="period-toggle-btn" onclick="Pages.reports._setPeriod('daily')"
+                style="padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;
+                       background:var(--bg-surface);color:var(--text-secondary);transition:all 150ms;">Daily</button>
+            </div>
+            <!-- Refresh button -->
+            <button onclick="Pages.reports._refreshSummary()" style="
+              display:inline-flex;align-items:center;gap:6px;
+              padding:7px 16px;
+              background:var(--bg-surface);
+              border:1px solid var(--border-default);
+              border-radius:8px;
+              color:var(--text-secondary);
+              font-size:13px;font-weight:600;
+              cursor:pointer;
+              transition:all 150ms;
+            " onmouseenter="this.style.borderColor='var(--border-hover)';this.style.color='var(--text-primary)'"
+               onmouseleave="this.style.borderColor='var(--border-default)';this.style.color='var(--text-secondary)'">
+              ↻ Refresh Report
+            </button>
+          </div>
+
+          <!-- Hero stat cards -->
+          <div id="summaryHeroCards" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
+            ${[1,2,3,4,5].map(() => `
+              <div class="kpi-card"><div class="kpi-spinner"><div class="spinner"></div></div></div>
+            `).join('')}
+          </div>
+
+          <!-- Agent breakdown table -->
+          <div id="summaryAgentTable" style="
+            background:var(--bg-surface);
+            border:1px solid var(--border-default);
+            border-radius:12px;overflow:hidden;
+          ">
+            <div style="padding:20px;text-align:center;color:var(--text-tertiary);">
+              <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Loading agent breakdown…
+            </div>
+          </div>
+        </div>
+
         <!-- Range Picker -->
         <div class="reports-toolbar">
           <div class="range-picker">
@@ -125,6 +184,15 @@ Pages.reports = {
         </div>
       </div>`;
 
+    // Responsive: hero summary cards collapse on small screens
+    const mqHero = window.matchMedia('(max-width: 959px)');
+    const applyHeroMQ = (e) => {
+      const g = document.getElementById('summaryHeroCards');
+      if (g) g.style.gridTemplateColumns = e.matches ? 'repeat(3,1fr)' : 'repeat(5,1fr)';
+    };
+    applyHeroMQ(mqHero);
+    mqHero.addEventListener('change', applyHeroMQ);
+
     // Responsive: token bottom grid stacks on narrow screens
     const mq = window.matchMedia('(max-width: 767px)');
     const applyMQ = (e) => {
@@ -139,6 +207,7 @@ Pages.reports = {
 
   async _loadAll() {
     await Promise.all([
+      this._loadWeeklySummary(),
       this._loadKPIs(),
       this._loadCharts(),
       this._loadTokenSection(),
@@ -147,6 +216,172 @@ Pages.reports = {
       this._loadLatency(),
     ]);
   },
+
+  /* ═══════════════════════════════════════════════════════
+     EXECUTIVE SUMMARY — Weekly / Daily Report
+  ═══════════════════════════════════════════════════════ */
+
+  _setPeriod(period) {
+    this._reportPeriod = period;
+    const wBtn = document.getElementById('toggleWeekly');
+    const dBtn = document.getElementById('toggleDaily');
+    if (wBtn && dBtn) {
+      if (period === 'weekly') {
+        wBtn.style.background = 'var(--accent)'; wBtn.style.color = '#000';
+        dBtn.style.background = 'var(--bg-surface)'; dBtn.style.color = 'var(--text-secondary)';
+      } else {
+        dBtn.style.background = 'var(--accent)'; dBtn.style.color = '#000';
+        wBtn.style.background = 'var(--bg-surface)'; wBtn.style.color = 'var(--text-secondary)';
+      }
+    }
+    this._loadWeeklySummary();
+  },
+
+  async _refreshSummary() {
+    const btn = document.querySelector('[onclick*="_refreshSummary"]');
+    if (btn) { btn.textContent = '↻ Refreshing…'; btn.style.opacity = '0.6'; }
+    await this._loadWeeklySummary();
+    if (btn) { btn.textContent = '↻ Refresh Report'; btn.style.opacity = '1'; }
+  },
+
+  async _loadWeeklySummary() {
+    const heroEl = document.getElementById('summaryHeroCards');
+    const tableEl = document.getElementById('summaryAgentTable');
+    const tsEl = document.getElementById('reportGeneratedAt');
+
+    // Show skeleton
+    if (heroEl) heroEl.innerHTML = [1,2,3,4,5].map(() =>
+      `<div class="kpi-card"><div class="kpi-spinner"><div class="spinner"></div></div></div>`
+    ).join('');
+    if (tableEl) tableEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-tertiary);">
+      <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Loading…</div>`;
+
+    let data = null;
+    const endpoint = `/api/report?period=${this._reportPeriod}`;
+    try {
+      data = await apiFetch(endpoint);
+    } catch (_) {
+      // fall back to weekly if daily isn't available
+      if (this._reportPeriod === 'daily') {
+        try { data = await apiFetch('/api/report?period=weekly'); } catch (__) {}
+      }
+    }
+
+    if (!data) {
+      if (heroEl) heroEl.innerHTML = `<div style="grid-column:1/-1;padding:20px;color:var(--danger);">Failed to load report data.</div>`;
+      if (tableEl) tableEl.innerHTML = `<div style="padding:20px;color:var(--danger);">Endpoint unavailable.</div>`;
+      return;
+    }
+
+    // Timestamp
+    if (tsEl && data.generated_at) {
+      const d = new Date(data.generated_at);
+      tsEl.textContent = `Generated ${d.toLocaleDateString(undefined, {weekday:'short',month:'short',day:'numeric'})} at ${d.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'})}`;
+    } else if (tsEl) {
+      tsEl.textContent = '';
+    }
+
+    this._renderSummaryHero(heroEl, data);
+    this._renderSummaryTable(tableEl, data.agents || []);
+  },
+
+  _renderSummaryHero(el, d) {
+    if (!el) return;
+    const fmtUSD = (v) => {
+      if (!v && v !== 0) return '—';
+      if (v >= 1000) return '$' + (v / 1000).toFixed(1) + 'K';
+      return '$' + v.toFixed(2);
+    };
+    const fmtPct = (v) => (v != null ? v.toFixed(1) + '%' : '—');
+
+    const cards = [
+      { icon: '🤖', label: 'Total Agents',   value: d.total_agents ?? '—', color: 'var(--text-primary)' },
+      { icon: '🟢', label: 'Online Now',      value: d.online_agents ?? '—', color: '#22C55E' },
+      { icon: '✅', label: 'Tasks Done',       value: d.completed_tasks ?? '—', color: '#3B82F6' },
+      { icon: '📈', label: 'Completion Rate', value: fmtPct(d.completion_rate), color: d.completion_rate >= 50 ? '#22C55E' : d.completion_rate >= 25 ? '#F59E0B' : '#EF4444' },
+      { icon: '💰', label: 'Cost This Week',  value: fmtUSD(d.cost_this_week), color: '#10B981' },
+    ];
+
+    el.innerHTML = cards.map((c, i) => `
+      <div class="kpi-card" style="animation: fadeInKPI 220ms ease ${i * 50}ms both;">
+        <div style="font-size:22px;margin-bottom:8px;">${c.icon}</div>
+        <div class="kpi-number" style="color:${c.color};">${Utils.esc(String(c.value))}</div>
+        <div class="kpi-label">${c.label}</div>
+      </div>
+    `).join('');
+  },
+
+  _renderSummaryTable(el, agents) {
+    if (!el) return;
+    if (!agents || agents.length === 0) {
+      el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-tertiary);">No agent data available.</div>`;
+      return;
+    }
+
+    // Sort by tasks_completed desc
+    const sorted = agents.slice().sort((a, b) => (b.tasks_completed || 0) - (a.tasks_completed || 0));
+    const maxTasks = sorted[0]?.tasks_completed || 1;
+
+    const statusPill = (status) => {
+      const map = {
+        online:   ['online',   'Online'],
+        active:   ['online',   'Active'],
+        busy:     ['busy',     'Busy'],
+        idle:     ['idle',     'Idle'],
+        offline:  ['offline',  'Offline'],
+        inactive: ['inactive', 'Inactive'],
+        error:    ['error',    'Error'],
+      };
+      const [cls, label] = map[status] || ['offline', status || 'Unknown'];
+      return `<span class="status-pill status-pill--${cls}">
+        <span class="status-pill__dot"></span>${Utils.esc(label)}
+      </span>`;
+    };
+
+    const rows = sorted.map((agent, i) => {
+      const tasksDone = agent.tasks_completed ?? 0;
+      const barPct = maxTasks > 0 ? Math.round((tasksDone / maxTasks) * 100) : 0;
+      const rankMedal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="color:var(--text-tertiary);font-size:12px;">#${i + 1}</span>`;
+
+      return `<tr style="border-bottom:1px solid var(--border-default);transition:background 120ms;"
+        onmouseenter="this.style.background='var(--bg-inset)'"
+        onmouseleave="this.style.background=''">
+        <td style="padding:12px 16px;text-align:center;width:48px;font-size:15px;">${rankMedal}</td>
+        <td style="padding:12px 16px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${Utils.esc(agent.display_name || agent.id || 'Unknown')}</div>
+          ${agent.role ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">${Utils.esc(agent.role)}</div>` : ''}
+        </td>
+        <td style="padding:12px 16px;">${statusPill(agent.status)}</td>
+        <td style="padding:12px 16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:6px;background:var(--bg-inset);border-radius:99px;overflow:hidden;min-width:80px;">
+              <div style="
+                width:${barPct}%;height:100%;
+                background:${tasksDone > 0 ? 'var(--accent,#B5CC18)' : 'var(--border-default)'};
+                border-radius:99px;transition:width 500ms ease;
+              "></div>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:var(--text-primary);width:28px;text-align:right;">${tasksDone}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--bg-inset);border-bottom:1px solid var(--border-default);">
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;width:48px;">Rank</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Agent</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Status</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Tasks Completed</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  },
+
+  /* ─────────────────────────────────────────────────── */
 
   async _setRange(days, btn) {
     this._range = days;
