@@ -66,6 +66,9 @@ func main() {
 	reportHandler := &handlers.ReportHandler{}
 	documentsHandler := &handlers.DocumentsHandler{}
 	metricsHandler := &handlers.MetricsHandler{}
+	webhookHandler := &handlers.WebhookHandler{}
+	errorsHandler := &handlers.ErrorsHandler{}
+	controlHandler := &handlers.AgentControlHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
@@ -97,6 +100,16 @@ func main() {
 	api.HandleFunc("/agents/{id}/activity", agentHandler.GetAgentActivity).Methods("GET")
 	api.HandleFunc("/agents/{id}/metrics", agentHandler.GetAgentMetrics).Methods("GET")
 	api.HandleFunc("/agents/{id}/status", agentHandler.UpdateAgentStatus).Methods("PUT")
+	api.HandleFunc("/agents/{id}/pause", agentHandler.PauseAgent).Methods("POST")
+	api.HandleFunc("/agents/{id}/resume", agentHandler.ResumeAgent).Methods("POST")
+	api.HandleFunc("/agents/{id}/kill", agentHandler.KillAgent).Methods("POST")
+
+	// Webhooks
+	api.HandleFunc("/webhooks", webhookHandler.ListWebhooks).Methods("GET")
+	api.HandleFunc("/webhooks", webhookHandler.CreateWebhook).Methods("POST")
+	api.HandleFunc("/webhooks/{id}", webhookHandler.UpdateWebhook).Methods("PUT")
+	api.HandleFunc("/webhooks/{id}", webhookHandler.DeleteWebhook).Methods("DELETE")
+	api.HandleFunc("/webhooks/{id}/test", webhookHandler.TestWebhook).Methods("POST")
 
 	// Soul endpoint — reads live workspace files
 	api.HandleFunc("/agents/{id}/soul", openclawHandler.GetAgentSoul).Methods("GET")
@@ -144,6 +157,14 @@ func main() {
 	// Documents
 	api.HandleFunc("/documents", documentsHandler.ListDocuments).Methods("GET")
 	api.HandleFunc("/documents/content", documentsHandler.GetDocumentContent).Methods("GET")
+
+	// Errors
+	api.HandleFunc("/errors", errorsHandler.GetErrors).Methods("GET")
+
+	// Agent control (pause/resume/kill)
+	api.HandleFunc("/agents/{id}/kill", controlHandler.Kill).Methods("POST")
+	api.HandleFunc("/agents/{id}/pause", controlHandler.Pause).Methods("POST")
+	api.HandleFunc("/agents/{id}/resume", controlHandler.Resume).Methods("POST")
 
 	// Global search
 	api.HandleFunc("/search", searchHandler.Search).Methods("GET")

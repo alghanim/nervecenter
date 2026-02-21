@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS agents (
     last_active TIMESTAMP,
     workspace_path VARCHAR(500),
     is_lead BOOLEAN DEFAULT FALSE,
-    CONSTRAINT valid_agent_status CHECK (status IN ('online', 'offline', 'busy', 'idle'))
+    CONSTRAINT valid_agent_status CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed'))
 );
 
 -- Add team_color if upgrading from older schema
@@ -121,6 +121,49 @@ CREATE TABLE IF NOT EXISTS task_history (
 );
 CREATE INDEX IF NOT EXISTS idx_task_history_task_id ON task_history(task_id);
 
+-- Alert Rules table
+CREATE TABLE IF NOT EXISTS alert_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    agent_id VARCHAR(100),  -- NULL = all agents
+    condition_type VARCHAR(50) NOT NULL,
+    threshold INT NOT NULL DEFAULT 30,
+    enabled BOOLEAN DEFAULT true,
+    notify_webhook_id UUID,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT valid_condition_type CHECK (condition_type IN ('no_heartbeat', 'error_rate', 'task_stuck'))
+);
+
+-- Alert History table
+CREATE TABLE IF NOT EXISTS alert_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    rule_id UUID NOT NULL REFERENCES alert_rules(id) ON DELETE CASCADE,
+    agent_id VARCHAR(100),
+    triggered_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    message TEXT,
+    acknowledged BOOLEAN DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_rules_enabled ON alert_rules(enabled);
+CREATE INDEX IF NOT EXISTS idx_alert_history_rule_id ON alert_history(rule_id);
+CREATE INDEX IF NOT EXISTS idx_alert_history_triggered_at ON alert_history(triggered_at);
+CREATE INDEX IF NOT EXISTS idx_alert_history_acknowledged ON alert_history(acknowledged);
+
+-- Webhooks table
+CREATE TABLE IF NOT EXISTS webhooks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255),
+    url TEXT NOT NULL,
+    events TEXT[] NOT NULL DEFAULT '{}',
+    secret VARCHAR(255),
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(active);
+
 -- Trigger to auto-update updated_at on tasks
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -132,4 +175,8 @@ $$ language 'plpgsql';
 
 DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks;
 CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_alert_rules_updated_at ON alert_rules;
+CREATE TRIGGER update_alert_rules_updated_at BEFORE UPDATE ON alert_rules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
