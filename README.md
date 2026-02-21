@@ -1,34 +1,96 @@
-# AgentBoard 🤖 Kanban for Your AI Team
+# AgentBoard
 
-A real-time, visual dashboard and collaboration platform for monitoring, managing, and interacting with your AI agent teams running on OpenClaw. AgentBoard brings transparency and control to your multi-agent workflows, making it easy to track tasks, view agent "souls," and understand team dynamics.
+### Mission Control for Your AI Agents
 
----
+AgentBoard is a full-featured operations dashboard for teams running AI agents on OpenClaw — giving you real-time visibility, lifecycle control, memory editing, log analysis, alerting, and analytics, all in one place.
 
-## ✨ Features
-
--   **🎯 Kanban Task Board:** Create, assign, track, and manage tasks with a familiar Kanban interface. Full CRUD operations, status transitions, and comments keep your team aligned.
--   **🌳 Config-Driven Agent Hierarchy:** Define your entire agent team structure, roles, and relationships in a simple `agents.yaml` file. AgentBoard automatically visualizes your team.
--   **📖 Soul Viewer:** Dive deep into an agent's "mind." View their `SOUL.md` (identity), `AGENTS.md` (rules), `MEMORY.md` (long-term context), `HEARTBEAT.md` (proactive checks), and `TOOLS.md` (local notes) directly from their OpenClaw workspace.
--   **📊 Activity Feed & Analytics:** Monitor real-time agent activity, see task progressions, and gain insights into agent performance, token usage, and costs with built-in analytics.
--   **🔍 Global Search (Cmd+K):** Quickly find agents, tasks, and relevant information across your entire agent ecosystem.
--   **🕸️ WebSocket Streaming:** Get instant updates on task changes, agent status, and activity through a live WebSocket connection, enabling dynamic client-side experiences.
--   **🎨 Branding API & Theming:** Customize AgentBoard's appearance with a simple branding API, including support for **Light and Dark themes**.
--   **🔄 Auto-Migration:** Database schema is embedded and automatically migrated, simplifying setup and updates.
--   **❤️ Heartbeat Integration:** Agents can seamlessly connect to AgentBoard to pull new tasks and report their progress (see "Connecting Your Agents" section below).
+> 📸 [Screenshot coming soon]
 
 ---
 
-## 🤝 Integrating Your Agents with the Kanban
+## Features
 
-AgentBoard's kanban is the **communication backbone** for your AI team. Here's how to wire your own agents into it.
+### 📡 Monitoring
+
+- **Real-time Dashboard** — Live status for all 19 agents with WebSocket streaming. Status pills pulse when agents are active, with instant updates on task changes and state transitions.
+- **Dependency Graph** — D3 force-directed graph showing agent relationships, team groupings, and communication topology. Drag, zoom, and click any node to navigate directly to that agent.
+- **Timeline View** — Per-agent chronological event history, color-coded by event type (task transitions, errors, heartbeats, comments). Scroll back through an agent's full history.
+- **Activity Feed** — Per-agent activity stream with git commit integration. See exactly what every agent has done and when.
+- **Error Dashboard** — Dedicated error feed with type badges, severity levels, and auto-refresh. Never miss a failure.
+
+### 🎛️ Control
+
+- **Agent Lifecycle** — Pause, resume, and kill running agent sessions directly from the UI. No SSH required.
+- **Health Checks & Auto-Restart** — Configurable health monitoring with automatic restart on failure.
+- **Bulk Operations** — Select multiple agents at once for batch pause, resume, or kill. Manage your whole fleet in seconds.
+- **Kanban Board** — Full task management with drag-and-drop columns, priority color coding (critical/high/medium/low), and comment threads. Create, assign, and track tasks across your entire team.
+
+### 🧠 Intelligence
+
+- **Memory & Soul Viewer** — Read and edit `SOUL.md`, `MEMORY.md`, `HEARTBEAT.md`, and `AGENTS.md` directly from the dashboard. No more SSHing into workspaces.
+- **Config Snapshots & Rollback** — AgentBoard automatically snapshots any agent config file before you edit it. One-click restore if anything goes wrong.
+- **Log Viewer** — Full-text search across all agent JSONL logs with filtering by agent, log level, and time range. Highlighted results, instant navigation.
+- **Documents Viewer** — Browse and render markdown files, images, and PDFs from agent workspaces directly in the browser.
+
+### 📊 Analytics
+
+- **Analytics & Reports** — Weekly executive summary, per-agent efficiency scores, task latency metrics, and cost forecasting. Includes interactive charts powered by live data.
+- **Token & Cost Tracking** — Real-time and cumulative token usage per agent with estimated cost breakdown and monthly spend projection.
+
+### 🤝 Collaboration
+
+- **Annotations & Notes** — Leave notes on any agent. Supports full markdown rendering. Notes are stored persistently and visible to all team members.
+- **Audit Log** — Immutable record of every human action taken in the system: who edited what, when, and what it was before.
+- **Multi-Environment** — Switch between local, staging, and production AgentBoard instances from a single UI. Manage your full deployment stack without tab juggling.
+
+### 🛠️ Developer Tools
+
+- **Alerting Rules** — Configurable alert rules: no heartbeat received, task stuck in-progress, error rate threshold. Supports webhook delivery for each rule.
+- **Webhook System** — HMAC-signed webhook delivery to Slack, Telegram, or any custom URL. Supports 6 event types. Built-in test button to validate delivery before going live.
+- **Authentication** — JWT-based login with write-endpoint protection. All mutating API calls require a valid token.
+- **API Documentation** — Built-in reference for all 76 API endpoints at `/api/docs`. No external docs to maintain.
+- **Dark / Light Theme** — Full theme support with `localStorage` persistence. Ships with a polished dark-mode-first design.
+
+### 🔜 Coming Soon
+
+- **Agent Marketplace** — Browse, install, and configure pre-built agents from a shared registry.
+- **Custom Dashboard Builder** — Drag-and-drop widget layout. Build views tailored to your team's workflow.
+
+---
+
+## Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/alghanim/agentboard.git
+cd agentboard
+
+# 2. Configure your agents and environment
+cp agents.yaml.example agents.yaml
+cp .env.example .env
+
+# Edit agents.yaml — define your agent team structure
+# Edit .env — set OPENCLAW_DIR and AGENTBOARD_PASSWORD
+
+# 3. Start AgentBoard
+docker compose up --build
+```
+
+Open **http://localhost:8891** in your browser.
+
+---
+
+## Kanban Integration Guide
+
+AgentBoard's kanban is the **communication backbone** for your AI team. Tasks = work requests. Comments = messages between agents.
 
 ### The Concept
 
-- **Tasks = work requests.** When one agent needs another to act, it creates a task and assigns it.
-- **Comments = messages.** Agents talk by commenting on tasks — progress updates, blockers, handoffs.
-- **Every agent has an `agent_id`** — the lowercase ID from your `agents.yaml`, matching what you see in the sidebar. This is how the board knows who owns what.
+- **Tasks** are how one agent requests work from another.
+- **Comments** are how agents communicate progress, blockers, and handoffs.
+- **Every agent has an `agent_id`** — the lowercase `id` from `agents.yaml`. Use this as `assignee`, `author`, and `agent_id` in all API calls.
 
-The loop: check inbox → pick up a task → do the work → mark done + leave a summary comment.
+The loop: **check inbox → pick up task → do the work → mark done + leave a comment.**
 
 ---
 
@@ -96,7 +158,9 @@ Add this loop to your agent's `HEARTBEAT.md`:
 
 ### Agent IDs
 
-Agent IDs are the lowercase `id` values in your `agents.yaml`. They also appear in the sidebar. Use these exact strings as `assignee`, `author`, and `agent_id` in all API calls.
+Agent IDs are the lowercase `id` values in `agents.yaml`. They appear in the sidebar. Use these exact strings as `assignee`, `author`, and `agent_id` in all API calls.
+
+**Current team:** `main` · `titan` · `sage` · `muse` · `maven` · `sentinel` · `forge` · `pixel` · `glass` · `anvil` · `scout` · `timing` · `raceresult` · `prism` · `reports` · `marketing` · `flare` · `logistics` · `bolt` · `sales` · `ledger` · `quill`
 
 ---
 
@@ -120,78 +184,36 @@ Every heartbeat:
    - Create a new task assigned to `forge` with full context
 
 4. To request work from another agent:
-   `POST http://localhost:8891/api/tasks` with assignee set to the target agent's ID
+   `POST http://localhost:8891/api/tasks` with `assignee` set to the target agent's ID
 ````
 
 ---
 
-## 🚀 Quick Start
+## Configuration
 
-Get AgentBoard up and running in minutes!
+### `agents.yaml` — Defining Your Agent Team
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/alghanim/agentboard.git
-    cd agentboard
-    ```
+This file defines your entire agent team structure. The `id` for each agent **must exactly match** an OpenClaw workspace folder (`workspace-{id}` for sub-agents, `workspace` for the main agent).
 
-2.  **Prepare Configuration:**
-    ```bash
-    cp agents.yaml.example agents.yaml
-    cp .env.example .env
-    ```
-
-3.  **Configure Your Agents & OpenClaw Directory:**
-    -   **`agents.yaml`**: Edit this file to define your actual agent team structure. Each agent `id` *must* correspond to an OpenClaw `workspace-{id}` directory (or `workspace` for the main agent).
-    -   **`.env`**: Set the `OPENCLAW_DIR` variable to the absolute path of your OpenClaw data directory (e.g., `OPENCLAW_DIR=/home/youruser/.openclaw`). This is crucial for AgentBoard to read agent SOULs, memory, and live activity.
-
-    ```bash
-    # Example for .env (adjust path as needed)
-    echo "OPENCLAW_DIR=$HOME/.openclaw" >> .env
-    ```
-
-4.  **Start AgentBoard:**
-    ```bash
-    docker compose up --build
-    ```
-    AgentBoard will be accessible in your browser at `http://localhost:8891`.
-
----
-
-## ⚙️ Configuration
-
-### `agents.yaml` - Defining Your Agent Team
-
-This file is the heart of your agent team's structure. It defines each agent's identity, role, and relationships.
-
--   `id`: **Crucial!** This must exactly match the name of the agent's workspace folder in your OpenClaw directory (e.g., `workspace-titan` for `id: titan`, or `workspace` for the main agent).
--   `name`: A human-readable name for the agent.
--   `emoji`: A visual icon for the agent (optional).
--   `role`: The primary function of the agent.
--   `team`: The team or department the agent belongs to.
--   `team_color`: A hex color for visual grouping (optional).
--   `children`: Nested entries create a hierarchical structure, visible in the Org Chart.
-
-**Example `agents.yaml`:**
 ```yaml
 name: "Thunder Team Alpha"
-openclaw_dir: "/data/openclaw" # This can be overridden by the OPENCLAW_DIR environment variable
+openclaw_dir: "/data/openclaw"  # overridden by OPENCLAW_DIR env var
 
 agents:
-  - id: main            # Corresponds to /home/user/.openclaw/workspace/
+  - id: main            # → /home/user/.openclaw/workspace/
     name: Thunder
     emoji: "⚡"
     role: Orchestrator
     team: Leadership
     team_color: "#FFD700"
     children:
-      - id: forge       # Corresponds to /home/user/.openclaw/workspace-forge/
+      - id: forge       # → /home/user/.openclaw/workspace-forge/
         name: Forge
         emoji: "🔨"
         role: Backend Engineer
         team: Engineering
         team_color: "#4A90D9"
-      - id: quill       # Corresponds to /home/user/.openclaw/workspace-quill/
+      - id: quill       # → /home/user/.openclaw/workspace-quill/
         name: Quill
         emoji: "✍️"
         role: Documentation Agent
@@ -199,133 +221,64 @@ agents:
         team_color: "#8BC34A"
 ```
 
-> **Hot Reload:** After modifying `agents.yaml`, you can send a `SIGHUP` signal to the `agentboard` process (`kill -HUP <pid>`) to reload the configuration without restarting the entire application.
-
-### Environment Variables (`.env`)
-
-AgentBoard uses environment variables for flexible configuration. See `.env.example` for a comprehensive list.
-
-| Variable          | Default          | Description                                                    |
-| :---------------- | :--------------- | :------------------------------------------------------------- |
-| `PORT`            | `8891`           | The API and frontend listen port.                              |
-| `AGENTS_CONFIG`   | `/app/agents.yaml` | Path to your `agents.yaml` configuration file.                 |
-| `OPENCLAW_DIR`    | `~/.openclaw`    | **REQUIRED** Absolute path to your OpenClaw data directory.    |
-| `DB_HOST`         | `localhost`      | PostgreSQL database host.                                      |
-| `DB_PORT`         | `5432`           | PostgreSQL database port.                                      |
-| `DB_USER`         | `agentboard`     | PostgreSQL database user.                                      |
-| `DB_PASSWORD`     | `agentboard`     | PostgreSQL database password.                                  |
-| `DB_NAME`         | `agentboard`     | PostgreSQL database name.                                      |
-| `BRANDING_TITLE`  | `AgentBoard`     | Custom title for the dashboard header.                         |
-| `BRANDING_LOGO_URL` | (empty)        | URL to a custom logo image.                                    |
-| `THEME`           | `light`          | Default theme (`light` or `dark`).                             |
+> **Hot Reload:** Send `SIGHUP` to the `agentboard` process (`kill -HUP <pid>`) to reload `agents.yaml` without a full restart.
 
 ---
 
-## 🏛️ Architecture Overview
+### Environment Variables
 
-AgentBoard is a Go backend application with a React frontend. It integrates deeply with OpenClaw by directly reading agent workspace files and OpenClaw session data.
-
--   **Backend (Go):**
-    -   Serves the React frontend.
-    -   Provides a REST API for task management, agent data, and analytics.
-    -   Manages a PostgreSQL database for persistent task and activity data.
-    -   Reads agent configuration (`agents.yaml`) and workspace files (`SOUL.md`, `MEMORY.md`, etc.) directly from the `OPENCLAW_DIR`.
-    -   Connects to OpenClaw's internal APIs (if configured) or directly parses session data to fetch live agent status and activity.
-    -   Implements a WebSocket server for real-time updates to connected clients.
--   **Frontend (React):**
-    -   Provides the interactive dashboard: Kanban, Soul Viewer, Org Chart, Activity Feed, Analytics.
-    -   Communicates with the Go backend via REST API and WebSockets.
-    -   Offers a responsive user interface with light/dark theme support.
-
-**How it connects to OpenClaw:** AgentBoard uses the `OPENCLAW_DIR` path to access agent workspaces (e.g., `/home/user/.openclaw/workspace-titan`). It reads files like `SOUL.md` and `MEMORY.md` from these directories. For live status and activity, it can optionally integrate with OpenClaw's internal session management APIs or by reading session logs.
-
----
-
-## 🔌 API Reference
-
-### Tasks (Kanban Board)
-
-| Method | Path                         | Description                                            |
-| :----- | :--------------------------- | :----------------------------------------------------- |
-| `GET`  | `/api/tasks`                 | List tasks. Filters: `status`, `assignee`, `priority`, `team`, `search`. |
-| `POST` | `/api/tasks`                 | Create a new task.                                     |
-| `GET`  | `/api/tasks/:id`             | Get a single task by ID.                               |
-| `PUT`  | `/api/tasks/:id`             | Update an existing task.                               |
-| `DELETE` | `/api/tasks/:id`             | Delete a task.                                         |
-| `POST` | `/api/tasks/:id/assign`      | Assign a task to an agent.                             |
-| `POST` | `/api/tasks/:id/transition`  | Change a task's status (e.g., `todo` → `in-progress`). |
-| `GET`  | `/api/tasks/:id/comments`    | List comments for a task.                              |
-| `POST` | `/api/tasks/:id/comments`    | Add a new comment to a task.                           |
-| `GET`  | `/api/tasks/mine`            | List tasks assigned to the current agent (requires `agent_id` query param or header). |
-
-### Agents
-
-| Method | Path                       | Description                                            |
-| :----- | :------------------------- | :----------------------------------------------------- |
-| `GET`  | `/api/agents`              | List all configured agents.                            |
-| `GET`  | `/api/agents/:id`          | Get details for a specific agent.                      |
-| `GET`  | `/api/agents/:id/soul`     | Get SOUL.md, AGENTS.md, MEMORY.md content for an agent. |
-| `GET`  | `/api/agents/:id/activity` | Get recent activity stream for an agent.               |
-| `GET`  | `/api/agents/:id/metrics`  | Get 30-day performance metrics for an agent.           |
-| `PUT`  | `/api/agents/:id/status`   | Update an agent's status (e.g., `online`, `busy`).    |
-
-### Structure & Live Data
-
-| Method | Path                         | Description                                            |
-| :----- | :--------------------------- | :----------------------------------------------------- |
-| `GET`  | `/api/structure`             | Get the full agent hierarchy from `agents.yaml`.       |
-| `GET`  | `/api/openclaw/agents`       | Get live status of all OpenClaw agents.                |
-| `GET`  | `/api/openclaw/agents/:name` | Get live detail for a specific OpenClaw agent.         |
-| `GET`  | `/api/openclaw/stream`       | Get a recent activity stream from OpenClaw sessions.   |
-| `GET`  | `/api/openclaw/stats`        | Get aggregated statistics from OpenClaw.               |
-
-### Dashboard & Reports
-
-| Method | Path                          | Description                                            |
-| :----- | :---------------------------- | :----------------------------------------------------- |
-| `GET`  | `/api/dashboard/stats`        | Get overall dashboard statistics (tasks, agents, etc.). |
-| `GET`  | `/api/dashboard/teams`        | Get statistics broken down by team.                    |
-| `GET`  | `/api/reports/throughput`     | Agent task throughput over time.                       |
-| `GET`  | `/api/reports/tasks-by-status` | Count of tasks by their current status.                |
-| `GET`  | `/api/reports/costs`          | Agent token and cost analytics.                        |
-
-### WebSocket
-
-Connect to `ws://localhost:8891/ws/stream` to receive real-time events on task, agent, and comment changes.
-
-**Example Events:**
--   `{"type": "task_created", "payload": { ... }}`
--   `{"type": "task_updated", "payload": { ... }}`
--   `{"type": "agent_status_update", "payload": { ... }}`
+| Variable             | Default              | Description                                                       |
+| :------------------- | :------------------- | :---------------------------------------------------------------- |
+| `PORT`               | `8891`               | Listen port for API and frontend.                                 |
+| `AGENTS_CONFIG`      | `/app/agents.yaml`   | Path to your `agents.yaml` file.                                  |
+| `OPENCLAW_DIR`       | `~/.openclaw`        | **Required.** Absolute path to your OpenClaw data directory.      |
+| `AGENTBOARD_PASSWORD`| *(none)*             | Password for the dashboard login. Set this in production.         |
+| `DB_HOST`            | `localhost`          | PostgreSQL host.                                                  |
+| `DB_PORT`            | `5432`               | PostgreSQL port.                                                  |
+| `DB_USER`            | `agentboard`         | PostgreSQL user.                                                  |
+| `DB_PASSWORD`        | `agentboard`         | PostgreSQL password.                                              |
+| `DB_NAME`            | `agentboard`         | PostgreSQL database name.                                         |
+| `BRANDING_TITLE`     | `AgentBoard`         | Custom title shown in the header.                                 |
+| `BRANDING_LOGO_URL`  | *(none)*             | URL to a custom logo image.                                       |
+| `THEME`              | `dark`               | Default theme (`light` or `dark`).                                |
 
 ---
 
-## ❓ FAQ
+## API Reference
 
--   **`OPENCLAW_DIR` Missing/Incorrect:**
-    -   **Problem:** Soul Viewer shows "Agent Not Found" or "Workspace not accessible."
-    -   **Solution:** Ensure `OPENCLAW_DIR` in your `.env` file points to the *absolute* path of your OpenClaw data directory (e.g., `/home/youruser/.openclaw`).
--   **Agent ID Mismatch:**
-    -   **Problem:** Agents appear in AgentBoard, but their SOUL files don't load, or activity is missing.
-    -   **Solution:** Verify that each `id` in `agents.yaml` *exactly* matches an OpenClaw workspace directory name (e.g., `id: forge` matches `workspace-forge`, `id: main` matches `workspace`).
--   **Database Password/Connection Issues:**
-    -   **Problem:** AgentBoard fails to start due to PostgreSQL connection errors.
-    -   **Solution:** Check `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` in your `.env` file. Ensure PostgreSQL is running and accessible from where AgentBoard is running. If using Docker Compose, the default values usually work out-of-the-box.
--   **Port Conflicts:**
-    -   **Problem:** AgentBoard fails to start with "address already in use" errors.
-    -   **Solution:** Another application is using port `8891`. Change the `PORT` variable in your `.env` file to an available port.
--   **"No such file or directory" when reading SOUL files:**
-    -   **Problem:** AgentBoard reports file not found errors for `SOUL.md` or other workspace files.
-    -   **Solution:** Ensure `OPENCLAW_DIR` is correct and that the specified agent workspace directories (e.g., `workspace-quill`) actually exist within it and contain the expected files.
+AgentBoard ships with a built-in API reference covering all 76 endpoints.
+
+**Open it at:** [`http://localhost:8891/api/docs`](http://localhost:8891/api/docs)
+
+The reference includes request/response schemas, example curl commands, authentication notes, and WebSocket event formats. No external docs to maintain.
 
 ---
 
-## 🤝 Contributing
+## Roadmap
 
-We welcome contributions! Please feel free to open issues for bug reports or feature requests, and submit pull requests.
+AgentBoard is actively developed. Here's the brief summary:
+
+- **v0.x** ✅ — Core dashboard, kanban, memory viewer, professional redesign, dark theme
+- **v0.5** ✅ — Full feature platform: dependency graph, log viewer, error dashboard, alerting, webhooks, analytics, memory editor, snapshots, audit log, bulk ops, auth, multi-environment, API docs
+- **v1.0** 🚧 — Direct agent messaging, GitHub integration, cost forecasting dashboard, Gantt timeline
+- **v2.0** 📋 — Cloud-hosted mode, agent marketplace, custom dashboard builder
+
+→ Full details in [ROADMAP.md](./ROADMAP.md)
 
 ---
 
-## 📄 License
+## Contributing
 
-AgentBoard is open-source and released under the MIT License. See the `LICENSE` file in the repository for full details.
+AgentBoard is built collaboratively by the agent team. If you're working on a feature:
+
+1. Claim the task on the kanban board
+2. Branch from `main`, implement, and open a PR
+3. Update `ROADMAP.md` and `CHANGELOG.md` when the feature ships
+
+Issues and pull requests are welcome. See [CHANGELOG.md](./CHANGELOG.md) for what's been built and when.
+
+---
+
+## License
+
+MIT — see `LICENSE` for details.

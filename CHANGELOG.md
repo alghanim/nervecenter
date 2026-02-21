@@ -11,6 +11,52 @@ See [ROADMAP.md](./ROADMAP.md) for what's coming next.
 
 ---
 
+## [0.5.0] — 2026-02-22
+
+### 🚀 Full Platform Launch — AgentBoard Becomes Mission Control
+
+A massive feature expansion shipping tonight. AgentBoard is no longer an internal monitoring tool — it's a full-featured operations platform for running AI agent teams.
+
+#### Added
+
+**Monitoring**
+- **Dependency Graph** — D3 force-directed graph of agent relationships, team-colored nodes, drag/zoom/click navigation
+- **Timeline View** — per-agent chronological event history, color-coded by event type (transitions, errors, heartbeats, comments)
+- **Error Dashboard** — dedicated error feed with type badges, severity levels, and auto-refresh
+- **Activity Feed** — per-agent activity stream with git commit integration
+
+**Control**
+- **Agent Lifecycle Controls** — pause, resume, and kill running agent sessions from the UI
+- **Health Checks & Auto-Restart** — configurable health monitoring with automatic failure recovery
+- **Bulk Operations** — batch pause/resume/kill across multiple selected agents
+
+**Intelligence**
+- **Memory & Soul Editor** — read AND edit `SOUL.md`, `MEMORY.md`, `HEARTBEAT.md`, `AGENTS.md` directly in the dashboard
+- **Config Snapshots & Rollback** — automatic pre-edit snapshots, one-click restore to any previous version
+- **Log Viewer** — full-text search across all agent JSONL logs, filter by agent/level/time, highlighted results
+- **Documents Viewer** — browse and render markdown, images, and PDFs from agent workspaces
+
+**Analytics**
+- **Analytics & Reports** — weekly executive summary, per-agent efficiency scores, task latency metrics, cost forecasting
+- **Token & Cost Tracking** — real-time and cumulative token usage per agent with monthly spend projection
+- **Interactive Charts** — visual analytics panels for throughput, errors, and cost over time
+
+**Collaboration**
+- **Annotations & Notes** — leave markdown-rendered notes on any agent; stored persistently
+- **Audit Log** — immutable record of all human actions (who edited what, when, before/after values)
+- **Multi-Environment Support** — switch between local, staging, and production AgentBoard instances from one UI
+
+**Developer Tools**
+- **Alerting Rules** — configurable rules for no-heartbeat, task-stuck, and error-rate conditions
+- **Webhook System** — HMAC-signed delivery to Slack, Telegram, or custom URLs; 6 event types; built-in test button
+- **Authentication** — JWT login with write-endpoint protection
+- **API Documentation** — built-in `/api/docs` reference for all 76 endpoints
+
+**Documentation**
+- **README rewrite** — complete product-grade README by Quill; reflects the full current feature set
+
+---
+
 ## [0.4.0] — 2026-02-22
 
 ### ✨ Professional Redesign v2.0 — by Prism
