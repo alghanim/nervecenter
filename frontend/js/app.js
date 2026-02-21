@@ -100,6 +100,7 @@ window.Branding = (function () {
     'org-chart': { title: 'Org Chart',  subtitle: 'Team structure and reporting lines' },
     kanban:      { title: 'Kanban',     subtitle: 'Task management and workflow' },
     activity:    { title: 'Activity',   subtitle: 'Real-time agent activity stream' },
+    messaging:   { title: 'Messages',   subtitle: 'Send direct instructions to agents' },
     reports:     { title: 'Reports',    subtitle: 'Analytics and performance insights' },
     costs:       { title: 'Costs',      subtitle: 'Token usage and cost tracking' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
@@ -272,6 +273,7 @@ window.Branding = (function () {
       case 'org-chart':  page = Pages.orgChart; break;
       case 'kanban':     page = Pages.kanban; break;
       case 'activity':   page = Pages.activity; break;
+      case 'messaging':  page = Pages.messaging; break;
       case 'reports':    page = Pages.reports; break;
       case 'costs':      page = Pages.costs; break;
       case 'settings':   page = Pages.settings; break;

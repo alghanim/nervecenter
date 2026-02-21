@@ -738,40 +738,138 @@ Pages.kanban = {
   },
 
   /* ─── New Task Modal ─── */
-  _newTask() {
+  _newTask(prefill = {}) {
     const modal = document.getElementById('taskModal');
-    if (modal) modal.style.display = 'flex';
+    if (!modal) return;
+
+    // Reset form
+    ['newTaskTitle', 'newTaskDesc'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = prefill[id === 'newTaskTitle' ? 'title' : 'description'] || '';
+    });
+    const titleErr = document.getElementById('newTaskTitleError');
+    if (titleErr) titleErr.classList.remove('visible');
+
+    // Apply prefill
+    if (prefill.priority) {
+      const el = document.getElementById('newTaskPriority');
+      if (el) el.value = prefill.priority;
+    }
+    if (prefill.status) {
+      const el = document.getElementById('newTaskStatus');
+      if (el) el.value = prefill.status;
+    }
+    if (prefill.assignee !== undefined) {
+      const el = document.getElementById('newTaskAgent');
+      if (el) el.value = prefill.assignee;
+    }
+    if (prefill.team) {
+      const el = document.getElementById('newTaskTeam');
+      if (el) el.value = prefill.team;
+    }
+
+    // Label: support edit mode
+    const titleLabel = document.getElementById('taskModalTitle');
+    if (titleLabel) titleLabel.textContent = prefill._label || 'New Task';
+    const submitBtn = document.getElementById('newTaskSubmitBtn');
+    if (submitBtn) submitBtn.textContent = prefill._submitLabel || 'Create Task';
+
+    // Animate open
+    modal.classList.add('is-open');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => modal.classList.add('is-visible'));
+    });
+    setTimeout(() => document.getElementById('newTaskTitle')?.focus(), 150);
   },
 
   _closeModal() {
     const modal = document.getElementById('taskModal');
-    if (modal) modal.style.display = 'none';
+    if (!modal) return;
+    modal.classList.remove('is-visible');
+    setTimeout(() => {
+      modal.classList.remove('is-open');
+    }, 200);
+  },
+
+  _clearTitleError() {
+    const err = document.getElementById('newTaskTitleError');
+    const inp = document.getElementById('newTaskTitle');
+    if (err) err.classList.remove('visible');
+    if (inp) inp.style.borderColor = '';
   },
 
   async _submitTask() {
-    const title = document.getElementById('newTaskTitle')?.value?.trim();
-    if (!title) { alert('Title is required'); return; }
+    const titleEl = document.getElementById('newTaskTitle');
+    const title = titleEl?.value?.trim();
+    if (!title) {
+      const err = document.getElementById('newTaskTitleError');
+      if (err) err.classList.add('visible');
+      if (titleEl) {
+        titleEl.style.borderColor = 'var(--danger)';
+        titleEl.focus();
+      }
+      return;
+    }
 
+    const submitBtn = document.getElementById('newTaskSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creating…'; }
+
+    const assigneeVal = document.getElementById('newTaskAgent')?.value || '';
+    const teamEl = document.getElementById('newTaskTeam');
     const data = {
       title,
       description: document.getElementById('newTaskDesc')?.value || '',
       priority: document.getElementById('newTaskPriority')?.value || 'medium',
       status: document.getElementById('newTaskStatus')?.value || 'todo',
-      assignee: document.getElementById('newTaskAgent')?.value || null,
+      assignee: assigneeVal || null,
+      team: teamEl?.value || null,
     };
 
     try {
       await API.createTask(data);
       this._closeModal();
       await this._loadTasks();
-
-      // Reset form
-      ['newTaskTitle', 'newTaskDesc'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
     } catch (e) {
-      alert('Failed to create task: ' + e.message);
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create Task'; }
+      const err = document.getElementById('newTaskTitleError');
+      if (err) { err.textContent = 'Failed: ' + e.message; err.classList.add('visible'); }
+    }
+  },
+
+  /* ─── Quick Assign ─── */
+  _toggleAssignDropdown(taskId, event) {
+    event.stopPropagation();
+    const dd = document.getElementById(`qa-${taskId}`);
+    if (!dd) return;
+    const isOpen = dd.style.display !== 'none';
+    // Close any other open dropdowns
+    document.querySelectorAll('.quick-assign-dropdown').forEach(d => { d.style.display = 'none'; });
+    if (!isOpen) {
+      dd.style.display = 'block';
+      // Close on outside click
+      const handler = (e) => {
+        if (!dd.contains(e.target)) {
+          dd.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', handler), 10);
+    }
+  },
+
+  async _quickAssign(taskId, agentId) {
+    // Close dropdowns
+    document.querySelectorAll('.quick-assign-dropdown').forEach(d => { d.style.display = 'none'; });
+    try {
+      await API.updateTask(taskId, { assignee: agentId || null });
+      // Update local state
+      for (const col of this.COLUMNS) {
+        const task = (this._tasks[col.id] || []).find(t => String(t.id) === String(taskId));
+        if (task) { task.assignee = agentId || ''; break; }
+      }
+      this._renderAll();
+    } catch (e) {
+      console.error('Quick assign failed:', e);
     }
   },
 
@@ -783,5 +881,28 @@ Pages.kanban = {
       this._escHandler = null;
     }
     this._closeDrawer();
+    this._closeModal();
   }
+};
+
+/* ─── TaskModal — Global Reusable Export ─── */
+window.TaskModal = {
+  /**
+   * Open the task creation modal.
+   * @param {object} prefill — optional pre-fill values:
+   *   { title, description, priority, status, assignee, team,
+   *     _label (modal heading), _submitLabel (button text) }
+   */
+  open(prefill = {}) {
+    if (!window.Pages || !Pages.kanban) {
+      console.warn('TaskModal: kanban page not active');
+      return;
+    }
+    Pages.kanban._newTask(prefill);
+  },
+
+  close() {
+    if (!window.Pages || !Pages.kanban) return;
+    Pages.kanban._closeModal();
+  },
 };
