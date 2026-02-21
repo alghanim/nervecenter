@@ -27,8 +27,8 @@ window.Search = (function () {
 
     modal.innerHTML = `
       <div id="searchBox" style="
-        background:var(--bg-secondary);
-        border:1px solid var(--border-primary);
+        background:var(--bg-surface);
+        border:1px solid var(--border-default);
         border-radius:12px;
         width:600px;
         max-width:90vw;
@@ -38,7 +38,7 @@ window.Search = (function () {
         flex-direction:column;
         box-shadow:0 24px 64px rgba(0,0,0,0.5);
       ">
-        <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border-primary);">
+        <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border-default);">
           <span style="margin-right:8px;color:var(--text-tertiary);display:flex;align-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
           <input id="searchInput"
             placeholder="Search tasks, agents, comments…"
@@ -56,7 +56,7 @@ window.Search = (function () {
           <kbd style="
             font-size:11px;
             padding:2px 6px;
-            border:1px solid var(--border-primary);
+            border:1px solid var(--border-default);
             border-radius:4px;
             color:var(--text-muted);
             background:var(--bg-tertiary,#0d0d1a);
@@ -68,7 +68,7 @@ window.Search = (function () {
           padding:8px 16px;
           font-size:11px;
           color:var(--text-muted);
-          border-top:1px solid var(--border-subtle,var(--border-primary));
+          border-top:1px solid var(--border-subtle,var(--border-default));
           display:flex;
           gap:16px;
           user-select:none;

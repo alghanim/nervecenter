@@ -55,7 +55,7 @@ Pages.reports = {
             grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
             gap:16px;
           ">
-            <div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-muted);">
+            <div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text-tertiary);">
               <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Loading performance data…
             </div>
           </div>
@@ -182,7 +182,7 @@ Pages.reports = {
           <div class="kpi-label">Active Agents Today</div>
         </div>`;
     } catch (e) {
-      grid.innerHTML = `<div style="color:var(--status-error);padding:16px;grid-column:1/-1">Failed to load KPIs: ${Utils.esc(e.message)}</div>`;
+      grid.innerHTML = `<div style="color:var(--danger);padding:16px;grid-column:1/-1">Failed to load KPIs: ${Utils.esc(e.message)}</div>`;
     }
   },
 
@@ -381,7 +381,7 @@ Pages.reports = {
     const arcs = g.selectAll('path').data(pie(data)).enter().append('path')
       .attr('d', arc)
       .attr('fill', d => STATUS_COLORS[d.data.label] || '#8888A0')
-      .attr('stroke', 'var(--bg-secondary)').attr('stroke-width', 2);
+      .attr('stroke', 'var(--bg-surface)').attr('stroke-width', 2);
 
     // Center label
     const total = d3.sum(data, d => d.value);
@@ -861,7 +861,7 @@ Pages.reports = {
     }
 
     if (data.length === 0) {
-      grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-muted);">No performance data yet</div>`;
+      grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-tertiary);">No performance data yet</div>`;
       return;
     }
 
@@ -893,15 +893,15 @@ Pages.reports = {
 
     // Online indicator
     const isOnline = a.status === 'online' || a.status === 'active';
-    const dotColor = isOnline ? '#22C55E' : 'var(--text-muted)';
+    const dotColor = isOnline ? '#22C55E' : 'var(--text-tertiary)';
     const dotLabel = isOnline ? 'Online' : (a.status || 'Offline');
 
     const barColor = pct > 75 ? '#EF4444' : pct > 40 ? '#F59E0B' : 'var(--accent,#B5CC18)';
 
     return `
       <div class="perf-card" style="
-        background:var(--bg-secondary);
-        border:1px solid var(--border-primary);
+        background:var(--bg-surface);
+        border:1px solid var(--border-default);
         border-radius:12px;
         padding:16px;
         display:flex;
@@ -920,34 +920,34 @@ Pages.reports = {
           </div>
           <div style="display:flex;align-items:center;gap:4px;white-space:nowrap;">
             <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};display:inline-block;${isOnline ? 'box-shadow:0 0 4px ' + dotColor + ';' : ''}"></span>
-            <span style="font-size:10px;color:var(--text-muted);">${Utils.esc(dotLabel)}</span>
+            <span style="font-size:10px;color:var(--text-tertiary);">${Utils.esc(dotLabel)}</span>
           </div>
         </div>
 
         <!-- Divider -->
-        <div style="height:1px;background:var(--border-primary);"></div>
+        <div style="height:1px;background:var(--border-default);"></div>
 
         <!-- Stats trio -->
         ${total === 0
-          ? `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:4px 0;">No tasks yet</div>`
+          ? `<div style="text-align:center;color:var(--text-tertiary);font-size:12px;padding:4px 0;">No tasks yet</div>`
           : `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;gap:4px;">
               <div>
                 <div style="font-size:20px;font-weight:700;color:var(--text-primary);">${today}</div>
-                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Today</div>
+                <div style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;">Today</div>
               </div>
               <div>
                 <div style="font-size:20px;font-weight:700;color:var(--text-primary);">${week}</div>
-                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Week</div>
+                <div style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;">Week</div>
               </div>
               <div>
                 <div style="font-size:20px;font-weight:700;color:var(--text-primary);">${avgH}</div>
-                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Avg Time</div>
+                <div style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;">Avg Time</div>
               </div>
             </div>
 
             <!-- Progress bar: in-progress workload -->
             <div>
-              <div style="background:var(--bg-tertiary,#0d0d1a);border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">
+              <div style="background:var(--bg-inset);border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">
                 <div data-perf-bar="${pct}%" style="
                   width:0%;
                   height:100%;

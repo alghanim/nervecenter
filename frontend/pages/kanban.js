@@ -71,7 +71,7 @@ Pages.kanban = {
 
       <!-- New Task Modal -->
       <div id="taskModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center">
-        <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto">
+        <div style="background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <span style="font:600 var(--text-lg)/24px var(--font-body);color:var(--text-primary)">New Task</span>
             <button class="btn-icon" onclick="Pages.kanban._closeModal()" aria-label="Close">
@@ -466,7 +466,7 @@ Pages.kanban = {
       return '<div style="color:var(--text-tertiary);font-size:13px">No transitions yet</div>';
     }
 
-    const lineColor = 'var(--border-subtle)';
+    const lineColor = 'var(--border-default)';
 
     return `<div style="display:flex;flex-direction:column;gap:0">
       ${items.map((item, i) => {
