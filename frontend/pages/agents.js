@@ -139,6 +139,7 @@ Pages.agents = {
         <button class="tab" data-tab="agents_md" onclick=\"Pages.agents._switchTab('agents_md', '${agentId}')\">Agents.md</button>
         <button class="tab" data-tab="skills" onclick=\"Pages.agents._switchTab('skills', '${agentId}')\">Skills</button>
         <button class="tab" data-tab="activity" onclick=\"Pages.agents._switchTab('activity', '${agentId}')\">Activity</button>
+        <button class="tab" data-tab="timeline" onclick=\"Pages.agents._switchTab('timeline', '${agentId}')\">Timeline</button>
       </div>
 
       <div id="agentTabContent"></div>`;

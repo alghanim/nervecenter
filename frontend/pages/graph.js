@@ -1,25 +1,22 @@
-/* AgentBoard — Dependency Graph Page (force-directed, HTML5 Canvas) */
+/* AgentBoard — Dependency Graph (D3.js force-directed SVG) */
 window.Pages = window.Pages || {};
 
 Pages.graph = (function () {
   let _container = null;
-  let _canvas = null;
-  let _ctx = null;
-  let _animFrame = null;
+  let _simulation = null;
+  let _svg = null;
+  let _g = null;         // main group (zoom target)
+  let _zoom = null;
   let _nodes = [];
   let _edges = [];
-  let _scale = 1;
-  let _offsetX = 0;
-  let _offsetY = 0;
-  let _isDragging = false;
-  let _dragNode = null;
-  let _lastMouse = { x: 0, y: 0 };
-  let _hoveredNode = null;
   let _tooltip = null;
+  let _refreshTimer = null;
 
-  // Team → color mapping
+  // ── Team → color mapping ────────────────────────────────────────────────
   const TEAM_COLORS = {
     'Leadership':   '#6366f1',
+    'Command':      '#6366f1',
+    'Orchestrator': '#6366f1',
     'Engineering':  '#06b6d4',
     'Design':       '#ec4899',
     'Data':         '#8b5cf6',
@@ -29,6 +26,7 @@ Pages.graph = (function () {
     'Finance':      '#ef4444',
     'QA':           '#84cc16',
     'Strategy':     '#0ea5e9',
+    'Business':     '#f97316',
     'Discovered':   '#6b7280',
   };
 
@@ -39,510 +37,499 @@ Pages.graph = (function () {
     offline: '#6b7280',
   };
 
+  // Pulsing status: which statuses get a pulse animation
+  const PULSE_STATUSES = new Set(['online', 'busy']);
+
   function teamColor(team) {
-    return TEAM_COLORS[team] || '#6366f1';
+    if (!team) return '#6366f1';
+    // Exact match
+    if (TEAM_COLORS[team]) return TEAM_COLORS[team];
+    // Case-insensitive
+    const key = Object.keys(TEAM_COLORS).find(k => k.toLowerCase() === team.toLowerCase());
+    return key ? TEAM_COLORS[key] : '#6366f1';
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────
-  async function render(container, sub) {
+  function statusColor(status) {
+    return STATUS_COLORS[status] || '#6b7280';
+  }
+
+  // ── Render entry point ──────────────────────────────────────────────────
+  async function render(container) {
     _container = container;
 
     container.innerHTML = `
-      <div class="graph-page" style="height:calc(100vh - 80px);display:flex;flex-direction:column;padding:0;position:relative;">
+      <div class="graph-page" style="height:calc(100vh - 80px);display:flex;flex-direction:column;padding:0;position:relative;overflow:hidden;">
+
         <!-- Toolbar -->
-        <div id="graph-toolbar" style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+        <div id="graph-toolbar" style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;background:var(--bg-primary);">
           <button id="graph-zoom-in"  class="btn btn-ghost btn-sm" title="Zoom in">＋</button>
           <button id="graph-zoom-out" class="btn btn-ghost btn-sm" title="Zoom out">－</button>
           <button id="graph-reset"    class="btn btn-ghost btn-sm" title="Reset layout">↺ Reset</button>
+          <button id="graph-reheat"   class="btn btn-ghost btn-sm" title="Re-run simulation">⚡ Shake</button>
           <div style="flex:1;"></div>
-          <!-- Legend -->
+
+          <!-- Edge legend -->
           <div style="display:flex;align-items:center;gap:16px;font-size:11px;color:var(--text-secondary);">
-            <span><span style="display:inline-block;width:24px;height:2px;background:#999;vertical-align:middle;margin-right:4px;"></span>Parent</span>
-            <span><span style="display:inline-block;width:24px;height:2px;background:#999;vertical-align:middle;margin-right:4px;border-top:2px dashed #999;height:0;"></span>Task-flow</span>
+            <span style="display:flex;align-items:center;gap:5px;">
+              <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(156,163,175,0.7)" stroke-width="1.5"/><polygon points="24,4 18,1 18,7" fill="rgba(156,163,175,0.7)"/></svg>
+              Delegates
+            </span>
+            <span style="display:flex;align-items:center;gap:5px;">
+              <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="rgba(99,102,241,0.6)" stroke-width="1.5" stroke-dasharray="4,3"/><polygon points="24,4 18,1 18,7" fill="rgba(99,102,241,0.6)"/></svg>
+              Collaborates
+            </span>
           </div>
+
+          <!-- Team legend -->
           <div id="graph-team-legend" style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;"></div>
-          <div id="graph-status" style="font-size:12px;color:var(--text-secondary);"></div>
+          <div id="graph-status" style="font-size:12px;color:var(--text-secondary);padding-left:8px;"></div>
         </div>
 
-        <!-- Canvas -->
-        <div style="flex:1;position:relative;overflow:hidden;" id="graph-canvas-wrap">
-          <canvas id="graph-canvas" style="display:block;width:100%;height:100%;cursor:grab;"></canvas>
-          <div id="graph-tooltip" style="display:none;position:absolute;background:var(--bg-primary,#1a1a2e);border:1px solid var(--border);border-radius:8px;padding:10px 14px;pointer-events:none;min-width:160px;z-index:100;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></div>
+        <!-- SVG canvas -->
+        <div id="graph-svg-wrap" style="flex:1;position:relative;overflow:hidden;background:var(--bg-inset);">
+          <svg id="graph-svg" style="width:100%;height:100%;display:block;"></svg>
+          <!-- Tooltip -->
+          <div id="graph-tooltip" style="
+            display:none;
+            position:absolute;
+            background:var(--bg-primary,#1a1a2e);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:10px 14px;
+            pointer-events:none;
+            min-width:180px;
+            z-index:200;
+            font-size:13px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.5);
+          "></div>
         </div>
       </div>
+
+      <!-- Pulse keyframe -->
+      <style>
+        @keyframes graph-pulse {
+          0%   { r: 4; opacity: 1; }
+          70%  { r: 9; opacity: 0; }
+          100% { r: 9; opacity: 0; }
+        }
+        .graph-pulse-ring {
+          animation: graph-pulse 1.8s ease-out infinite;
+          pointer-events: none;
+        }
+        .graph-node circle.node-bg {
+          transition: filter 0.2s;
+        }
+        .graph-node:hover circle.node-bg {
+          filter: brightness(1.3);
+        }
+      </style>
     `;
 
     _tooltip = document.getElementById('graph-tooltip');
 
-    // Buttons
-    document.getElementById('graph-zoom-in').addEventListener('click', () => { _scale *= 1.2; draw(); });
-    document.getElementById('graph-zoom-out').addEventListener('click', () => { _scale /= 1.2; draw(); });
-    document.getElementById('graph-reset').addEventListener('click', resetLayout);
+    // Toolbar buttons
+    document.getElementById('graph-zoom-in').addEventListener('click', () => {
+      if (_svg && _zoom) _svg.transition().duration(300).call(_zoom.scaleBy, 1.3);
+    });
+    document.getElementById('graph-zoom-out').addEventListener('click', () => {
+      if (_svg && _zoom) _svg.transition().duration(300).call(_zoom.scaleBy, 0.77);
+    });
+    document.getElementById('graph-reset').addEventListener('click', resetView);
+    document.getElementById('graph-reheat').addEventListener('click', reheat);
 
     // Load data
     try {
-      document.getElementById('graph-status').textContent = 'Loading...';
+      document.getElementById('graph-status').textContent = 'Loading…';
       const data = await API.getGraphDependencies();
       initGraph(data.nodes || [], data.edges || []);
     } catch (e) {
-      document.getElementById('graph-status').textContent = 'Error: ' + e.message;
+      document.getElementById('graph-status').textContent = '⚠ ' + e.message;
     }
+
+    // Auto-refresh every 30s to pick up status changes
+    _refreshTimer = setInterval(async () => {
+      try {
+        const data = await API.getGraphDependencies();
+        updateStatuses(data.nodes || []);
+      } catch (_) {}
+    }, 30000);
   }
 
-  // ── Init Graph ───────────────────────────────────────────────────────────
+  // ── Init / build graph ──────────────────────────────────────────────────
   function initGraph(rawNodes, rawEdges) {
-    const wrap = document.getElementById('graph-canvas-wrap');
-    _canvas = document.getElementById('graph-canvas');
-    if (!_canvas || !wrap) return;
+    const wrap = document.getElementById('graph-svg-wrap');
+    if (!wrap) return;
 
-    // Set canvas pixel size
-    const W = wrap.clientWidth;
-    const H = wrap.clientHeight;
-    _canvas.width = W;
-    _canvas.height = H;
-    _ctx = _canvas.getContext('2d');
+    const W = wrap.clientWidth  || 900;
+    const H = wrap.clientHeight || 600;
 
-    // Place nodes in a circle initially
-    const N = rawNodes.length;
-    const cx = W / 2, cy = H / 2;
-    const radius = Math.min(W, H) * 0.3;
+    // D3 select SVG
+    _svg = d3.select('#graph-svg')
+      .attr('width', W)
+      .attr('height', H);
 
-    _nodes = rawNodes.map((n, i) => ({
+    // Arrow marker defs
+    const defs = _svg.append('defs');
+
+    function addMarker(id, color) {
+      defs.append('marker')
+        .attr('id', id)
+        .attr('viewBox', '0 -4 10 8')
+        .attr('refX', 10)
+        .attr('refY', 0)
+        .attr('markerWidth', 7)
+        .attr('markerHeight', 7)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-4L10,0L0,4Z')
+        .attr('fill', color);
+    }
+
+    addMarker('arrow-parent',   'rgba(156,163,175,0.8)');
+    addMarker('arrow-taskflow', 'rgba(99,102,241,0.8)');
+
+    // Zoom behaviour
+    _zoom = d3.zoom()
+      .scaleExtent([0.2, 3])
+      .on('zoom', (event) => _g.attr('transform', event.transform));
+
+    _svg.call(_zoom)
+      .on('dblclick.zoom', null); // disable double-click zoom
+
+    _g = _svg.append('g').attr('class', 'graph-root');
+
+    // ── Prepare node + edge data ──
+    _nodes = rawNodes.map(n => ({
       ...n,
-      x: cx + radius * Math.cos((2 * Math.PI * i) / N),
-      y: cy + radius * Math.sin((2 * Math.PI * i) / N),
-      vx: 0, vy: 0,
-      radius: 28,
+      x: W / 2 + (Math.random() - 0.5) * 200,
+      y: H / 2 + (Math.random() - 0.5) * 200,
     }));
 
-    _edges = rawEdges.map(e => ({
-      ...e,
-      source: _nodes.find(n => n.id === e.from),
-      target: _nodes.find(n => n.id === e.to),
-    })).filter(e => e.source && e.target);
+    const nodeById = new Map(_nodes.map(n => [n.id, n]));
 
-    _scale = 1;
-    _offsetX = 0;
-    _offsetY = 0;
+    _edges = rawEdges
+      .map(e => ({
+        ...e,
+        source: nodeById.get(e.from),
+        target: nodeById.get(e.to),
+      }))
+      .filter(e => e.source && e.target);
 
-    // Build team legend
+    // ── D3 force simulation ──
+    _simulation = d3.forceSimulation(_nodes)
+      .force('link', d3.forceLink(_edges)
+        .id(d => d.id)
+        .distance(d => d.type === 'parent' ? 130 : 180)
+        .strength(0.4))
+      .force('charge', d3.forceManyBody().strength(-600))
+      .force('center',  d3.forceCenter(W / 2, H / 2))
+      .force('collide', d3.forceCollide(48))
+      .force('x', d3.forceX(W / 2).strength(0.04))
+      .force('y', d3.forceY(H / 2).strength(0.04))
+      .alphaDecay(0.025);
+
+    // ── Draw edges ──
+    const linkGroup = _g.append('g').attr('class', 'links');
+    const link = linkGroup.selectAll('line')
+      .data(_edges)
+      .enter()
+      .append('line')
+      .attr('stroke', d => d.type === 'task-flow' ? 'rgba(99,102,241,0.5)' : 'rgba(156,163,175,0.45)')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-dasharray', d => d.type === 'task-flow' ? '5,4' : null)
+      .attr('marker-end', d => d.type === 'task-flow' ? 'url(#arrow-taskflow)' : 'url(#arrow-parent)');
+
+    // ── Draw nodes ──
+    const nodeGroup = _g.append('g').attr('class', 'nodes');
+
+    const node = nodeGroup.selectAll('g.graph-node')
+      .data(_nodes)
+      .enter()
+      .append('g')
+      .attr('class', 'graph-node')
+      .style('cursor', 'pointer')
+      .call(
+        d3.drag()
+          .on('start', onDragStart)
+          .on('drag',  onDrag)
+          .on('end',   onDragEnd)
+      )
+      .on('click', onClick)
+      .on('mouseover', onMouseOver)
+      .on('mousemove', onMouseMove)
+      .on('mouseout',  onMouseOut);
+
+    const NODE_R = 26;
+
+    // Glow filter per team color would be expensive; use a generic glow
+    defs.append('filter').attr('id', 'node-glow')
+      .append('feGaussianBlur')
+      .attr('in', 'SourceGraphic')
+      .attr('stdDeviation', '4')
+      .attr('result', 'blur');
+
+    // Background circle (fill)
+    node.append('circle')
+      .attr('class', 'node-bg')
+      .attr('r', NODE_R)
+      .attr('fill', d => teamColor(d.team) + '2a')
+      .attr('stroke', d => teamColor(d.team) + 'cc')
+      .attr('stroke-width', 2);
+
+    // Emoji label
+    node.append('text')
+      .attr('class', 'node-emoji')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('font-size', '18px')
+      .text(d => d.emoji || '🤖');
+
+    // Agent name below
+    node.append('text')
+      .attr('class', 'node-name')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'hanging')
+      .attr('dy', NODE_R + 4)
+      .attr('font-size', '10px')
+      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('font-family', 'Inter, sans-serif')
+      .text(d => d.label || d.name || d.id);
+
+    // Status dot (solid)
+    node.append('circle')
+      .attr('class', 'node-status-dot')
+      .attr('cx', NODE_R * 0.65)
+      .attr('cy', NODE_R * 0.65)
+      .attr('r', 5)
+      .attr('fill', d => statusColor(d.status))
+      .attr('stroke', 'var(--bg-inset, #0d0d1a)')
+      .attr('stroke-width', 1.5);
+
+    // Pulse ring (only for online/busy)
+    node.each(function (d) {
+      if (PULSE_STATUSES.has(d.status)) {
+        d3.select(this).append('circle')
+          .attr('class', 'graph-pulse-ring')
+          .attr('cx', NODE_R * 0.65)
+          .attr('cy', NODE_R * 0.65)
+          .attr('r', 4)
+          .attr('fill', 'none')
+          .attr('stroke', statusColor(d.status))
+          .attr('stroke-width', 1.5)
+          .attr('opacity', 1);
+      }
+    });
+
+    // ── Simulation tick ──
+    _simulation.on('tick', () => {
+      // Clamp nodes within SVG bounds
+      const W2 = +_svg.attr('width')  || W;
+      const H2 = +_svg.attr('height') || H;
+      _nodes.forEach(n => {
+        n.x = Math.max(NODE_R + 4, Math.min(W2 - NODE_R - 4, n.x));
+        n.y = Math.max(NODE_R + 4, Math.min(H2 - NODE_R - 4, n.y));
+      });
+
+      // Update edges (offset start/end to node radius)
+      link.each(function (d) {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const r = NODE_R + 2; // leave a gap before arrowhead
+        d3.select(this)
+          .attr('x1', d.source.x + (dx / dist) * r)
+          .attr('y1', d.source.y + (dy / dist) * r)
+          .attr('x2', d.target.x - (dx / dist) * (r + 10))
+          .attr('y2', d.target.y - (dy / dist) * (r + 10));
+      });
+
+      // Update nodes
+      node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+    // Initial centering after a short settle
+    setTimeout(resetView, 1200);
+
+    // ── Team legend ──
     const teams = [...new Set(_nodes.map(n => n.team).filter(Boolean))];
     const legendEl = document.getElementById('graph-team-legend');
     if (legendEl) {
-      legendEl.innerHTML = teams.map(t =>
-        `<span style="display:flex;align-items:center;gap:4px;">
-           <span style="width:10px;height:10px;border-radius:50%;background:${teamColor(t)};display:inline-block;"></span>
-           ${Utils.esc(t)}
-         </span>`
-      ).join('');
+      legendEl.innerHTML = teams.map(t => `
+        <span style="display:flex;align-items:center;gap:4px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${teamColor(t)};display:inline-block;flex-shrink:0;"></span>
+          <span>${Utils.esc(t)}</span>
+        </span>`).join('');
     }
 
-    document.getElementById('graph-status').textContent = `${_nodes.length} agents · ${_edges.length} connections`;
-
-    // Mouse events
-    _canvas.addEventListener('mousedown', onMouseDown);
-    _canvas.addEventListener('mousemove', onMouseMove);
-    _canvas.addEventListener('mouseup', onMouseUp);
-    _canvas.addEventListener('mouseleave', onMouseUp);
-    _canvas.addEventListener('wheel', onWheel, { passive: false });
-    _canvas.addEventListener('click', onClick);
-    _canvas.addEventListener('dblclick', onDblClick);
-
-    // Touch support
-    _canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-    _canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-    _canvas.addEventListener('touchend', onMouseUp);
-
-    // Start simulation
-    simulate();
+    document.getElementById('graph-status').textContent =
+      `${_nodes.length} agents · ${_edges.length} connections`;
   }
 
-  // ── Force Simulation ──────────────────────────────────────────────────────
-  let _simStep = 0;
-  const MAX_SIM_STEPS = 300;
-
-  function simulate() {
-    cancelAnimationFrame(_animFrame);
-
-    function tick() {
-      if (_simStep < MAX_SIM_STEPS) {
-        const alpha = 1 - _simStep / MAX_SIM_STEPS;
-        applyForces(alpha);
-        _simStep++;
+  // ── Update node statuses without full re-render ─────────────────────────
+  function updateStatuses(rawNodes) {
+    if (!_g) return;
+    const byId = new Map(rawNodes.map(n => [n.id, n]));
+    _g.selectAll('g.graph-node').each(function (d) {
+      const fresh = byId.get(d.id);
+      if (!fresh) return;
+      d.status = fresh.status;
+      d.activityCount = fresh.activityCount;
+      const sc = statusColor(d.status);
+      d3.select(this).select('.node-status-dot').attr('fill', sc);
+      // Update pulse ring
+      d3.select(this).select('.graph-pulse-ring').attr('stroke', sc);
+      if (PULSE_STATUSES.has(d.status)) {
+        if (d3.select(this).select('.graph-pulse-ring').empty()) {
+          const NODE_R = 26;
+          d3.select(this).append('circle')
+            .attr('class', 'graph-pulse-ring')
+            .attr('cx', NODE_R * 0.65).attr('cy', NODE_R * 0.65)
+            .attr('r', 4).attr('fill', 'none')
+            .attr('stroke', sc).attr('stroke-width', 1.5);
+        }
+      } else {
+        d3.select(this).select('.graph-pulse-ring').remove();
       }
-      draw();
-      _animFrame = requestAnimationFrame(tick);
-    }
-
-    _simStep = 0;
-    tick();
-  }
-
-  function applyForces(alpha) {
-    const W = _canvas.width, H = _canvas.height;
-    const cx = W / 2, cy = H / 2;
-    const repulsion = 4000;
-    const attraction = 0.04;
-    const gravity = 0.015;
-    const damping = 0.85;
-
-    // Reset forces
-    _nodes.forEach(n => { n.fx = 0; n.fy = 0; });
-
-    // Repulsion between all node pairs
-    for (let i = 0; i < _nodes.length; i++) {
-      for (let j = i + 1; j < _nodes.length; j++) {
-        const a = _nodes[i], b = _nodes[j];
-        let dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        const force = repulsion / (dist * dist);
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        a.fx -= fx; a.fy -= fy;
-        b.fx += fx; b.fy += fy;
-      }
-    }
-
-    // Attraction along edges
-    _edges.forEach(e => {
-      if (!e.source || !e.target) return;
-      const dx = e.target.x - e.source.x;
-      const dy = e.target.y - e.source.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const idealLen = e.type === 'parent' ? 120 : 160;
-      const stretch = dist - idealLen;
-      const fx = (dx / dist) * stretch * attraction;
-      const fy = (dy / dist) * stretch * attraction;
-      e.source.fx += fx; e.source.fy += fy;
-      e.target.fx -= fx; e.target.fy -= fy;
-    });
-
-    // Gravity toward center
-    _nodes.forEach(n => {
-      n.fx += (cx - n.x) * gravity;
-      n.fy += (cy - n.y) * gravity;
-    });
-
-    // Integrate
-    _nodes.forEach(n => {
-      if (n === _dragNode) return;
-      n.vx = (n.vx + n.fx * alpha) * damping;
-      n.vy = (n.vy + n.fy * alpha) * damping;
-      n.x += n.vx;
-      n.y += n.vy;
-
-      // Bounds
-      const pad = n.radius + 10;
-      n.x = Math.max(pad, Math.min(W - pad, n.x));
-      n.y = Math.max(pad, Math.min(H - pad, n.y));
     });
   }
 
-  // ── Draw ──────────────────────────────────────────────────────────────────
-  function draw() {
-    if (!_ctx || !_canvas) return;
-    const W = _canvas.width, H = _canvas.height;
-    _ctx.clearRect(0, 0, W, H);
-
-    _ctx.save();
-    _ctx.translate(_offsetX, _offsetY);
-    _ctx.scale(_scale, _scale);
-
-    // Draw edges first
-    _edges.forEach(e => drawEdge(e));
-
-    // Draw nodes on top
-    _nodes.forEach(n => drawNode(n));
-
-    _ctx.restore();
+  // ── Drag handlers ───────────────────────────────────────────────────────
+  function onDragStart(event, d) {
+    if (!event.active) _simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+    hideTooltip();
   }
 
-  function drawEdge(e) {
-    if (!e.source || !e.target) return;
-    const ctx = _ctx;
-    const { x: x1, y: y1 } = e.source;
-    const { x: x2, y: y2 } = e.target;
-    const dx = x2 - x1, dy = y2 - y1;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const r = e.source.radius;
-
-    // Offset start/end to node edge
-    const sx = x1 + (dx / dist) * r;
-    const sy = y1 + (dy / dist) * r;
-    const ex = x2 - (dx / dist) * r;
-    const ey = y2 - (dy / dist) * r;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = e.type === 'task-flow' ? 'rgba(99,102,241,0.5)' : 'rgba(156,163,175,0.4)';
-    ctx.lineWidth = e.type === 'task-flow' ? 1.5 : 1.5;
-    if (e.type === 'task-flow') {
-      ctx.setLineDash([5, 4]);
-    } else {
-      ctx.setLineDash([]);
-    }
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(ex, ey);
-    ctx.stroke();
-
-    // Arrowhead
-    ctx.setLineDash([]);
-    const angle = Math.atan2(ey - sy, ex - sx);
-    const arrowLen = 8;
-    ctx.fillStyle = e.type === 'task-flow' ? 'rgba(99,102,241,0.6)' : 'rgba(156,163,175,0.6)';
-    ctx.beginPath();
-    ctx.moveTo(ex, ey);
-    ctx.lineTo(ex - arrowLen * Math.cos(angle - 0.4), ey - arrowLen * Math.sin(angle - 0.4));
-    ctx.lineTo(ex - arrowLen * Math.cos(angle + 0.4), ey - arrowLen * Math.sin(angle + 0.4));
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+  function onDrag(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
   }
 
-  function drawNode(n) {
-    const ctx = _ctx;
-    const isHovered = n === _hoveredNode;
-    const color = teamColor(n.team);
-    const statusColor = STATUS_COLORS[n.status] || '#6b7280';
-    const r = n.radius;
-
-    ctx.save();
-
-    // Glow on hover
-    if (isHovered) {
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 18;
-    }
-
-    // Background circle
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
-    ctx.fillStyle = color + '33'; // 20% alpha
-    ctx.fill();
-
-    // Border
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
-    ctx.strokeStyle = isHovered ? color : color + 'aa';
-    ctx.lineWidth = isHovered ? 2.5 : 1.5;
-    ctx.stroke();
-
-    ctx.shadowBlur = 0;
-
-    // Emoji
-    ctx.font = `${r * 0.85}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(n.emoji || '🤖', n.x, n.y);
-
-    // Status dot
-    const dotR = 5;
-    ctx.beginPath();
-    ctx.arc(n.x + r * 0.65, n.y + r * 0.65, dotR, 0, 2 * Math.PI);
-    ctx.fillStyle = statusColor;
-    ctx.fill();
-    ctx.strokeStyle = '#0a0a14';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Name below
-    ctx.font = '11px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = isHovered ? '#fff' : 'rgba(255,255,255,0.75)';
-    ctx.fillText(n.name || n.id, n.x, n.y + r + 4);
-
-    ctx.restore();
+  function onDragEnd(event, d) {
+    if (!event.active) _simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
   }
 
-  // ── Mouse/Touch Events ────────────────────────────────────────────────────
-  function canvasPoint(e) {
-    const rect = _canvas.getBoundingClientRect();
-    const scaleX = _canvas.width / rect.width;
-    const scaleY = _canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    };
+  // ── Click → navigate ────────────────────────────────────────────────────
+  function onClick(event, d) {
+    event.stopPropagation();
+    App.navigate('agents/' + d.id);
   }
 
-  function worldPoint(cx, cy) {
-    return {
-      x: (cx - _offsetX) / _scale,
-      y: (cy - _offsetY) / _scale,
-    };
-  }
+  // ── Tooltip ─────────────────────────────────────────────────────────────
+  function onMouseOver(event, d) {
+    const wrap = document.getElementById('graph-svg-wrap');
+    if (!wrap || !_tooltip) return;
 
-  function nodeAt(cx, cy) {
-    const { x, y } = worldPoint(cx, cy);
-    return _nodes.find(n => {
-      const dx = n.x - x, dy = n.y - y;
-      return Math.sqrt(dx * dx + dy * dy) <= n.radius;
-    });
-  }
+    const sc = statusColor(d.status);
+    const statusLabel = d.status
+      ? d.status.charAt(0).toUpperCase() + d.status.slice(1)
+      : 'Unknown';
 
-  function onMouseDown(e) {
-    const pt = canvasPoint(e);
-    const n = nodeAt(pt.x, pt.y);
-    if (n) {
-      _dragNode = n;
-      _canvas.style.cursor = 'grabbing';
-      _simStep = 0; // restart sim
-    } else {
-      _isDragging = true;
-      _canvas.style.cursor = 'grabbing';
-    }
-    _lastMouse = { x: e.clientX, y: e.clientY };
-  }
+    const activityLine = typeof d.activityCount === 'number'
+      ? `<div style="color:var(--text-secondary);font-size:12px;">📈 ${d.activityCount} actions (7d)</div>`
+      : '';
 
-  function onMouseMove(e) {
-    const pt = canvasPoint(e);
-    const hovered = nodeAt(pt.x, pt.y);
-
-    if (hovered !== _hoveredNode) {
-      _hoveredNode = hovered;
-      if (hovered) {
-        _canvas.style.cursor = 'pointer';
-        showTooltip(e, hovered);
-      } else if (!_isDragging && !_dragNode) {
-        _canvas.style.cursor = 'grab';
-        hideTooltip();
-      }
-    } else if (hovered) {
-      moveTooltip(e);
-    }
-
-    const dx = e.clientX - _lastMouse.x;
-    const dy = e.clientY - _lastMouse.y;
-
-    if (_dragNode) {
-      const rect = _canvas.getBoundingClientRect();
-      const scaleX = _canvas.width / rect.width;
-      const scaleY = _canvas.height / rect.height;
-      _dragNode.x += (dx * scaleX) / _scale;
-      _dragNode.y += (dy * scaleY) / _scale;
-      _dragNode.vx = 0; _dragNode.vy = 0;
-    } else if (_isDragging) {
-      const rect = _canvas.getBoundingClientRect();
-      _offsetX += dx * (_canvas.width / rect.width);
-      _offsetY += dy * (_canvas.height / rect.height);
-    }
-
-    _lastMouse = { x: e.clientX, y: e.clientY };
-    if (_dragNode || _isDragging) draw();
-  }
-
-  function onMouseUp() {
-    _dragNode = null;
-    _isDragging = false;
-    _canvas.style.cursor = _hoveredNode ? 'pointer' : 'grab';
-  }
-
-  function onWheel(e) {
-    e.preventDefault();
-    const pt = canvasPoint(e);
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    // Zoom toward mouse
-    _offsetX = pt.x + (_offsetX - pt.x) * factor;
-    _offsetY = pt.y + (_offsetY - pt.y) * factor;
-    _scale *= factor;
-    draw();
-  }
-
-  function onClick(e) {
-    // Only fire if not dragging significantly
-    if (Math.abs(e.movementX) > 3 || Math.abs(e.movementY) > 3) return;
-    const pt = canvasPoint(e);
-    const n = nodeAt(pt.x, pt.y);
-    if (n) {
-      App.navigate('agents/' + n.id);
-    }
-  }
-
-  function onDblClick(e) {
-    const pt = canvasPoint(e);
-    const n = nodeAt(pt.x, pt.y);
-    if (n) {
-      App.navigate('agents/' + n.id);
-    }
-  }
-
-  function onTouchStart(e) {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
-    }
-  }
-
-  function onTouchMove(e) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      onMouseMove({ clientX: touch.clientX, clientY: touch.clientY, movementX: 0, movementY: 0 });
-    }
-  }
-
-  // ── Tooltip ───────────────────────────────────────────────────────────────
-  function showTooltip(e, node) {
-    if (!_tooltip) return;
-    const statusLabel = node.status ? (node.status.charAt(0).toUpperCase() + node.status.slice(1)) : 'Unknown';
     _tooltip.innerHTML = `
-      <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${Utils.esc(node.emoji || '🤖')} ${Utils.esc(node.name || node.id)}</div>
-      <div style="color:var(--text-secondary);font-size:12px;margin-bottom:2px;">🏷 ${Utils.esc(node.team || 'Unknown')}</div>
-      ${node.role ? `<div style="color:var(--text-secondary);font-size:12px;margin-bottom:2px;">📋 ${Utils.esc(node.role)}</div>` : ''}
-      <div style="font-size:12px;margin-top:4px;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${STATUS_COLORS[node.status] || '#6b7280'};margin-right:4px;"></span>
-        ${statusLabel}
+      <div style="font-weight:700;font-size:14px;margin-bottom:5px;">${Utils.esc(d.emoji || '🤖')} ${Utils.esc(d.label || d.name || d.id)}</div>
+      ${d.team  ? `<div style="color:var(--text-secondary);font-size:12px;margin-bottom:2px;">🏷 ${Utils.esc(d.team)}</div>` : ''}
+      ${d.role  ? `<div style="color:var(--text-secondary);font-size:12px;margin-bottom:2px;">📋 ${Utils.esc(d.role)}</div>` : ''}
+      ${activityLine}
+      <div style="font-size:12px;margin-top:6px;display:flex;align-items:center;gap:5px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${sc};display:inline-block;flex-shrink:0;"></span>
+        ${Utils.esc(statusLabel)}
       </div>
-      <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Click to view agent</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Click to view details</div>
     `;
+
     _tooltip.style.display = 'block';
-    moveTooltip(e);
+    positionTooltip(event);
+
+    // Highlight connected edges
+    if (_g) {
+      _g.selectAll('line').attr('opacity', e =>
+        (e.source.id === d.id || e.target.id === d.id) ? 1 : 0.15);
+    }
   }
 
-  function moveTooltip(e) {
+  function onMouseMove(event) {
+    positionTooltip(event);
+  }
+
+  function onMouseOut() {
+    hideTooltip();
+    if (_g) _g.selectAll('line').attr('opacity', 1);
+  }
+
+  function positionTooltip(event) {
     if (!_tooltip) return;
-    const wrap = document.getElementById('graph-canvas-wrap');
+    const wrap = document.getElementById('graph-svg-wrap');
     if (!wrap) return;
     const rect = wrap.getBoundingClientRect();
-    let tx = e.clientX - rect.left + 16;
-    let ty = e.clientY - rect.top - 20;
-    const tw = 180, th = 100;
-    if (tx + tw > rect.width) tx = e.clientX - rect.left - tw - 8;
-    if (ty + th > rect.height) ty = e.clientY - rect.top - th - 8;
+    const tw = 210, th = 120;
+    let tx = event.clientX - rect.left + 16;
+    let ty = event.clientY - rect.top  - 20;
+    if (tx + tw > rect.width)  tx = event.clientX - rect.left - tw - 10;
+    if (ty + th > rect.height) ty = event.clientY - rect.top  - th - 10;
+    if (ty < 0) ty = 4;
     _tooltip.style.left = tx + 'px';
-    _tooltip.style.top = ty + 'px';
+    _tooltip.style.top  = ty + 'px';
   }
 
   function hideTooltip() {
     if (_tooltip) _tooltip.style.display = 'none';
   }
 
-  // ── Reset Layout ──────────────────────────────────────────────────────────
-  function resetLayout() {
-    if (!_canvas) return;
-    const W = _canvas.width, H = _canvas.height;
-    const N = _nodes.length;
-    const radius = Math.min(W, H) * 0.3;
-    _nodes.forEach((n, i) => {
-      n.x = W / 2 + radius * Math.cos((2 * Math.PI * i) / N);
-      n.y = H / 2 + radius * Math.sin((2 * Math.PI * i) / N);
-      n.vx = 0; n.vy = 0;
+  // ── Zoom helpers ────────────────────────────────────────────────────────
+  function resetView() {
+    if (!_svg || !_zoom) return;
+    const wrap = document.getElementById('graph-svg-wrap');
+    if (!wrap) return;
+    const W = wrap.clientWidth  || 900;
+    const H = wrap.clientHeight || 600;
+
+    if (!_nodes.length) {
+      _svg.transition().duration(500).call(
+        _zoom.transform, d3.zoomIdentity);
+      return;
+    }
+
+    // Compute bounding box of settled nodes
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    _nodes.forEach(n => {
+      x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x);
+      y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y);
     });
-    _scale = 1; _offsetX = 0; _offsetY = 0;
-    simulate();
+
+    const pad = 60;
+    const scaleX = (W - pad * 2) / Math.max(x1 - x0, 1);
+    const scaleY = (H - pad * 2) / Math.max(y1 - y0, 1);
+    const scale = Math.min(scaleX, scaleY, 1.5);
+    const tx = W / 2 - ((x0 + x1) / 2) * scale;
+    const ty = H / 2 - ((y0 + y1) / 2) * scale;
+
+    _svg.transition().duration(700)
+      .call(_zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
   }
 
-  // ── Destroy ───────────────────────────────────────────────────────────────
+  function reheat() {
+    if (_simulation) {
+      _simulation.alpha(0.6).restart();
+    }
+  }
+
+  // ── Destroy ─────────────────────────────────────────────────────────────
   function destroy() {
-    cancelAnimationFrame(_animFrame);
-    _container = null;
-    _canvas = null;
-    _ctx = null;
+    if (_simulation) { _simulation.stop(); _simulation = null; }
+    if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
+    hideTooltip();
+    _svg = null;
+    _g   = null;
     _nodes = [];
     _edges = [];
-    _dragNode = null;
-    _hoveredNode = null;
+    _container = null;
     _tooltip = null;
   }
 
