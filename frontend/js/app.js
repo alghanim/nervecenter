@@ -200,6 +200,7 @@ window.Env = (function () {
     alerts:      { title: 'Alerts',     subtitle: 'Alerting rules and triggered notifications' },
     graph:       { title: 'Graph',      subtitle: 'Agent dependency and collaboration graph' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
+    'api-docs':  { title: 'API Reference', subtitle: 'REST API documentation and endpoint reference' },
   };
 
   async function init() {
@@ -384,6 +385,7 @@ window.Env = (function () {
       case 'alerts':     page = Pages.alerts; break;
       case 'graph':      page = Pages.graph; break;
       case 'settings':   page = Pages.settings; break;
+      case 'api-docs':   page = Pages.apiDocs; break;
       default:
         content.innerHTML = `<div class="empty-state">
           <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="22" cy="22" r="14" stroke="currentColor" stroke-width="2"/><line x1="32" y1="32" x2="44" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>

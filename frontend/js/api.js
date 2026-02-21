@@ -240,4 +240,19 @@ window.API = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
   }),
+
+  // API Docs
+  getAPIDocs: () => apiFetch('/api/docs'),
+
+  // Snapshots
+  getSnapshots: (agentId) => apiFetch(`/api/agents/${encodeURIComponent(agentId)}/snapshots`),
+  createSnapshot: (agentId, label) => apiFetch(`/api/agents/${encodeURIComponent(agentId)}/snapshots`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label: label || '' }),
+  }),
+  restoreSnapshot: (agentId, snapshotId) => apiFetch(
+    `/api/agents/${encodeURIComponent(agentId)}/snapshots/${encodeURIComponent(snapshotId)}/restore`,
+    { method: 'POST' }
+  ),
 };

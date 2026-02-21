@@ -173,6 +173,7 @@ Pages.agents = {
         <button class="tab" data-tab="timeline" onclick=\"Pages.agents._switchTab('timeline', '${agentId}')\">Timeline</button>
         <button class="tab" data-tab="notes" onclick=\"Pages.agents._switchTab('notes', '${agentId}')\">📝 Notes</button>
         <button class="tab" data-tab="health" onclick=\"Pages.agents._switchTab('health', '${agentId}')\">🏥 Health</button>
+        <button class="tab" data-tab="snapshots" onclick=\"Pages.agents._switchTab('snapshots', '${agentId}')\">📸 Snapshots</button>
       </div>
 
       <div id="agentTabContent"></div>`;
@@ -215,6 +216,16 @@ Pages.agents = {
 
     if (tab === 'notes') {
       await this._loadNotesTab(el, agentId);
+      return;
+    }
+
+    if (tab === 'health') {
+      await this._loadHealthTab(el, agentId);
+      return;
+    }
+
+    if (tab === 'snapshots') {
+      await this._loadSnapshotsTab(el, agentId);
       return;
     }
 
@@ -647,6 +658,130 @@ Pages.agents = {
         <span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em">Recent Commits</span>
       </div>
       <div class="activity-list">${rows}</div>`;
+  },
+
+  async _loadHealthTab(el, agentId) {
+    el.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Checking health...</span></div>';
+
+    let health;
+    try {
+      health = await API.getAgentHealth(agentId);
+    } catch (e) {
+      Utils.showEmpty(el, '⚠️', 'Failed to load health', e.message);
+      return;
+    }
+
+    const statusConfig = {
+      online:   { icon: '✅', label: 'Healthy',   color: '#22c55e' },
+      busy:     { icon: '✅', label: 'Healthy',   color: '#22c55e' },
+      idle:     { icon: '✅', label: 'Healthy',   color: '#22c55e' },
+      degraded: { icon: '⚠️', label: 'Degraded',  color: '#f59e0b' },
+      offline:  { icon: '❌', label: 'Unhealthy', color: '#ef4444' },
+      killed:   { icon: '❌', label: 'Unhealthy', color: '#ef4444' },
+      paused:   { icon: '⚠️', label: 'Paused',    color: '#9ca3af' },
+      unknown:  { icon: '❓', label: 'Unknown',   color: '#6b7280' },
+    };
+    const sc = statusConfig[health.status] || statusConfig.unknown;
+    const lastSeenText = health.last_seen
+      ? Utils.relTime(health.last_seen) + ' (' + Utils.absTime(health.last_seen) + ')'
+      : 'Never';
+
+    const checksHTML = (health.checks || []).map(c => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-default,#2a2a3a);">
+        <span style="font-size:16px;flex-shrink:0;margin-top:1px">${c.passed ? '✅' : '❌'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);text-transform:capitalize">${Utils.esc(c.name.replace(/_/g,' '))}</div>
+          <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${Utils.esc(c.message)}</div>
+        </div>
+      </div>`).join('');
+
+    const autoRestartChecked = health.auto_restart ? 'checked' : '';
+
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:20px;padding-top:4px">
+
+        <!-- Overall Status Card -->
+        <div class="chart-card" style="padding:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="font-size:48px;line-height:1">${sc.icon}</div>
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:22px;font-weight:700;color:${sc.color}">${sc.label}</div>
+            <div style="font-size:13px;color:var(--text-tertiary);margin-top:4px">Status: <strong style="color:var(--text-primary)">${Utils.esc(health.status)}</strong></div>
+            <div style="font-size:13px;color:var(--text-tertiary);margin-top:2px">Last seen: <strong style="color:var(--text-primary)">${Utils.esc(lastSeenText)}</strong></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+            <button id="forceHealthCheckBtn" class="btn-secondary"
+              onclick="Pages.agents._forceHealthCheck('${Utils.esc(agentId)}')"
+              style="font-size:13px;padding:6px 14px;white-space:nowrap">
+              🔄 Force Health Check
+            </button>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-secondary)">
+              <div style="position:relative;display:inline-block;width:36px;height:20px">
+                <input type="checkbox" id="autoRestartToggle" ${autoRestartChecked}
+                  onchange="Pages.agents._setAutoRestart('${Utils.esc(agentId)}', this.checked)"
+                  style="opacity:0;width:0;height:0;position:absolute">
+                <span id="autoRestartSlider" style="
+                  position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;
+                  border-radius:20px;transition:0.2s;
+                  background:${health.auto_restart ? 'var(--accent,#B5CC18)' : 'var(--border-default,#3a3a4a)'};
+                ">
+                  <span style="
+                    position:absolute;content:'';height:14px;width:14px;
+                    left:${health.auto_restart ? '19px' : '3px'};bottom:3px;
+                    background:white;border-radius:50%;transition:0.2s;
+                    display:block;
+                  "></span>
+                </span>
+              </div>
+              Auto-Restart
+            </label>
+          </div>
+        </div>
+
+        <!-- Individual Checks -->
+        <div class="chart-card" style="padding:20px">
+          <div class="chart-card__title" style="margin-bottom:8px">Health Checks</div>
+          ${checksHTML || '<div style="color:var(--text-tertiary);font-size:13px;padding:12px 0">No checks available</div>'}
+        </div>
+
+      </div>`;
+
+    // Animate the toggle slider properly
+    const toggle = document.getElementById('autoRestartToggle');
+    if (toggle) {
+      toggle.addEventListener('change', function() {
+        const slider = document.getElementById('autoRestartSlider');
+        if (slider) {
+          slider.style.background = this.checked ? 'var(--accent,#B5CC18)' : 'var(--border-default,#3a3a4a)';
+          const knob = slider.querySelector('span');
+          if (knob) knob.style.left = this.checked ? '19px' : '3px';
+        }
+      });
+    }
+  },
+
+  async _forceHealthCheck(agentId) {
+    const btn = document.getElementById('forceHealthCheckBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking...'; }
+    try {
+      await API.forceHealthCheck(agentId);
+      // Reload the health tab with fresh data
+      const el = document.getElementById('agentTabContent');
+      if (el) await this._loadHealthTab(el, agentId);
+    } catch (e) {
+      alert('Health check failed: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 Force Health Check'; }
+    }
+  },
+
+  async _setAutoRestart(agentId, enabled) {
+    try {
+      await API.setAutoRestart(agentId, enabled);
+    } catch (e) {
+      alert('Failed to update auto-restart: ' + e.message);
+      // Revert the toggle
+      const toggle = document.getElementById('autoRestartToggle');
+      if (toggle) toggle.checked = !enabled;
+    }
   },
 
   _buildActionButtons(status, agentId) {
