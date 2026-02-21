@@ -397,6 +397,9 @@ func (h *OpenClawHandler) UpdateAgentSoul(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Auto-create a snapshot before overwriting the file
+	_, _ = CreateSnapshotForAgent(ca.ID, "auto-save-"+req.File)
+
 	if err := os.WriteFile(targetPath, []byte(req.Content), 0644); err != nil {
 		http.Error(w, "Failed to write file: "+err.Error(), http.StatusInternalServerError)
 		return

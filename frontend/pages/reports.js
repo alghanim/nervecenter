@@ -61,6 +61,37 @@ Pages.reports = {
           </div>
         </div>
 
+        <!-- ═══ Agent Efficiency Score Leaderboard ═══ -->
+        <div id="efficiencySection" style="margin-top:40px;">
+          <div class="section-header" style="margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+            <span class="section-title">🏆 Efficiency Leaderboard</span>
+            <span class="efficiency-info-icon" title="How is this score calculated?&#10;&#10;Score = sum of 4 sub-scores (each 0–25 pts):&#10;• Throughput — tasks completed vs top agent&#10;• Token Efficiency — fewer tokens per task = higher score&#10;• Speed — faster avg completion vs slowest agent&#10;• Reliability — fewer blocked tasks = higher score&#10;&#10;Total: 0–100. Green ≥70 · Yellow 40–69 · Red &lt;40" style="
+              display:inline-flex;align-items:center;justify-content:center;
+              width:20px;height:20px;border-radius:50%;
+              background:var(--border-active);color:var(--text-secondary);
+              font-size:11px;font-weight:700;cursor:help;flex-shrink:0;
+              border:1px solid var(--border-hover);
+            ">?</span>
+          </div>
+          <div id="efficiencyGrid" style="overflow-x:auto;">
+            <div style="padding:20px;text-align:center;color:var(--text-tertiary);">
+              <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Loading efficiency data…
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Latency Metrics ═══ -->
+        <div id="latencySection" style="margin-top:40px;">
+          <div class="section-header" style="margin-bottom:20px;">
+            <span class="section-title">⏱ Response &amp; Latency Metrics</span>
+          </div>
+          <div id="latencyGrid" style="overflow-x:auto;">
+            <div style="padding:20px;text-align:center;color:var(--text-tertiary);">
+              <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Loading latency data…
+            </div>
+          </div>
+        </div>
+
         <!-- ═══ Token Usage & Cost Section ═══ -->
         <div class="token-section" id="tokenSection" style="margin-top:40px;">
           <div class="section-header">
@@ -107,7 +138,14 @@ Pages.reports = {
   },
 
   async _loadAll() {
-    await Promise.all([this._loadKPIs(), this._loadCharts(), this._loadTokenSection(), this._loadPerformance()]);
+    await Promise.all([
+      this._loadKPIs(),
+      this._loadCharts(),
+      this._loadTokenSection(),
+      this._loadPerformance(),
+      this._loadEfficiency(),
+      this._loadLatency(),
+    ]);
   },
 
   async _setRange(days, btn) {
@@ -960,6 +998,240 @@ Pages.reports = {
             </div>`
         }
       </div>`;
+  },
+
+  _exportCSV() {
+    API.exportCSV();
+  },
+
+  /* ═══════════════════════════════════════════════════════
+     EFFICIENCY SCORE LEADERBOARD
+  ═══════════════════════════════════════════════════════ */
+  async _loadEfficiency() {
+    const container = document.getElementById('efficiencyGrid');
+    if (!container) return;
+
+    let data = [];
+    try {
+      data = await API.getEfficiencyScores();
+      if (!Array.isArray(data)) data = [];
+    } catch (e) {
+      container.innerHTML = `<div style="padding:16px;color:var(--danger,#EF4444);">Failed to load efficiency data: ${Utils.esc(e.message)}</div>`;
+      return;
+    }
+
+    if (data.length === 0) {
+      container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-tertiary);">No efficiency data yet — complete some tasks first.</div>`;
+      return;
+    }
+
+    // Build leaderboard table
+    const rows = data.map((agent, idx) => {
+      const rank = idx + 1;
+      const score = agent.score ?? 0;
+      const bd = agent.breakdown || {};
+      const throughput  = bd.throughput   ?? 0;
+      const tokenEff    = bd.token_eff    ?? 0;
+      const speedScore  = bd.speed_score  ?? 0;
+      const reliability = bd.reliability  ?? 0;
+
+      // Score badge color
+      let badgeColor, badgeBg;
+      if (score >= 70) { badgeColor = '#22C55E'; badgeBg = 'rgba(34,197,94,0.12)'; }
+      else if (score >= 40) { badgeColor = '#F59E0B'; badgeBg = 'rgba(245,158,11,0.12)'; }
+      else { badgeColor = '#EF4444'; badgeBg = 'rgba(239,68,68,0.12)'; }
+
+      // Rank medal
+      const rankDisplay = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+
+      // Mini bar helper (val out of 25)
+      const miniBar = (val, color) => {
+        const pct = Math.min(100, Math.round((val / 25) * 100));
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <div style="flex:1;height:5px;background:var(--bg-inset,#0D0D14);border-radius:99px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;transition:width 500ms ease;"></div>
+          </div>
+          <span style="font-size:10px;color:var(--text-tertiary);width:26px;text-align:right;font-family:monospace;">${val.toFixed(1)}</span>
+        </div>`;
+      };
+
+      const breakdownCell = `
+        <div style="min-width:180px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:1px;">
+            <span style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Throughput</span>
+          </div>
+          ${miniBar(throughput, '#6366F1')}
+          <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:1px;">
+            <span style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Token Eff</span>
+          </div>
+          ${miniBar(tokenEff, '#3B82F6')}
+          <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:1px;">
+            <span style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Speed</span>
+          </div>
+          ${miniBar(speedScore, '#10B981')}
+          <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:1px;">
+            <span style="font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;">Reliability</span>
+          </div>
+          ${miniBar(reliability, '#F59E0B')}
+        </div>`;
+
+      return `<tr style="border-bottom:1px solid var(--border-default);transition:background 120ms;" onmouseenter="this.style.background='var(--bg-surface-hover)'" onmouseleave="this.style.background=''">
+        <td style="padding:14px 16px;font-size:16px;text-align:center;width:48px;">${rankDisplay}</td>
+        <td style="padding:14px 16px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${Utils.esc(agent.name || agent.agent_id)}</div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
+            ${agent.tasks_completed} tasks · ${agent.avg_completion_hours}h avg · ${agent.error_rate}% err
+          </div>
+        </td>
+        <td style="padding:14px 16px;text-align:center;white-space:nowrap;">
+          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="
+              display:inline-block;
+              font-size:24px;font-weight:800;
+              color:${badgeColor};
+              background:${badgeBg};
+              border:1px solid ${badgeColor}44;
+              border-radius:10px;
+              padding:4px 14px;
+              line-height:1.2;
+              min-width:64px;
+              text-align:center;
+            ">${score.toFixed(1)}</span>
+            <span style="font-size:10px;color:var(--text-tertiary);">/ 100</span>
+          </div>
+        </td>
+        <td style="padding:14px 16px;">${breakdownCell}</td>
+        <td style="padding:14px 16px;font-family:monospace;font-size:12px;color:var(--text-secondary);white-space:nowrap;">
+          <div>${(agent.tokens_per_task || 0).toLocaleString()} tok/task</div>
+          <div style="color:#10B981;margin-top:2px;">$${(agent.cost_per_task || 0).toFixed(4)}/task</div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+      <table style="
+        width:100%;border-collapse:collapse;
+        background:var(--bg-surface);
+        border:1px solid var(--border-default);
+        border-radius:12px;
+        overflow:hidden;
+      ">
+        <thead>
+          <tr style="background:var(--bg-inset,#0D0D14);border-bottom:1px solid var(--border-default);">
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Rank</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Agent</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Score</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Breakdown (×4 @ 25pts each)</th>
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Efficiency</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  },
+
+  /* ═══════════════════════════════════════════════════════
+     LATENCY METRICS TABLE
+  ═══════════════════════════════════════════════════════ */
+  async _loadLatency() {
+    const container = document.getElementById('latencyGrid');
+    if (!container) return;
+
+    let data = [];
+    try {
+      data = await API.getLatencyMetrics();
+      if (!Array.isArray(data)) data = [];
+    } catch (e) {
+      container.innerHTML = `<div style="padding:16px;color:var(--danger,#EF4444);">Failed to load latency data: ${Utils.esc(e.message)}</div>`;
+      return;
+    }
+
+    if (data.length === 0) {
+      container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-tertiary);">No latency data yet.</div>`;
+      return;
+    }
+
+    // Sort by avg_response_sec ascending (fastest first)
+    data = data.slice().sort((a, b) => (a.avg_response_sec || 0) - (b.avg_response_sec || 0));
+
+    const latencyColor = (sec) => {
+      if (sec === 0 || sec == null) return 'var(--text-tertiary)';
+      if (sec < 5)   return '#22C55E';
+      if (sec <= 15) return '#F59E0B';
+      return '#EF4444';
+    };
+
+    const latencyBadge = (sec, label) => {
+      if (!sec && sec !== 0) return `<span style="color:var(--text-tertiary)">—</span>`;
+      const color = latencyColor(sec);
+      const bg = sec === 0 ? 'transparent'
+        : sec < 5   ? 'rgba(34,197,94,0.10)'
+        : sec <= 15 ? 'rgba(245,158,11,0.10)'
+        : 'rgba(239,68,68,0.10)';
+      return `<span style="
+        display:inline-block;
+        background:${bg};border:1px solid ${color}44;
+        color:${color};
+        font-size:13px;font-weight:700;font-family:monospace;
+        border-radius:7px;padding:3px 9px;white-space:nowrap;
+      ">${sec > 0 ? sec.toFixed(1) + 's' : '—'}</span>`;
+    };
+
+    const fmtHours = (h) => {
+      if (!h) return '—';
+      if (h < 1) return `${Math.round(h * 60)}m`;
+      if (h < 24) return `${h.toFixed(1)}h`;
+      return `${(h / 24).toFixed(1)}d`;
+    };
+
+    const rows = data.map((agent, idx) => {
+      const isFirst = idx === 0;
+      return `<tr style="border-bottom:1px solid var(--border-default);transition:background 120ms;${isFirst ? 'background:rgba(34,197,94,0.04);' : ''}" onmouseenter="this.style.background='var(--bg-surface-hover)'" onmouseleave="this.style.background='${isFirst ? 'rgba(34,197,94,0.04)' : ''}'">
+        <td style="padding:14px 16px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${isFirst ? '<span style="font-size:12px;background:rgba(34,197,94,0.15);color:#22C55E;border-radius:5px;padding:2px 6px;font-weight:700;letter-spacing:0.03em;">FASTEST</span>' : ''}
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${Utils.esc(agent.name || agent.agent_id)}</div>
+              <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">${Utils.esc(agent.agent_id || '')}</div>
+            </div>
+          </div>
+        </td>
+        <td style="padding:14px 16px;text-align:center;">${latencyBadge(agent.avg_response_sec)}</td>
+        <td style="padding:14px 16px;text-align:center;">${latencyBadge(agent.p50_response_sec)}</td>
+        <td style="padding:14px 16px;text-align:center;">${latencyBadge(agent.p95_response_sec)}</td>
+        <td style="padding:14px 16px;text-align:center;font-size:13px;color:var(--text-secondary);">${fmtHours(agent.avg_task_completion_hours)}</td>
+        <td style="padding:14px 16px;text-align:center;">
+          <span style="font-size:14px;font-weight:700;color:var(--text-primary);">${(agent.tasks_completed || 0).toLocaleString()}</span>
+        </td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:16px;font-size:12px;flex-wrap:wrap;">
+        <span style="color:var(--text-tertiary);">Response time thresholds:</span>
+        <span style="color:#22C55E;">● &lt;5s Good</span>
+        <span style="color:#F59E0B;">● 5–15s Moderate</span>
+        <span style="color:#EF4444;">● &gt;15s Slow</span>
+        <span style="margin-left:auto;color:var(--text-tertiary);font-style:italic;">Sorted fastest → slowest</span>
+      </div>
+      <table style="
+        width:100%;border-collapse:collapse;
+        background:var(--bg-surface);
+        border:1px solid var(--border-default);
+        border-radius:12px;
+        overflow:hidden;
+      ">
+        <thead>
+          <tr style="background:var(--bg-inset,#0D0D14);border-bottom:1px solid var(--border-default);">
+            <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Agent</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Avg Response</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">P50</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">P95</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Avg Task Time</th>
+            <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Tasks Done</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   },
 
   _exportCSV() {

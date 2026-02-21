@@ -17,7 +17,7 @@ type AgentHandler struct{}
 func (h *AgentHandler) GetAgents(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.Query(`
 		SELECT id, display_name, emoji, role, team, model, status,
-		       current_task_id, last_active, workspace_path, is_lead
+		       current_task_id, last_active, workspace_path, is_lead, COALESCE(auto_restart, false)
 		FROM agents ORDER BY team, id`)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
@@ -33,7 +33,7 @@ func (h *AgentHandler) GetAgents(w http.ResponseWriter, r *http.Request) {
 
 		if err := rows.Scan(&agent.ID, &displayName, &emoji, &role,
 			&team, &model, &agent.Status, &currentTaskID,
-			&lastActive, &workspacePath, &agent.IsLead); err != nil {
+			&lastActive, &workspacePath, &agent.IsLead, &agent.AutoRestart); err != nil {
 			respondError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -66,11 +66,11 @@ func (h *AgentHandler) GetAgent(w http.ResponseWriter, r *http.Request) {
 
 	err := db.DB.QueryRow(`
 		SELECT id, display_name, emoji, role, team, model, status,
-		       current_task_id, last_active, workspace_path, is_lead
+		       current_task_id, last_active, workspace_path, is_lead, COALESCE(auto_restart, false)
 		FROM agents WHERE id = $1`, id).
 		Scan(&agent.ID, &displayName, &emoji, &role,
 			&team, &model, &agent.Status, &currentTaskID,
-			&lastActive, &workspacePath, &agent.IsLead)
+			&lastActive, &workspacePath, &agent.IsLead, &agent.AutoRestart)
 
 	if err == sql.ErrNoRows {
 		respondError(w, http.StatusNotFound, "Agent not found")

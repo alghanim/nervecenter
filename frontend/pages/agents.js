@@ -171,6 +171,8 @@ Pages.agents = {
         <button class="tab" data-tab="skills" onclick=\"Pages.agents._switchTab('skills', '${agentId}')\">Skills</button>
         <button class="tab" data-tab="activity" onclick=\"Pages.agents._switchTab('activity', '${agentId}')\">Activity</button>
         <button class="tab" data-tab="timeline" onclick=\"Pages.agents._switchTab('timeline', '${agentId}')\">Timeline</button>
+        <button class="tab" data-tab="notes" onclick=\"Pages.agents._switchTab('notes', '${agentId}')\">📝 Notes</button>
+        <button class="tab" data-tab="health" onclick=\"Pages.agents._switchTab('health', '${agentId}')\">🏥 Health</button>
       </div>
 
       <div id="agentTabContent"></div>`;
@@ -208,6 +210,11 @@ Pages.agents = {
 
     if (tab === 'timeline') {
       await this._loadTimelineTab(el, agentId);
+      return;
+    }
+
+    if (tab === 'notes') {
+      await this._loadNotesTab(el, agentId);
       return;
     }
 
@@ -480,6 +487,104 @@ Pages.agents = {
       el.innerHTML = html;
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load skills', e.message);
+    }
+  },
+
+  async _loadNotesTab(el, agentId) {
+    Utils.showLoading(el, 'Loading notes...');
+    let annotations = [];
+    try {
+      annotations = await API.getAnnotations(agentId);
+    } catch (e) {
+      Utils.showEmpty(el, '⚠️', 'Failed to load notes', e.message);
+      return;
+    }
+
+    const renderAnnotations = (anns) => {
+      if (!anns || anns.length === 0) {
+        return `<div style="color:var(--text-tertiary);font-size:13px;padding:16px 0;text-align:center">No notes yet. Add the first one below.</div>`;
+      }
+      return anns.map(ann => {
+        const mdHtml = DOMPurify.sanitize(marked.parse(ann.content || ''));
+        const ts = Utils.relTime ? Utils.relTime(ann.created_at) : new Date(ann.created_at).toLocaleString();
+        const tsAbs = Utils.absTime ? Utils.absTime(ann.created_at) : new Date(ann.created_at).toISOString();
+        const isOwn = ann.author === 'ali';
+        return `
+          <div class="annotation-item" data-id="${Utils.esc(ann.id)}" style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:14px 16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:12px;font-weight:600;color:var(--accent,#6366f1)">@${Utils.esc(ann.author)}</span>
+                <span style="font-size:11px;color:var(--text-tertiary)" title="${Utils.esc(tsAbs)}">${Utils.esc(ts)}</span>
+              </div>
+              ${isOwn ? `<button onclick="Pages.agents._deleteAnnotation('${Utils.esc(agentId)}','${Utils.esc(ann.id)}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:2px 6px;border-radius:4px;font-size:12px;transition:color 0.15s" onmouseover="this.style.color='var(--danger,#ef4444)'" onmouseout="this.style.color='var(--text-tertiary)'" title="Delete note">🗑️</button>` : ''}
+            </div>
+            <div class="markdown-body" style="font-size:13px;line-height:1.6">${mdHtml}</div>
+          </div>`;
+      }).join('');
+    };
+
+    el.innerHTML = `
+      <div style="max-width:720px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary)">Notes</span>
+          <span style="font-size:12px;color:var(--text-tertiary)">${annotations.length} note${annotations.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div id="annotationsList">
+          ${renderAnnotations(annotations)}
+        </div>
+        <div style="margin-top:20px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:14px 16px">
+          <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px">Add a note — supports Markdown. <kbd style="font-size:10px;padding:1px 5px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:3px">Shift+Enter</kbd> to submit</div>
+          <textarea id="annotationInput" placeholder="Write a note..." style="width:100%;min-height:80px;box-sizing:border-box;font-size:13px;font-family:var(--font-body);background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:8px 10px;color:var(--text-primary);resize:vertical;outline:none;line-height:1.6"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+            <span style="font-size:11px;color:var(--text-tertiary)">as <strong>ali</strong></span>
+            <button id="annotationSubmitBtn" onclick="Pages.agents._submitAnnotation('${Utils.esc(agentId)}')" class="btn-primary" style="font-size:13px;padding:5px 14px">Add Note</button>
+          </div>
+        </div>
+      </div>`;
+
+    // Bind Shift+Enter shortcut
+    const ta = document.getElementById('annotationInput');
+    if (ta) {
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.shiftKey) {
+          e.preventDefault();
+          Pages.agents._submitAnnotation(agentId);
+        }
+      });
+    }
+  },
+
+  async _submitAnnotation(agentId) {
+    const ta = document.getElementById('annotationInput');
+    const btn = document.getElementById('annotationSubmitBtn');
+    if (!ta || !btn) return;
+    const content = ta.value.trim();
+    if (!content) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+
+    try {
+      await API.addAnnotation(agentId, content, 'ali');
+      ta.value = '';
+      // Reload the notes tab
+      const el = document.getElementById('agentTabContent');
+      if (el) await this._loadNotesTab(el, agentId);
+    } catch (e) {
+      alert('Failed to add note: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Add Note';
+    }
+  },
+
+  async _deleteAnnotation(agentId, annId) {
+    if (!confirm('Delete this note?')) return;
+    try {
+      await API.deleteAnnotation(agentId, annId);
+      const el = document.getElementById('agentTabContent');
+      if (el) await this._loadNotesTab(el, agentId);
+    } catch (e) {
+      alert('Failed to delete note: ' + e.message);
     }
   },
 

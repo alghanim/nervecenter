@@ -59,6 +59,7 @@ func main() {
 	activityHandler := &handlers.ActivityHandler{}
 	dashboardHandler := &handlers.DashboardHandler{}
 	openclawHandler := &handlers.OpenClawHandler{}
+	healthHandler := &handlers.HealthHandler{}
 	analyticsHandler := &handlers.AnalyticsHandler{}
 	brandingHandler := &handlers.BrandingHandler{}
 	searchHandler := &handlers.SearchHandler{}
@@ -72,12 +73,17 @@ func main() {
 	controlHandler := &handlers.AgentControlHandler{}
 	authHandler := &handlers.AuthHandler{}
 	commitsHandler := &handlers.CommitsHandler{}
+	annotationHandler := &handlers.AnnotationHandler{}
+	environmentHandler := &handlers.EnvironmentHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
 
 	// Alert evaluator
 	go handlers.StartAlertEvaluator(hub)
+
+	// Health checker
+	go handlers.StartHealthChecker()
 
 	// Router
 	router := mux.NewRouter()
@@ -116,8 +122,24 @@ func main() {
 	api.HandleFunc("/agents/{id}/resume", agentHandler.ResumeAgent).Methods("POST")
 	api.HandleFunc("/agents/{id}/kill", agentHandler.KillAgent).Methods("POST")
 
+	// Agent health checks
+	api.HandleFunc("/agents/{id}/health", healthHandler.GetAgentHealth).Methods("GET")
+	api.HandleFunc("/agents/{id}/health/check", healthHandler.ForceHealthCheck).Methods("POST")
+	api.HandleFunc("/agents/{id}/health/auto-restart", healthHandler.SetAutoRestart).Methods("POST")
+
 	// Git commits
 	api.HandleFunc("/agents/{id}/commits", commitsHandler.GetCommits).Methods("GET")
+
+	// Annotations (shared notes on agents)
+	api.HandleFunc("/agents/{id}/annotations", annotationHandler.GetAnnotations).Methods("GET")
+	api.HandleFunc("/agents/{id}/annotations", annotationHandler.CreateAnnotation).Methods("POST")
+	api.HandleFunc("/agents/{id}/annotations/{ann_id}", annotationHandler.DeleteAnnotation).Methods("DELETE")
+
+	// Environments
+	api.HandleFunc("/environments", environmentHandler.GetEnvironments).Methods("GET")
+	api.HandleFunc("/environments", environmentHandler.AddEnvironment).Methods("POST")
+	api.HandleFunc("/environments", environmentHandler.DeleteEnvironment).Methods("DELETE")
+	api.HandleFunc("/environments/switch", environmentHandler.SwitchEnvironment).Methods("POST")
 
 	// Webhooks
 	api.HandleFunc("/webhooks", webhookHandler.ListWebhooks).Methods("GET")
@@ -129,6 +151,11 @@ func main() {
 	// Soul endpoint — reads live workspace files
 	api.HandleFunc("/agents/{id}/soul", openclawHandler.GetAgentSoul).Methods("GET")
 	api.HandleFunc("/agents/{id}/soul", openclawHandler.UpdateAgentSoul).Methods("PUT")
+
+	// Snapshots
+	api.HandleFunc("/agents/{id}/snapshots", handlers.GetSnapshots).Methods("GET")
+	api.HandleFunc("/agents/{id}/snapshots", handlers.CreateSnapshot).Methods("POST")
+	api.HandleFunc("/agents/{id}/snapshots/{snapshot_id}/restore", handlers.RestoreSnapshot).Methods("POST")
 
 	// Timeline endpoint — agent's action history
 	api.HandleFunc("/agents/{id}/timeline", openclawHandler.GetAgentTimeline).Methods("GET")
@@ -181,6 +208,9 @@ func main() {
 	api.HandleFunc("/agents/{id}/kill", controlHandler.Kill).Methods("POST")
 	api.HandleFunc("/agents/{id}/pause", controlHandler.Pause).Methods("POST")
 	api.HandleFunc("/agents/{id}/resume", controlHandler.Resume).Methods("POST")
+
+	// API Docs
+	api.HandleFunc("/docs", handlers.GetAPIDocs).Methods("GET")
 
 	// Global search
 	api.HandleFunc("/search", searchHandler.Search).Methods("GET")

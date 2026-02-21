@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -39,33 +40,19 @@ func (h *CommitsHandler) GetCommits(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Resolve agent name (may be "forge", "titan", etc.)
-	agentName := resolveAgentName(agentID)
-
-	// Repos to check
-	home, _ := os.UserHomeDir()
-	repos := []struct {
-		path string
-		name string
-	}{
-		{filepath.Join(home, "thunder-site"), "thunder-site"},
-		{filepath.Join(home, "agentboard"), "agentboard"},
-		// Agent-specific workspace under ~/.openclaw/workspace-{agentID}
-		{filepath.Join(home, ".openclaw", fmt.Sprintf("workspace-%s", agentID)), "workspace-" + agentID},
-	}
+	repos := candidateRepos(agentID)
 
 	var all []Commit
-
 	for _, repo := range repos {
 		if _, err := os.Stat(repo.path); os.IsNotExist(err) {
 			continue
 		}
-		commits := gitLog(repo.path, repo.name, agentName, limit)
+		// Try with agentID filter first, then without (to show repo-level commits)
+		commits := gitLog(repo.path, repo.name, agentID, limit)
 		all = append(all, commits...)
 	}
 
-	// Sort by date descending (they're already in order per repo; merge by taking first N)
-	// Simple approach: sort all combined
+	// Sort newest first and cap
 	sortCommitsByDate(all)
 	if len(all) > limit {
 		all = all[:limit]
@@ -73,22 +60,57 @@ func (h *CommitsHandler) GetCommits(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if all == nil {
-		all = []Commit{} // return [] not null
+		all = []Commit{}
 	}
 	json.NewEncoder(w).Encode(all)
 }
 
-// gitLog runs git log filtered by author in a repo directory.
-func gitLog(repoPath, repoName, authorName string, limit int) []Commit {
-	args := []string{
-		"log",
-		fmt.Sprintf("--max-count=%d", limit),
-		"--format=%H|%s|%ai", // full hash | subject | date ISO
+// candidateRepos returns the list of repo paths to check for an agent.
+func candidateRepos(agentID string) []struct{ path, name string } {
+	home, _ := os.UserHomeDir()
+	openclawDir := os.Getenv("OPENCLAW_DIR")
+	if openclawDir == "" {
+		openclawDir = filepath.Join(home, ".openclaw")
 	}
 
-	// If authorName is non-empty, filter by author
-	if authorName != "" {
-		args = append(args, fmt.Sprintf("--author=%s", authorName))
+	candidates := []struct{ path, name string }{
+		// Agentboard repo (mounted at /app/repo inside Docker, or ~/agentboard on host)
+		{"/app/repo", "agentboard"},
+		{filepath.Join(home, "agentboard"), "agentboard"},
+
+		// Thunder site
+		{"/mnt/thunder-site", "thunder-site"},
+		{filepath.Join(home, "thunder-site"), "thunder-site"},
+
+		// Agent-specific workspace under OPENCLAW_DIR
+		{filepath.Join(openclawDir, fmt.Sprintf("workspace-%s", agentID)), "workspace-" + agentID},
+	}
+
+	// Deduplicate by path
+	seen := map[string]bool{}
+	unique := candidates[:0]
+	for _, c := range candidates {
+		if !seen[c.path] {
+			seen[c.path] = true
+			unique = append(unique, c)
+		}
+	}
+	return unique
+}
+
+// gitLog runs git log filtered by author substring in a repo directory.
+func gitLog(repoPath, repoName, authorFilter string, limit int) []Commit {
+	// -c safe.directory=* bypasses ownership checks in Docker volume mounts
+	args := []string{
+		"-c", "safe.directory=*",
+		"log",
+		fmt.Sprintf("--max-count=%d", limit),
+		"--format=%H|%s|%ai",
+		"--all",
+	}
+
+	if authorFilter != "" {
+		args = append(args, fmt.Sprintf("--author=%s", authorFilter))
 	}
 
 	cmd := exec.Command("git", args...)
@@ -96,8 +118,7 @@ func gitLog(repoPath, repoName, authorName string, limit int) []Commit {
 
 	out, err := cmd.Output()
 	if err != nil {
-		// Not a git repo or no commits — silently skip
-		log.Printf("commits: git log in %s: %v", repoPath, err)
+		log.Printf("commits: git log in %s (author=%s): %v", repoPath, authorFilter, err)
 		return nil
 	}
 
@@ -112,8 +133,12 @@ func gitLog(repoPath, repoName, authorName string, limit int) []Commit {
 		if len(parts) < 3 {
 			continue
 		}
+		hash := parts[0]
+		if len(hash) > 7 {
+			hash = hash[:7]
+		}
 		commits = append(commits, Commit{
-			Hash:    parts[0][:7],  // short hash
+			Hash:    hash,
 			Message: parts[1],
 			Date:    parts[2],
 			Repo:    repoName,
@@ -122,26 +147,11 @@ func gitLog(repoPath, repoName, authorName string, limit int) []Commit {
 	return commits
 }
 
-// resolveAgentName maps an agent ID to a display name for git --author filtering.
-// Many agents commit using their display name (e.g. "forge" → "forge").
-func resolveAgentName(agentID string) string {
-	// Try to map common IDs to git author names.
-	// The simplest heuristic: use the agentID itself; git --author does partial matching.
-	return agentID
-}
-
-// sortCommitsByDate sorts commits newest-first by their ISO date string.
+// sortCommitsByDate sorts commits newest-first.
 func sortCommitsByDate(commits []Commit) {
-	// Simple insertion sort (slice is small)
-	for i := 1; i < len(commits); i++ {
-		for j := i; j > 0; j-- {
-			di, _ := time.Parse("2006-01-02 15:04:05 -0700", commits[j].Date)
-			dj, _ := time.Parse("2006-01-02 15:04:05 -0700", commits[j-1].Date)
-			if di.After(dj) {
-				commits[j], commits[j-1] = commits[j-1], commits[j]
-			} else {
-				break
-			}
-		}
-	}
+	sort.SliceStable(commits, func(i, j int) bool {
+		di, _ := time.Parse("2006-01-02 15:04:05 -0700", commits[i].Date)
+		dj, _ := time.Parse("2006-01-02 15:04:05 -0700", commits[j].Date)
+		return di.After(dj)
+	})
 }

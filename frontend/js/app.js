@@ -88,6 +88,97 @@ window.Branding = (function () {
 })();
 
 /* ═══════════════════════════
+   ENVIRONMENT SWITCHER MODULE
+═══════════════════════════ */
+window.Env = (function () {
+  let _envs = [];
+  let _open = false;
+
+  async function init() {
+    try {
+      _envs = await API.getEnvironments();
+    } catch (_) {
+      _envs = [{ name: 'Local', url: 'http://localhost:8891', active: true }];
+    }
+    _renderBtn();
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('envSwitcher')?.contains(e.target)) {
+        _close();
+      }
+    });
+  }
+
+  function toggle() {
+    _open = !_open;
+    const dd = document.getElementById('envDropdown');
+    if (dd) {
+      dd.style.display = _open ? 'block' : 'none';
+      if (_open) _renderList();
+    }
+  }
+
+  function _close() {
+    _open = false;
+    const dd = document.getElementById('envDropdown');
+    if (dd) dd.style.display = 'none';
+  }
+
+  function _renderBtn() {
+    const active = _envs.find(e => e.active) || _envs[0];
+    const nameEl = document.getElementById('envCurrentName');
+    if (nameEl && active) nameEl.textContent = active.name;
+  }
+
+  function _renderList() {
+    const listEl = document.getElementById('envList');
+    if (!listEl) return;
+    listEl.innerHTML = _envs.map(env => `
+      <div onclick="Env._switch('${Utils.esc(env.url)}')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;transition:background 0.1s;${env.active ? 'background:var(--bg-elevated)' : ''}" onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background='${env.active ? 'var(--bg-elevated)' : ''}'">
+        <span style="width:7px;height:7px;border-radius:50%;background:${env.active ? '#22c55e' : 'var(--border-default)'};flex-shrink:0"></span>
+        <span style="flex:1;color:var(--text-primary)">${Utils.esc(env.name)}</span>
+        <span style="font-size:11px;color:var(--text-tertiary);font-family:var(--font-display)">${Utils.esc(env.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>
+      </div>`).join('');
+  }
+
+  async function _switch(url) {
+    try {
+      _envs = await API.switchEnvironment(url);
+      _renderBtn();
+      _close();
+      // Update global API base and reload page data
+      window.AGENTBOARD_API = url === window.location.origin ? '' : url;
+      // Reload current page
+      if (window.App && App.reload) App.reload();
+    } catch (e) {
+      alert('Failed to switch environment: ' + e.message);
+    }
+  }
+
+  async function addEnvironment(name, url) {
+    try {
+      _envs = await API.addEnvironment(name, url);
+      _renderBtn();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async function deleteEnvironment(url) {
+    try {
+      _envs = await API.deleteEnvironment(url);
+      _renderBtn();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  function getAll() { return _envs; }
+
+  return { init, toggle, _switch, addEnvironment, deleteEnvironment, getAll };
+})();
+
+/* ═══════════════════════════
    MAIN APP
 ═══════════════════════════ */
 (function () {
@@ -114,6 +205,9 @@ window.Branding = (function () {
   async function init() {
     // Init theme & branding in parallel
     await Promise.all([Theme.init(), Branding.init()]);
+
+    // Init environment switcher
+    Env.init().catch(() => {});
 
     // Auth: show logout button if already logged in
     if (window.Auth) Auth._renderLogoutBtn();
@@ -319,7 +413,12 @@ window.Branding = (function () {
   }
 
   // Expose globally
-  window.App = { navigate, init };
+  function reload() {
+    const hash = location.hash.slice(1) || 'dashboard';
+    routeTo(hash, false);
+  }
+
+  window.App = { navigate, init, reload };
 
   document.addEventListener('DOMContentLoaded', init);
 })();

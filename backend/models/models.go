@@ -45,6 +45,15 @@ type Comment struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Annotation represents a shared note on an agent.
+type Annotation struct {
+	ID        string    `json:"id"`
+	AgentID   string    `json:"agent_id"`
+	Author    string    `json:"author"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // Agent represents an agent record in the DB.
 type Agent struct {
 	ID            string     `json:"id"`
@@ -58,6 +67,7 @@ type Agent struct {
 	LastActive    *time.Time `json:"last_active,omitempty"`
 	WorkspacePath *string    `json:"workspace_path,omitempty"`
 	IsLead        bool       `json:"is_lead"`
+	AutoRestart   bool       `json:"auto_restart"`
 }
 
 // ActivityLog represents an activity log entry.

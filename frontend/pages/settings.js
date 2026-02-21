@@ -32,6 +32,16 @@ Pages.settings = {
         </div>
         <div class="settings-section">
           <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Environments</span>
+            <button class="btn-secondary" onclick="Pages.settings._openEnvForm()" style="font-size:12px;padding:4px 10px">+ Add Environment</button>
+          </div>
+          <div id="settingsEnvironments">
+            <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
+          </div>
+          <div id="envForm" style="display:none"></div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between">
             <span>Webhooks</span>
             <button class="btn-secondary" onclick="Pages.settings._openWebhookForm()" style="font-size:12px;padding:4px 10px">+ Add Webhook</button>
           </div>
@@ -84,6 +94,7 @@ Pages.settings = {
       this._loadConnection(),
       this._loadBranding(),
       this._loadAgents(),
+      this._loadEnvironments(),
       this._loadWebhooks(),
       this._loadAuditLog(),
     ]);
@@ -175,6 +186,94 @@ Pages.settings = {
     } catch (e) {
       const el = document.getElementById('settingsAgents');
       if (el) el.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
+    }
+  },
+
+  async _loadEnvironments() {
+    const el = document.getElementById('settingsEnvironments');
+    if (!el) return;
+    try {
+      const envs = await API.getEnvironments();
+      if (!envs || envs.length === 0) {
+        el.innerHTML = `<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0">No environments configured.</div>`;
+        return;
+      }
+      el.innerHTML = envs.map(env => `
+        <div class="settings-row" style="align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <span style="width:8px;height:8px;border-radius:50%;background:${env.active ? '#22c55e' : 'var(--border-default)'};flex-shrink:0"></span>
+            <span class="settings-key" style="font-weight:${env.active ? '600' : '400'};color:${env.active ? 'var(--text-primary)' : 'var(--text-secondary)'}">${Utils.esc(env.name)}</span>
+            <span style="font-family:var(--font-display);font-size:11px;color:var(--text-tertiary)">${Utils.esc(env.url)}</span>
+            ${env.active ? `<span style="font-size:10px;background:rgba(34,197,94,0.15);color:#22c55e;border-radius:4px;padding:1px 6px;font-weight:600">active</span>` : ''}
+          </div>
+          <div style="display:flex;gap:4px">
+            ${!env.active ? `<button class="btn-secondary" onclick="Pages.settings._switchEnv('${Utils.esc(env.url)}')" style="font-size:11px;padding:3px 8px">Switch</button>` : ''}
+            <button class="btn-secondary" onclick="Pages.settings._deleteEnv('${Utils.esc(env.url)}')" style="font-size:11px;padding:3px 8px;color:var(--danger,#ef4444);border-color:var(--danger,#ef4444)" title="Remove">🗑️</button>
+          </div>
+        </div>`).join('');
+    } catch (e) {
+      if (el) el.innerHTML = `<div style="color:var(--danger,#ef4444);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
+    }
+  },
+
+  _openEnvForm() {
+    const formEl = document.getElementById('envForm');
+    if (!formEl) return;
+    formEl.style.display = 'block';
+    formEl.innerHTML = `
+      <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:16px;margin-top:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-primary)">Add Environment</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Name <span style="color:var(--danger,#ef4444)">*</span></label>
+            <input id="envName" type="text" placeholder="Staging" style="width:100%;box-sizing:border-box;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:6px 10px;color:var(--text-primary)">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">AgentBoard URL <span style="color:var(--danger,#ef4444)">*</span></label>
+            <input id="envURL" type="url" placeholder="http://staging.example.com:8891" style="width:100%;box-sizing:border-box;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:6px 10px;color:var(--text-primary)">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-secondary" onclick="Pages.settings._saveEnvForm()" style="font-size:13px;padding:6px 14px">Add</button>
+            <button class="btn-secondary" onclick="Pages.settings._closeEnvForm()" style="font-size:13px;padding:6px 14px;color:var(--text-tertiary)">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _closeEnvForm() {
+    const formEl = document.getElementById('envForm');
+    if (formEl) { formEl.style.display = 'none'; formEl.innerHTML = ''; }
+  },
+
+  async _saveEnvForm() {
+    const name = document.getElementById('envName')?.value?.trim() || '';
+    const url  = document.getElementById('envURL')?.value?.trim() || '';
+    if (!name || !url) { alert('Name and URL are required'); return; }
+    try {
+      await Env.addEnvironment(name, url);
+      this._closeEnvForm();
+      await this._loadEnvironments();
+    } catch (e) {
+      alert('Failed to add environment: ' + e.message);
+    }
+  },
+
+  async _switchEnv(url) {
+    try {
+      await Env._switch(url);
+      await this._loadEnvironments();
+    } catch (e) {
+      alert('Failed to switch environment: ' + e.message);
+    }
+  },
+
+  async _deleteEnv(url) {
+    if (!confirm('Remove this environment?')) return;
+    try {
+      await Env.deleteEnvironment(url);
+      await this._loadEnvironments();
+    } catch (e) {
+      alert('Failed to remove environment: ' + e.message);
     }
   },
 

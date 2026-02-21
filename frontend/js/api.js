@@ -184,6 +184,10 @@ window.API = {
     return apiFetch('/api/audit' + (qs ? '?' + qs : ''));
   },
 
+  // Efficiency Scores & Latency Metrics
+  getEfficiencyScores: () => apiFetch('/api/metrics/efficiency'),
+  getLatencyMetrics: () => apiFetch('/api/metrics/latency'),
+
   // Git Commits
   getAgentCommits: (agentId, limit = 10) =>
     apiFetch(`/api/agents/${encodeURIComponent(agentId)}/commits?limit=${limit}`),
@@ -195,4 +199,45 @@ window.API = {
     body: JSON.stringify({ password })
   }),
   authMe: () => apiFetch('/api/auth/me'),
+
+  // Annotations (shared notes on agents)
+  getAnnotations: (agentId) => apiFetch(`/api/agents/${encodeURIComponent(agentId)}/annotations`),
+  addAnnotation: (agentId, content, author) => apiFetch(`/api/agents/${encodeURIComponent(agentId)}/annotations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, author: author || 'ali' })
+  }),
+  deleteAnnotation: (agentId, annId) => apiFetch(`/api/agents/${encodeURIComponent(agentId)}/annotations/${annId}`, {
+    method: 'DELETE'
+  }),
+
+  // Agent Health
+  getAgentHealth: (id) => apiFetch(`/api/agents/${encodeURIComponent(id)}/health`),
+  forceHealthCheck: (id) => apiFetch(`/api/agents/${encodeURIComponent(id)}/health/check`, { method: 'POST' }),
+  setAutoRestart: (id, enabled) => apiFetch(`/api/agents/${encodeURIComponent(id)}/health/auto-restart`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled })
+  }),
+
+  // Cost Forecast
+  getCostForecast: () => apiFetch('/api/metrics/cost-forecast'),
+
+  // Environments
+  getEnvironments: () => apiFetch('/api/environments'),
+  addEnvironment: (name, url) => apiFetch('/api/environments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, url })
+  }),
+  switchEnvironment: (url) => apiFetch('/api/environments/switch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  }),
+  deleteEnvironment: (url) => apiFetch('/api/environments', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  }),
 };

@@ -52,12 +52,15 @@ CREATE TABLE IF NOT EXISTS agents (
 -- Add team_color if upgrading from older schema
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS team_color VARCHAR(50);
 
--- Update agent status constraint to include paused/killed (idempotent)
+-- Update agent status constraint to include paused/killed/degraded (idempotent)
 DO $$ BEGIN
   ALTER TABLE agents DROP CONSTRAINT IF EXISTS valid_agent_status;
   ALTER TABLE agents ADD CONSTRAINT valid_agent_status
-    CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed'));
+    CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed', 'degraded'));
 END $$;
+
+-- Add auto_restart flag for health-check-triggered restarts
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS auto_restart BOOLEAN DEFAULT false;
 
 -- Activity Log table
 CREATE TABLE IF NOT EXISTS activity_log (
@@ -115,6 +118,17 @@ CREATE INDEX IF NOT EXISTS idx_sessions_agent ON agent_sessions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON agent_sessions(started_at);
 
 CREATE INDEX IF NOT EXISTS idx_metrics_agent_date ON agent_metrics(agent_id, date);
+
+-- Annotations table (shared notes on agents)
+CREATE TABLE IF NOT EXISTS annotations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id VARCHAR(100) NOT NULL,
+    author VARCHAR(100) NOT NULL DEFAULT 'ali',
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_annotations_agent ON annotations(agent_id);
+CREATE INDEX IF NOT EXISTS idx_annotations_created ON annotations(created_at);
 
 -- Task History table (status transition audit trail)
 CREATE TABLE IF NOT EXISTS task_history (
