@@ -255,4 +255,21 @@ window.API = {
     `/api/agents/${encodeURIComponent(agentId)}/snapshots/${encodeURIComponent(snapshotId)}/restore`,
     { method: 'POST' }
   ),
+
+  // Custom Dashboards (builder)
+  getDashboards: () => apiFetch('/api/dashboards'),
+  getDashboard: (id) => apiFetch(`/api/dashboards/${encodeURIComponent(id)}`),
+  createDashboard: (name, widgets) => apiFetch('/api/dashboards', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, widgets: widgets || [] })
+  }),
+  updateDashboard: (id, data) => apiFetch(`/api/dashboards/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  deleteDashboard: (id) => apiFetch(`/api/dashboards/${encodeURIComponent(id)}`, {
+    method: 'DELETE'
+  }),
 };

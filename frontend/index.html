@@ -63,6 +63,16 @@
           </span>
           <span class="nav-label">Dashboard</span>
         </a>
+        <a class="nav-item" data-nav="dashboard-builder" href="#dashboard-builder" title="My Dashboard">
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.2"/>
+              <line x1="6" y1="6" x2="6" y2="15" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+          </span>
+          <span class="nav-label">My Dashboard</span>
+        </a>
         <a class="nav-item" data-nav="agents" href="#agents" title="Agents">
           <span class="nav-icon">
             <!-- users icon -->
@@ -210,6 +220,13 @@
 
     <div class="sidebar-footer">
       <div class="nav-divider"></div>
+        <a class="nav-item" data-nav="marketplace" href="#marketplace" title="Marketplace">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span class="nav-label">Marketplace</span>
+        </a>
       <a class="nav-item" data-nav="settings" href="#settings" title="Settings">
         <span class="nav-icon">
           <!-- settings/gear icon -->
@@ -387,6 +404,7 @@
 
 <!-- JS: Pages -->
 <script src="pages/dashboard.js"></script>
+<script src="pages/dashboard-builder.js"></script>
 <script src="pages/agents.js"></script>
 <script src="pages/activity.js"></script>
 <script src="pages/kanban.js"></script>
@@ -402,6 +420,7 @@
 <script src="pages/errors.js"></script>
 <script src="pages/logs.js"></script>
 <script src="pages/api-docs.js"></script>
+<script src="pages/marketplace.js"></script>
 
 <!-- JS: App (must be last) -->
 <script src="js/app.js"></script>

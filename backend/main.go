@@ -72,6 +72,7 @@ func main() {
 	webhookHandler := &handlers.WebhookHandler{}
 	controlHandler := &handlers.AgentControlHandler{}
 	authHandler := &handlers.AuthHandler{}
+	dashboardsHandler := &handlers.DashboardsHandler{}
 	commitsHandler := &handlers.CommitsHandler{}
 	annotationHandler := &handlers.AnnotationHandler{}
 	environmentHandler := &handlers.EnvironmentHandler{}
@@ -170,6 +171,13 @@ func main() {
 	api.HandleFunc("/dashboard/stats", dashboardHandler.GetStats).Methods("GET")
 	api.HandleFunc("/dashboard/teams", dashboardHandler.GetTeamStats).Methods("GET")
 
+	// Custom Dashboards (builder)
+	api.HandleFunc("/dashboards", dashboardsHandler.ListDashboards).Methods("GET")
+	api.HandleFunc("/dashboards", dashboardsHandler.CreateDashboard).Methods("POST")
+	api.HandleFunc("/dashboards/{id}", dashboardsHandler.GetDashboard).Methods("GET")
+	api.HandleFunc("/dashboards/{id}", dashboardsHandler.UpdateDashboard).Methods("PUT")
+	api.HandleFunc("/dashboards/{id}", dashboardsHandler.DeleteDashboard).Methods("DELETE")
+
 	// OpenClaw live data
 	api.HandleFunc("/openclaw/agents", openclawHandler.GetAgents).Methods("GET")
 	api.HandleFunc("/openclaw/agents/{name}", openclawHandler.GetAgent).Methods("GET")
@@ -241,6 +249,12 @@ func main() {
 
 	// Dependency Graph
 	api.HandleFunc("/graph/dependencies", handlers.GetDependencyGraph).Methods("GET")
+
+	// Marketplace
+	marketplaceHandler := &handlers.MarketplaceHandler{}
+	api.HandleFunc("/marketplace/templates", marketplaceHandler.ListTemplates).Methods("GET")
+	api.HandleFunc("/marketplace/templates/{id}", marketplaceHandler.GetTemplate).Methods("GET")
+	api.HandleFunc("/marketplace/templates/{id}/deploy", marketplaceHandler.DeployTemplate).Methods("POST")
 
 	// WebSocket
 	router.HandleFunc("/ws/stream", func(w http.ResponseWriter, r *http.Request) {
