@@ -66,12 +66,16 @@ func main() {
 	reportHandler := &handlers.ReportHandler{}
 	documentsHandler := &handlers.DocumentsHandler{}
 	metricsHandler := &handlers.MetricsHandler{}
-	webhookHandler := &handlers.WebhookHandler{}
 	errorsHandler := &handlers.ErrorsHandler{}
+	logsHandler := &handlers.LogsHandler{}
+	webhookHandler := &handlers.WebhookHandler{}
 	controlHandler := &handlers.AgentControlHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
+
+	// Alert evaluator
+	go handlers.StartAlertEvaluator(hub)
 
 	// Router
 	router := mux.NewRouter()
@@ -169,8 +173,29 @@ func main() {
 	// Global search
 	api.HandleFunc("/search", searchHandler.Search).Methods("GET")
 
+	// Errors & Failures dashboard
+	api.HandleFunc("/errors", errorsHandler.GetErrors).Methods("GET")
+	api.HandleFunc("/errors/summary", errorsHandler.GetErrorsSummary).Methods("GET")
+
+	// Logs viewer
+	api.HandleFunc("/logs/files", logsHandler.GetLogFiles).Methods("GET")
+	api.HandleFunc("/logs/search", logsHandler.SearchLogs).Methods("GET")
+	api.HandleFunc("/logs", logsHandler.GetLogs).Methods("GET")
+
 	// Structure (hierarchy from config)
 	api.HandleFunc("/structure", openclawHandler.GetStructure).Methods("GET")
+
+	// Alert Rules Engine
+	api.HandleFunc("/alerts/rules", handlers.GetAlertRules).Methods("GET")
+	api.HandleFunc("/alerts/rules", handlers.CreateAlertRule).Methods("POST")
+	api.HandleFunc("/alerts/rules/{id}", handlers.UpdateAlertRule).Methods("PUT")
+	api.HandleFunc("/alerts/rules/{id}", handlers.DeleteAlertRule).Methods("DELETE")
+	api.HandleFunc("/alerts/history", handlers.GetAlertHistory).Methods("GET")
+	api.HandleFunc("/alerts/history/{id}/acknowledge", handlers.AcknowledgeAlert).Methods("POST")
+	api.HandleFunc("/alerts/unacknowledged-count", handlers.GetAlertUnacknowledgedCount).Methods("GET")
+
+	// Dependency Graph
+	api.HandleFunc("/graph/dependencies", handlers.GetDependencyGraph).Methods("GET")
 
 	// WebSocket
 	router.HandleFunc("/ws/stream", func(w http.ResponseWriter, r *http.Request) {

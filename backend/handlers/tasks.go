@@ -344,6 +344,17 @@ func (h *TaskHandler) TransitionTask(w http.ResponseWriter, r *http.Request) {
 	})
 	h.Hub.Broadcast("task_transitioned", map[string]string{"task_id": id, "status": data.Status})
 
+	// Trigger webhooks for terminal task statuses
+	if data.Status == "done" {
+		go TriggerWebhooks("task_done", map[string]interface{}{
+			"task_id": id, "changed_by": changedBy,
+		})
+	} else if data.Status == "blocked" {
+		go TriggerWebhooks("task_failed", map[string]interface{}{
+			"task_id": id, "changed_by": changedBy,
+		})
+	}
+
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Task status updated"})
 }
 

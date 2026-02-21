@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS agents (
 -- Add team_color if upgrading from older schema
 ALTER TABLE agents ADD COLUMN IF NOT EXISTS team_color VARCHAR(50);
 
+-- Update agent status constraint to include paused/killed (idempotent)
+DO $$ BEGIN
+  ALTER TABLE agents DROP CONSTRAINT IF EXISTS valid_agent_status;
+  ALTER TABLE agents ADD CONSTRAINT valid_agent_status
+    CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed'));
+END $$;
+
 -- Activity Log table
 CREATE TABLE IF NOT EXISTS activity_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

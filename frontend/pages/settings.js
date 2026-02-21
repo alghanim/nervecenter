@@ -3,6 +3,10 @@
 window.Pages = window.Pages || {};
 
 Pages.settings = {
+  _webhooks: [],
+  _showWebhookForm: false,
+  _editingWebhookId: null,
+
   async render(container) {
     container.innerHTML = `
       <div style="max-width:640px">
@@ -23,6 +27,16 @@ Pages.settings = {
           <div id="settingsAgents">
             <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
           </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Webhooks</span>
+            <button class="btn-secondary" onclick="Pages.settings._openWebhookForm()" style="font-size:12px;padding:4px 10px">+ Add Webhook</button>
+          </div>
+          <div id="settingsWebhooks">
+            <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
+          </div>
+          <div id="webhookForm" style="display:none"></div>
         </div>
         <div class="settings-section">
           <div class="settings-section-title">About</div>
@@ -46,6 +60,7 @@ Pages.settings = {
       this._loadConnection(),
       this._loadBranding(),
       this._loadAgents(),
+      this._loadWebhooks(),
     ]);
   },
 
@@ -133,6 +148,159 @@ Pages.settings = {
       const el = document.getElementById('settingsAgents');
       if (el) el.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
     }
+  },
+
+  async _loadWebhooks() {
+    const el = document.getElementById('settingsWebhooks');
+    if (!el) return;
+    try {
+      this._webhooks = await API.getWebhooks();
+      this._renderWebhookList();
+    } catch (e) {
+      el.innerHTML = `<div style="color:var(--danger,#ef4444);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
+    }
+  },
+
+  _renderWebhookList() {
+    const el = document.getElementById('settingsWebhooks');
+    if (!el) return;
+
+    const ALL_EVENTS = ['agent_down', 'task_done', 'task_failed', 'agent_error', 'agent_paused', 'agent_killed'];
+
+    if (!this._webhooks || this._webhooks.length === 0) {
+      el.innerHTML = `<div style="color:var(--text-tertiary);font-size:13px;padding:8px 0">No webhooks configured. Add one to get notified of events.</div>`;
+      return;
+    }
+
+    el.innerHTML = this._webhooks.map(wh => `
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 0;border-bottom:1px solid var(--border-default)" data-webhook-id="${Utils.esc(wh.id)}">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">${Utils.esc(wh.name || '(unnamed)')}</span>
+            <span style="font-family:var(--font-display);font-size:11px;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="${Utils.esc(wh.url)}">${Utils.esc(wh.url.length > 40 ? wh.url.slice(0, 40) + '…' : wh.url)}</span>
+            <label class="settings-toggle" style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary)">
+              <input type="checkbox" ${wh.active ? 'checked' : ''} onchange="Pages.settings._toggleWebhook('${Utils.esc(wh.id)}', this.checked)" style="cursor:pointer">
+              ${wh.active ? 'Active' : 'Inactive'}
+            </label>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn-secondary" onclick="Pages.settings._testWebhook('${Utils.esc(wh.id)}')" style="font-size:11px;padding:3px 8px" title="Send test event">🔔 Test</button>
+            <button class="btn-secondary" onclick="Pages.settings._openWebhookForm('${Utils.esc(wh.id)}')" style="font-size:11px;padding:3px 8px" title="Edit">✏️</button>
+            <button class="btn-secondary" onclick="Pages.settings._deleteWebhook('${Utils.esc(wh.id)}')" style="font-size:11px;padding:3px 8px;color:var(--danger,#ef4444);border-color:var(--danger,#ef4444)" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${(wh.events || []).map(ev => `<span style="font-size:10px;background:var(--bg-elevated,#1e1e2e);border:1px solid var(--border-default);border-radius:4px;padding:2px 6px;color:var(--text-secondary)">${Utils.esc(ev)}</span>`).join('')}
+        </div>
+      </div>`).join('');
+  },
+
+  _openWebhookForm(editId) {
+    this._editingWebhookId = editId || null;
+    const formEl = document.getElementById('webhookForm');
+    if (!formEl) return;
+
+    const existing = editId ? this._webhooks.find(w => w.id === editId) : null;
+    const ALL_EVENTS = ['agent_down', 'task_done', 'task_failed', 'agent_error', 'agent_paused', 'agent_killed'];
+
+    formEl.style.display = 'block';
+    formEl.innerHTML = `
+      <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:16px;margin-top:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-primary)">${editId ? 'Edit Webhook' : 'New Webhook'}</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Name</label>
+            <input id="whName" type="text" value="${Utils.esc(existing ? existing.name || '' : '')}" placeholder="My Webhook" style="width:100%;box-sizing:border-box;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:6px 10px;color:var(--text-primary)">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">URL <span style="color:var(--danger,#ef4444)">*</span></label>
+            <input id="whURL" type="url" value="${Utils.esc(existing ? existing.url : '')}" placeholder="https://hooks.example.com/..." style="width:100%;box-sizing:border-box;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:6px 10px;color:var(--text-primary)">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px">Events <span style="color:var(--danger,#ef4444)">*</span></label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              ${ALL_EVENTS.map(ev => `
+                <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;color:var(--text-secondary)">
+                  <input type="checkbox" name="whEvents" value="${Utils.esc(ev)}" ${existing && existing.events && existing.events.includes(ev) ? 'checked' : ''}>
+                  ${Utils.esc(ev)}
+                </label>`).join('')}
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Secret (optional — used for HMAC-SHA256 signature)</label>
+            <input id="whSecret" type="text" value="" placeholder="leave blank to keep existing" style="width:100%;box-sizing:border-box;font-size:13px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:6px;padding:6px 10px;color:var(--text-primary)">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-secondary" onclick="Pages.settings._saveWebhook()" style="font-size:13px;padding:6px 14px">${editId ? 'Save Changes' : 'Create Webhook'}</button>
+            <button class="btn-secondary" onclick="Pages.settings._closeWebhookForm()" style="font-size:13px;padding:6px 14px;color:var(--text-tertiary)">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _closeWebhookForm() {
+    const formEl = document.getElementById('webhookForm');
+    if (formEl) { formEl.style.display = 'none'; formEl.innerHTML = ''; }
+    this._editingWebhookId = null;
+  },
+
+  async _saveWebhook() {
+    const name = document.getElementById('whName')?.value?.trim() || '';
+    const url  = document.getElementById('whURL')?.value?.trim() || '';
+    const secret = document.getElementById('whSecret')?.value?.trim() || '';
+    const checkedBoxes = document.querySelectorAll('input[name="whEvents"]:checked');
+    const events = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (!url) { alert('URL is required'); return; }
+    if (events.length === 0) { alert('Select at least one event'); return; }
+
+    try {
+      const payload = { name, url, events };
+      if (secret) payload.secret = secret;
+
+      if (this._editingWebhookId) {
+        await API.updateWebhook(this._editingWebhookId, payload);
+      } else {
+        await API.createWebhook(payload);
+      }
+      this._closeWebhookForm();
+      await this._loadWebhooks();
+    } catch (e) {
+      alert('Failed to save webhook: ' + e.message);
+    }
+  },
+
+  async _toggleWebhook(id, active) {
+    try {
+      await API.updateWebhook(id, { active });
+      const wh = this._webhooks.find(w => w.id === id);
+      if (wh) wh.active = active;
+    } catch (e) {
+      alert('Failed to update webhook: ' + e.message);
+      await this._loadWebhooks();
+    }
+  },
+
+  async _deleteWebhook(id) {
+    if (!confirm('Delete this webhook?')) return;
+    try {
+      await API.deleteWebhook(id);
+      await this._loadWebhooks();
+    } catch (e) {
+      alert('Failed to delete webhook: ' + e.message);
+    }
+  },
+
+  async _testWebhook(id) {
+    const btn = document.querySelector(`[data-webhook-id="${id}"] button[onclick*="testWebhook"]`);
+    if (btn) btn.textContent = '⏳';
+    try {
+      await API.testWebhook(id);
+      alert('Test event sent! Check your webhook endpoint.');
+    } catch (e) {
+      alert('Failed to send test: ' + e.message);
+    }
+    if (btn) btn.textContent = '🔔 Test';
   },
 
   destroy() {}

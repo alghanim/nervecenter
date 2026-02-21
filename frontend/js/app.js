@@ -104,6 +104,7 @@ window.Branding = (function () {
     reports:     { title: 'Reports',    subtitle: 'Analytics and performance insights' },
     costs:       { title: 'Costs',      subtitle: 'Token usage and cost tracking' },
     documents:   { title: 'Documents',  subtitle: 'Browse agent-generated files and specs' },
+    errors:      { title: 'Errors',     subtitle: 'Error and failure dashboard' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
   };
 

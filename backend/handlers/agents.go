@@ -183,6 +183,74 @@ func (h *AgentHandler) GetAgentMetrics(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, result)
 }
 
+// PauseAgent handles POST /api/agents/:id/pause
+func (h *AgentHandler) PauseAgent(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	var currentStatus string
+	if err := db.DB.QueryRow(`SELECT status FROM agents WHERE id = $1`, id).Scan(&currentStatus); err != nil {
+		respondError(w, http.StatusNotFound, "Agent not found")
+		return
+	}
+
+	if _, err := db.DB.Exec(
+		`UPDATE agents SET status = 'paused', last_active = NOW() WHERE id = $1`, id); err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logActivity(id, "agent_paused", "", map[string]string{"previous_status": currentStatus})
+	go TriggerWebhooks("agent_paused", map[string]interface{}{
+		"event":    "agent_paused",
+		"agent_id": id,
+	})
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Agent paused"})
+}
+
+// ResumeAgent handles POST /api/agents/:id/resume
+func (h *AgentHandler) ResumeAgent(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	var currentStatus string
+	if err := db.DB.QueryRow(`SELECT status FROM agents WHERE id = $1`, id).Scan(&currentStatus); err != nil {
+		respondError(w, http.StatusNotFound, "Agent not found")
+		return
+	}
+
+	if _, err := db.DB.Exec(
+		`UPDATE agents SET status = 'online', last_active = NOW() WHERE id = $1`, id); err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logActivity(id, "agent_resumed", "", map[string]string{"previous_status": currentStatus})
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Agent resumed"})
+}
+
+// KillAgent handles POST /api/agents/:id/kill
+func (h *AgentHandler) KillAgent(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	var currentStatus string
+	if err := db.DB.QueryRow(`SELECT status FROM agents WHERE id = $1`, id).Scan(&currentStatus); err != nil {
+		respondError(w, http.StatusNotFound, "Agent not found")
+		return
+	}
+
+	if _, err := db.DB.Exec(
+		`UPDATE agents SET status = 'killed', last_active = NOW() WHERE id = $1`, id); err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logActivity(id, "agent_killed", "", map[string]string{"previous_status": currentStatus})
+	go TriggerWebhooks("agent_killed", map[string]interface{}{
+		"event":    "agent_killed",
+		"agent_id": id,
+	})
+	respondJSON(w, http.StatusOK, map[string]string{"message": "Agent killed"})
+}
+
 // UpdateAgentStatus handles PUT /api/agents/:id/status
 func (h *AgentHandler) UpdateAgentStatus(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]

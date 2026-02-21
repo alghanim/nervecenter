@@ -107,6 +107,8 @@ Pages.agents = {
 
     const teamStyle = agent.team ? `style="${Utils.teamBadgeStyle(agent)}"` : '';
 
+    const actionBtns = this._buildActionButtons(agent.status, agentId);
+
     container.innerHTML = `
       <div class="agent-detail-header">
         <button class="agent-detail-back" onclick="App.navigate('agents')">
@@ -116,7 +118,7 @@ Pages.agents = {
         <div class="agent-detail-title">
           <span class="agent-detail-emoji">${Utils.esc(agent.emoji || '🤖')}</span>
           <span class="agent-detail-name">${Utils.esc(agent.name || agent.displayName || agentId)}</span>
-          <div class="agent-detail-status">
+          <div class="agent-detail-status" id="agentStatusPill">
             ${Utils.statusPill(agent.status)}
           </div>
         </div>
@@ -124,6 +126,9 @@ Pages.agents = {
           <span>${Utils.esc(agent.role || '')}</span>
           ${agent.team ? `<span style="color:var(--text-tertiary)">·</span><span class="badge" ${teamStyle}>${Utils.esc(agent.team)}</span>` : ''}
           ${agent.currentModel ? `<span style="color:var(--text-tertiary)">·</span><span class="model-badge">${Utils.esc(agent.currentModel)}</span>` : ''}
+        </div>
+        <div class="agent-detail-actions" id="agentActionBtns" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          ${actionBtns}
         </div>
       </div>
 
@@ -250,6 +255,56 @@ Pages.agents = {
       el.innerHTML = html;
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load skills', e.message);
+    }
+  },
+
+  _buildActionButtons(status, agentId) {
+    const id = Utils.esc(agentId);
+    let btns = '';
+    const canPause  = ['online', 'busy', 'idle'].includes(status);
+    const canResume = status === 'paused';
+    const canKill   = status !== 'killed';
+
+    if (canPause) {
+      btns += `<button class="btn-secondary" onclick="Pages.agents._doAgentAction('pause','${id}')" title="Pause agent" style="font-size:13px;padding:5px 12px">⏸️ Pause</button>`;
+    }
+    if (canResume) {
+      btns += `<button class="btn-secondary" onclick="Pages.agents._doAgentAction('resume','${id}')" title="Resume agent" style="font-size:13px;padding:5px 12px;color:var(--success,#22c55e)">▶️ Resume</button>`;
+    }
+    if (canKill) {
+      btns += `<button class="btn-secondary" onclick="Pages.agents._doAgentAction('kill','${id}')" title="Kill agent" style="font-size:13px;padding:5px 12px;color:var(--danger,#ef4444);border-color:var(--danger,#ef4444)">💀 Kill</button>`;
+    }
+    return btns;
+  },
+
+  async _doAgentAction(action, agentId) {
+    if (action === 'kill') {
+      if (!confirm(`Are you sure you want to kill agent "${agentId}"? This cannot be undone.`)) return;
+    }
+
+    const btnContainer = document.getElementById('agentActionBtns');
+    if (btnContainer) btnContainer.innerHTML = `<span style="font-size:13px;color:var(--text-tertiary)">Processing...</span>`;
+
+    try {
+      if (action === 'pause')  await API.pauseAgent(agentId);
+      if (action === 'resume') await API.resumeAgent(agentId);
+      if (action === 'kill')   await API.killAgent(agentId);
+
+      // Reload agent to get updated status
+      const agents = await API.getAgents();
+      const updated = agents.find(a => a.id === agentId || a.name === agentId);
+      if (updated) {
+        const pill = document.getElementById('agentStatusPill');
+        if (pill) pill.innerHTML = Utils.statusPill(updated.status);
+        if (btnContainer) btnContainer.innerHTML = this._buildActionButtons(updated.status, agentId);
+      }
+    } catch (e) {
+      if (btnContainer) {
+        const agents = await API.getAgents().catch(() => []);
+        const current = agents.find(a => a.id === agentId || a.name === agentId);
+        btnContainer.innerHTML = this._buildActionButtons(current ? current.status : 'offline', agentId);
+      }
+      alert(`Failed to ${action} agent: ${e.message}`);
     }
   },
 

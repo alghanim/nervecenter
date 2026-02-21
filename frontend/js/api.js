@@ -84,6 +84,32 @@ window.API = {
     a.click();
   },
 
+  // Agent controls
+  pauseAgent: (id) => apiFetch(`/api/agents/${id}/pause`, { method: 'POST' }),
+  resumeAgent: (id) => apiFetch(`/api/agents/${id}/resume`, { method: 'POST' }),
+  killAgent: (id) => apiFetch(`/api/agents/${id}/kill`, { method: 'POST' }),
+
+  // Webhooks
+  getWebhooks: () => apiFetch('/api/webhooks'),
+  createWebhook: (data) => apiFetch('/api/webhooks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }),
+  updateWebhook: (id, data) => apiFetch(`/api/webhooks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }),
+  deleteWebhook: (id) => apiFetch(`/api/webhooks/${id}`, { method: 'DELETE' }),
+  testWebhook: (id) => apiFetch(`/api/webhooks/${id}/test`, { method: 'POST' }),
+
+  // Errors
+  getErrors: (agentId) => {
+    const qs = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : '';
+    return apiFetch(`/api/errors${qs}`);
+  },
+
   // Token & Cost Analytics
   getTokenUsage: () => apiFetch('/api/analytics/tokens'),
   getTokenTimeline: (days, agent) => {
@@ -93,4 +119,27 @@ window.API = {
     return apiFetch('/api/analytics/tokens/timeline?' + p);
   },
   getCostSummary: () => apiFetch('/api/analytics/cost/summary'),
+
+  // Alerts
+  getAlertRules: () => apiFetch('/api/alerts/rules'),
+  createAlertRule: (data) => apiFetch('/api/alerts/rules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  updateAlertRule: (id, data) => apiFetch(`/api/alerts/rules/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  deleteAlertRule: (id) => apiFetch(`/api/alerts/rules/${id}`, { method: 'DELETE' }),
+  getAlertHistory: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch('/api/alerts/history' + (qs ? '?' + qs : ''));
+  },
+  acknowledgeAlert: (id) => apiFetch(`/api/alerts/history/${id}/acknowledge`, { method: 'POST' }),
+  getAlertUnacknowledgedCount: () => apiFetch('/api/alerts/unacknowledged-count'),
+
+  // Dependency Graph
+  getGraphDependencies: () => apiFetch('/api/graph/dependencies'),
 };
