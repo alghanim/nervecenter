@@ -101,6 +101,7 @@ window.Branding = (function () {
     kanban:      { title: 'Kanban',     subtitle: 'Task management and workflow' },
     activity:    { title: 'Activity',   subtitle: 'Real-time agent activity stream' },
     reports:     { title: 'Reports',    subtitle: 'Analytics and performance insights' },
+    costs:       { title: 'Costs',      subtitle: 'Token usage and cost tracking' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
   };
 
@@ -272,6 +273,7 @@ window.Branding = (function () {
       case 'kanban':     page = Pages.kanban; break;
       case 'activity':   page = Pages.activity; break;
       case 'reports':    page = Pages.reports; break;
+      case 'costs':      page = Pages.costs; break;
       case 'settings':   page = Pages.settings; break;
       default:
         content.innerHTML = `<div class="empty-state">

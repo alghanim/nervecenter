@@ -83,4 +83,14 @@ window.API = {
     a.download = 'agentboard-export.csv';
     a.click();
   },
+
+  // Token & Cost Analytics
+  getTokenUsage: () => apiFetch('/api/analytics/tokens'),
+  getTokenTimeline: (days, agent) => {
+    const p = new URLSearchParams();
+    if (days)  p.set('days',  days);
+    if (agent) p.set('agent', agent);
+    return apiFetch('/api/analytics/tokens/timeline?' + p);
+  },
+  getCostSummary: () => apiFetch('/api/analytics/cost/summary'),
 };

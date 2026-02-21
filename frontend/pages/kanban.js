@@ -69,52 +69,158 @@ Pages.kanban = {
           </div>`).join('')}
       </div>
 
-      <!-- New Task Modal -->
-      <div id="taskModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center">
-        <div style="background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto">
+      <!-- New Task Modal (reusable via window.TaskModal) -->
+      <style>
+        #taskModal {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          z-index: 300;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity var(--dur-normal) var(--ease-default);
+        }
+        #taskModal.is-open { display: flex; }
+        #taskModal.is-visible { opacity: 1; }
+        #taskModal .task-modal-card {
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-default);
+          border-radius: 12px;
+          padding: 24px;
+          width: 500px;
+          max-width: 95vw;
+          max-height: 88vh;
+          overflow-y: auto;
+          transform: translateY(8px) scale(0.98);
+          transition: transform var(--dur-normal) var(--ease-entrance);
+          box-shadow: var(--shadow-xl);
+        }
+        #taskModal.is-visible .task-modal-card { transform: translateY(0) scale(1); }
+        .task-modal-error {
+          color: var(--danger);
+          font-size: var(--text-sm);
+          margin-top: 4px;
+          display: none;
+        }
+        .task-modal-error.visible { display: block; }
+        /* Quick-assign dropdown */
+        .quick-assign-wrap { position: relative; }
+        .quick-assign-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--text-tertiary);
+          padding: 2px 4px;
+          border-radius: var(--radius-sm);
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 11px;
+          transition: color var(--dur-fast), background var(--dur-fast);
+        }
+        .quick-assign-btn:hover { color: var(--accent); background: var(--accent-muted); }
+        .quick-assign-dropdown {
+          position: absolute;
+          bottom: calc(100% + 4px);
+          right: 0;
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-default);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-md);
+          z-index: 200;
+          min-width: 160px;
+          max-height: 220px;
+          overflow-y: auto;
+          padding: 4px;
+        }
+        .quick-assign-dropdown button {
+          display: block;
+          width: 100%;
+          text-align: left;
+          background: none;
+          border: none;
+          padding: 7px 10px;
+          border-radius: var(--radius-sm);
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          transition: background var(--dur-fast);
+        }
+        .quick-assign-dropdown button:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+      </style>
+      <div id="taskModal">
+        <div class="task-modal-card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <span style="font:600 var(--text-lg)/24px var(--font-body);color:var(--text-primary)">New Task</span>
-            <button class="btn-icon" onclick="Pages.kanban._closeModal()" aria-label="Close">
+            <span id="taskModalTitle" style="font:600 var(--text-lg)/24px var(--font-body);color:var(--text-primary)">New Task</span>
+            <button class="btn-icon" onclick="window.TaskModal.close()" aria-label="Close">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </button>
           </div>
           <div style="display:flex;flex-direction:column;gap:14px">
             <div>
-              <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Title</label>
-              <input class="input" id="newTaskTitle" placeholder="Task title..." style="width:100%">
+              <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Title <span style="color:var(--danger)">*</span></label>
+              <input class="input" id="newTaskTitle" placeholder="Task title..." style="width:100%"
+                oninput="Pages.kanban._clearTitleError()">
+              <div class="task-modal-error" id="newTaskTitleError">Title is required.</div>
             </div>
             <div>
               <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Description</label>
-              <textarea class="input" id="newTaskDesc" rows="3" placeholder="Description..."
+              <textarea class="input" id="newTaskDesc" rows="3" placeholder="Description (markdown supported)..."
                 style="width:100%;height:auto;padding-top:8px;resize:vertical"></textarea>
-              <span style="font-size:11px;color:var(--text-tertiary);margin-top:4px;display:block">Markdown supported</span>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div>
                 <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Priority</label>
                 <select class="select" id="newTaskPriority" style="width:100%">
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
                   <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="critical">Critical</option>
                 </select>
               </div>
               <div>
                 <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Status</label>
                 <select class="select" id="newTaskStatus" style="width:100%">
-                  ${this.COLUMNS.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
+                  <option value="backlog">Backlog</option>
+                  <option value="todo" selected>To Do</option>
+                  <option value="next">Next</option>
+                  <option value="progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="done">Done</option>
+                  <option value="blocked">Blocked</option>
                 </select>
               </div>
             </div>
-            <div>
-              <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Assign to</label>
-              <select class="select" id="newTaskAgent" style="width:100%">
-                <option value="">Unassigned</option>
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Assign to</label>
+                <select class="select" id="newTaskAgent" style="width:100%">
+                  <option value="">Unassigned</option>
+                </select>
+              </div>
+              <div>
+                <label style="font:500 var(--text-sm)/18px var(--font-body);color:var(--text-secondary);display:block;margin-bottom:6px">Team</label>
+                <select class="select" id="newTaskTeam" style="width:100%">
+                  <option value="">— None —</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Design">Design</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Command">Command</option>
+                </select>
+              </div>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-              <button class="btn-secondary" onclick="Pages.kanban._closeModal()">Cancel</button>
-              <button class="btn-primary" onclick="Pages.kanban._submitTask()">Create Task</button>
+              <button class="btn-secondary" onclick="window.TaskModal.close()">Cancel</button>
+              <button class="btn-primary" id="newTaskSubmitBtn" onclick="Pages.kanban._submitTask()">Create Task</button>
             </div>
           </div>
         </div>
@@ -287,6 +393,16 @@ Pages.kanban = {
       ? `<span style="background:var(--warning-muted);color:var(--warning);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5l4 7H1l4-7Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Stuck</span>`
       : '';
 
+    // Quick-assign dropdown options
+    const qaOptions = [
+      `<button onclick="event.stopPropagation();Pages.kanban._quickAssign('${Utils.esc(t.id)}', '')">🚫 Unassigned</button>`,
+      ...this._agents.map(a => {
+        const aName = a.name || a.displayName || a.id;
+        const aId = a.id || aName;
+        return `<button onclick="event.stopPropagation();Pages.kanban._quickAssign('${Utils.esc(t.id)}', '${Utils.esc(aId)}')">${Utils.esc(a.emoji || '🤖')} ${Utils.esc(aName)}</button>`;
+      })
+    ].join('');
+
     return `
       <div class="task-card ${priorityClass}" data-task-id="${Utils.esc(t.id)}" draggable="true">
         <div class="task-card__header-row">
@@ -298,6 +414,15 @@ Pages.kanban = {
           ${assigneeHTML}
           ${priority ? `<span class="${Utils.priorityClass(priority)}">${Utils.capitalize(priority)}</span>` : ''}
           ${t.estimate ? `<span style="color:var(--text-tertiary)">${Utils.esc(t.estimate)}</span>` : ''}
+          <span class="quick-assign-wrap" style="margin-left:auto">
+            <button class="quick-assign-btn" title="Assign" onclick="event.stopPropagation();Pages.kanban._toggleAssignDropdown('${Utils.esc(t.id)}', event)">
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Assign
+            </button>
+            <div class="quick-assign-dropdown" id="qa-${Utils.esc(t.id)}" style="display:none">
+              ${qaOptions}
+            </div>
+          </span>
         </div>
         ${tags.length ? `<div class="task-card__tags">${tags.map(tag => `<span class="task-card__tag">#${Utils.esc(tag)}</span>`).join('')}</div>` : ''}
       </div>`;
