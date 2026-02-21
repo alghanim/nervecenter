@@ -209,7 +209,9 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	result, err := db.DB.Exec(
 		`UPDATE tasks SET title=$1, description=$2, status=$3, priority=$4,
-		 assignee=$5, team=$6, due_date=$7, parent_task_id=$8, labels=$9
+		 assignee=$5, team=$6, due_date=$7, parent_task_id=$8, labels=$9,
+		 updated_at=NOW(),
+		 completed_at = CASE WHEN $3 = 'done' THEN COALESCE(completed_at, NOW()) ELSE completed_at END
 		 WHERE id=$10`,
 		task.Title, models.PtrToNullString(task.Description), task.Status, task.Priority,
 		models.PtrToNullString(task.Assignee), models.PtrToNullString(task.Team),
@@ -223,10 +225,6 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	if n, _ := result.RowsAffected(); n == 0 {
 		respondError(w, http.StatusNotFound, "Task not found")
 		return
-	}
-
-	if task.Status == "done" {
-		db.DB.Exec(`UPDATE tasks SET completed_at = NOW() WHERE id = $1`, id)
 	}
 
 	logActivity(getAgentFromContext(r), "task_updated", id, map[string]string{"status": task.Status})
@@ -323,13 +321,16 @@ func (h *TaskHandler) TransitionTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := db.DB.Exec(`UPDATE tasks SET status = $1 WHERE id = $2`, data.Status, id); err != nil {
+	if _, err := db.DB.Exec(
+		`UPDATE tasks SET
+		   status = $1,
+		   updated_at = NOW(),
+		   completed_at = CASE WHEN $1 = 'done' THEN COALESCE(completed_at, NOW()) ELSE completed_at END
+		 WHERE id = $2`,
+		data.Status, id,
+	); err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
-	}
-
-	if data.Status == "done" {
-		db.DB.Exec(`UPDATE tasks SET completed_at = NOW() WHERE id = $1`, id)
 	}
 
 	// Record status transition in task_history

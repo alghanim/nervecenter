@@ -267,6 +267,15 @@ func (h *AgentHandler) UpdateAgentStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	validAgentStatuses := map[string]bool{
+		"online": true, "offline": true, "busy": true,
+		"idle": true, "paused": true, "killed": true, "degraded": true,
+	}
+	if !validAgentStatuses[data.Status] {
+		respondError(w, http.StatusBadRequest, "invalid status: must be one of online, offline, busy, idle, paused, killed, degraded")
+		return
+	}
+
 	if _, err := db.DB.Exec(
 		`UPDATE agents SET status = $1, last_active = NOW() WHERE id = $2`,
 		data.Status, id); err != nil {
