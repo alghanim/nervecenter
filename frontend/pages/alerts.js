@@ -1,392 +1,557 @@
 /* AgentBoard — Alerts Page */
+
 window.Pages = window.Pages || {};
 
-Pages.alerts = (function () {
-  let _container = null;
-  let _tab = 'rules';
-  let _pollInterval = null;
+Pages.alerts = {
+  _rules: [],
+  _history: [],
+  _agents: [],
+  _webhooks: [],
+  _showForm: false,
+  _refreshTimer: null,
+  _tab: 'rules', // 'rules' | 'history'
 
-  const CONDITION_LABELS = {
-    no_heartbeat: 'No Heartbeat',
-    error_rate:   'Error Rate',
-    task_stuck:   'Task Stuck',
-  };
-
-  const CONDITION_DESCRIPTIONS = {
-    no_heartbeat: 'Agent inactive for N minutes',
-    error_rate:   'More than N errors in 1 hour',
-    task_stuck:   'Task in-progress for more than N minutes',
-  };
-
-  // ── Render ──────────────────────────────────────────────────────────────
-  async function render(container, sub) {
-    _container = container;
-    _tab = sub === 'history' ? 'history' : 'rules';
-
+  async render(container) {
     container.innerHTML = `
-      <div class="alerts-page" style="padding:24px;max-width:1100px;">
-        <div class="alerts-tabs" style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;">
-          <button class="tab-btn ${_tab === 'rules' ? 'active' : ''}" data-tab="rules"
-            style="padding:8px 20px;border:none;background:none;cursor:pointer;color:${_tab==='rules'?'var(--accent)':'var(--text-secondary)'};border-bottom:2px solid ${_tab==='rules'?'var(--accent)':'transparent'};font-size:14px;font-weight:600;transition:all 0.15s;">
-            📋 Rules
+      <div class="alerts-page">
+
+        <!-- Tab Bar -->
+        <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0">
+          <button id="alertsTabRules"
+            onclick="Pages.alerts._switchTab('rules')"
+            style="padding:8px 16px;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--text-primary);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">
+            Rules
           </button>
-          <button class="tab-btn ${_tab === 'history' ? 'active' : ''}" data-tab="history"
-            style="padding:8px 20px;border:none;background:none;cursor:pointer;color:${_tab==='history'?'var(--accent)':'var(--text-secondary)'};border-bottom:2px solid ${_tab==='history'?'var(--accent)':'transparent'};font-size:14px;font-weight:600;transition:all 0.15s;">
-            🔔 History
+          <button id="alertsTabHistory"
+            onclick="Pages.alerts._switchTab('history')"
+            style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-tertiary);cursor:pointer;font-size:13px;font-weight:500;margin-bottom:-1px">
+            Fired Alerts <span id="alertsUnackBadge" style="display:none;background:var(--red,#ef4444);color:#fff;border-radius:9px;font-size:10px;padding:1px 6px;margin-left:4px;font-weight:700"></span>
           </button>
         </div>
-        <div id="alerts-tab-content"></div>
-      </div>
-    `;
 
-    // Tab switching
-    container.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        _tab = btn.dataset.tab;
-        container.querySelectorAll('.tab-btn').forEach(b => {
-          b.style.color = 'var(--text-secondary)';
-          b.style.borderBottom = '2px solid transparent';
-        });
-        btn.style.color = 'var(--accent)';
-        btn.style.borderBottom = '2px solid var(--accent)';
-        renderTab();
-      });
-    });
-
-    renderTab();
-    updateBadge();
-
-    // Poll badge every 30s
-    _pollInterval = setInterval(updateBadge, 30000);
-  }
-
-  async function renderTab() {
-    const el = document.getElementById('alerts-tab-content');
-    if (!el) return;
-    el.innerHTML = `<div class="loading-state" style="padding:40px 0;"><div class="spinner"></div><span>Loading...</span></div>`;
-
-    if (_tab === 'rules') {
-      await renderRules(el);
-    } else {
-      await renderHistory(el);
-    }
-  }
-
-  // ── Rules Tab ────────────────────────────────────────────────────────────
-  async function renderRules(el) {
-    let rules = [];
-    let agents = [];
-    try {
-      [rules, agents] = await Promise.all([API.getAlertRules(), API.getAgents()]);
-    } catch (e) {
-      el.innerHTML = `<div class="empty-state"><div class="empty-state-title">Failed to load rules</div><div class="empty-state-desc">${Utils.esc(e.message)}</div></div>`;
-      return;
-    }
-
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="margin:0;font-size:16px;font-weight:600;">Alert Rules <span style="color:var(--text-secondary);font-weight:400;font-size:13px;">(${rules.length})</span></h3>
-        <button id="btn-add-rule" class="btn btn-primary" style="display:flex;align-items:center;gap:6px;">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Add Rule
-        </button>
-      </div>
-      <div id="rules-list"></div>
-    `;
-
-    document.getElementById('btn-add-rule').addEventListener('click', () => showRuleModal(null, agents, () => renderTab()));
-    renderRulesList(rules, agents);
-  }
-
-  function renderRulesList(rules, agents) {
-    const list = document.getElementById('rules-list');
-    if (!list) return;
-
-    if (rules.length === 0) {
-      list.innerHTML = `
-        <div class="empty-state" style="padding:60px 0;">
-          <div class="empty-state-icon">🔔</div>
-          <div class="empty-state-title">No alert rules</div>
-          <div class="empty-state-desc">Create a rule to get notified when something goes wrong</div>
-        </div>
-      `;
-      return;
-    }
-
-    const agentMap = {};
-    (agents || []).forEach(a => { agentMap[a.id] = a; });
-
-    list.innerHTML = rules.map(rule => {
-      const agent = rule.agent_id ? (agentMap[rule.agent_id] || { display_name: rule.agent_id }) : null;
-      const agentLabel = agent ? `${agent.emoji || '🤖'} ${agent.display_name || rule.agent_id}` : 'All Agents';
-      const condLabel = CONDITION_LABELS[rule.condition_type] || rule.condition_type;
-      const thresholdUnit = rule.condition_type === 'error_rate' ? 'errors/hr' : 'min';
-
-      return `
-        <div class="rule-card" data-id="${Utils.esc(rule.id)}" style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${Utils.esc(rule.name)}</div>
-            <div style="font-size:12px;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap;">
-              <span>🎯 ${Utils.esc(agentLabel)}</span>
-              <span>⚡ ${Utils.esc(condLabel)}</span>
-              <span>📊 Threshold: ${rule.threshold} ${thresholdUnit}</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-            <label class="toggle-switch" title="${rule.enabled ? 'Enabled' : 'Disabled'}" style="cursor:pointer;">
-              <input type="checkbox" ${rule.enabled ? 'checked' : ''} data-action="toggle" data-id="${Utils.esc(rule.id)}" style="display:none;">
-              <span class="toggle-track" style="display:inline-block;width:36px;height:20px;border-radius:10px;background:${rule.enabled ? 'var(--accent)' : 'var(--border)'};position:relative;transition:background 0.15s;">
-                <span style="position:absolute;top:3px;left:${rule.enabled ? '19px' : '3px'};width:14px;height:14px;border-radius:50%;background:#fff;transition:left 0.15s;"></span>
-              </span>
-            </label>
-            <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${Utils.esc(rule.id)}" title="Edit">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 2l2 2-7.5 7.5L2 12l.5-2.5L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <button class="btn btn-ghost btn-sm" data-action="delete" data-id="${Utils.esc(rule.id)}" title="Delete" style="color:var(--red,#ef4444);">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1,3 13,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 3V1.5h4V3M2.5 3l1 9.5h7L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <!-- Rules Tab -->
+        <div id="alertsRulesTab">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+            <span style="color:var(--text-secondary);font-size:13px">
+              Alert rules run every 60 seconds and fire when conditions are met.
+            </span>
+            <button class="btn-primary" onclick="Pages.alerts._openForm()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="margin-right:6px" aria-hidden="true">
+                <line x1="7" y1="2" x2="7" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              New Rule
             </button>
           </div>
-        </div>
-      `;
-    }).join('');
 
-    // Bind actions
-    list.addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.dataset.action;
-      const id = btn.dataset.id;
-      const rule = rules.find(r => r.id === id);
+          <!-- Create Form (hidden by default) -->
+          <div id="alertsFormWrap" style="display:none;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px">
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px">Create Alert Rule</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="alertsFormGrid">
 
-      if (action === 'edit') {
-        showRuleModal(rule, agents, () => renderTab());
-      } else if (action === 'delete') {
-        if (!confirm(`Delete rule "${rule.name}"?`)) return;
-        try {
-          await API.deleteAlertRule(id);
-          renderTab();
-        } catch (e) {
-          alert('Delete failed: ' + e.message);
-        }
-      }
-    });
-
-    // Toggle handlers
-    list.querySelectorAll('[data-action="toggle"]').forEach(checkbox => {
-      checkbox.addEventListener('change', async () => {
-        const id = checkbox.dataset.id;
-        const rule = rules.find(r => r.id === id);
-        try {
-          await API.updateAlertRule(id, { enabled: checkbox.checked });
-          // Update visual
-          const track = checkbox.parentElement.querySelector('.toggle-track');
-          const knob = track.querySelector('span');
-          track.style.background = checkbox.checked ? 'var(--accent)' : 'var(--border)';
-          knob.style.left = checkbox.checked ? '19px' : '3px';
-        } catch (e) {
-          checkbox.checked = !checkbox.checked;
-          alert('Update failed: ' + e.message);
-        }
-      });
-    });
-  }
-
-  // ── Rule Modal ───────────────────────────────────────────────────────────
-  function showRuleModal(rule, agents, onSave) {
-    const isEdit = !!rule;
-    const modal = document.createElement('div');
-    modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;`;
-
-    const agentOptions = agents.map(a =>
-      `<option value="${Utils.esc(a.id)}" ${rule && rule.agent_id === a.id ? 'selected' : ''}>
-        ${Utils.esc(a.emoji || '🤖')} ${Utils.esc(a.display_name || a.id)}
-      </option>`
-    ).join('');
-
-    modal.innerHTML = `
-      <div style="background:var(--bg-primary,#1a1a2e);border:1px solid var(--border);border-radius:12px;padding:28px;width:480px;max-width:95vw;">
-        <h3 style="margin:0 0 20px;font-size:16px;font-weight:700;">${isEdit ? 'Edit Alert Rule' : 'New Alert Rule'}</h3>
-        <form id="rule-form">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">RULE NAME</label>
-            <input name="name" value="${Utils.esc(rule?.name || '')}" required placeholder="e.g. Forge heartbeat check"
-              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary,#111);color:var(--text);font-size:14px;box-sizing:border-box;">
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">AGENT (leave blank for all)</label>
-            <select name="agent_id"
-              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary,#111);color:var(--text);font-size:14px;box-sizing:border-box;">
-              <option value="">— All Agents —</option>
-              ${agentOptions}
-            </select>
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">CONDITION TYPE</label>
-            <select name="condition_type"
-              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary,#111);color:var(--text);font-size:14px;box-sizing:border-box;">
-              <option value="no_heartbeat" ${rule?.condition_type === 'no_heartbeat' ? 'selected' : ''}>No Heartbeat — inactive for N minutes</option>
-              <option value="error_rate"   ${rule?.condition_type === 'error_rate'   ? 'selected' : ''}>Error Rate — &gt;N errors in last hour</option>
-              <option value="task_stuck"   ${rule?.condition_type === 'task_stuck'   ? 'selected' : ''}>Task Stuck — in-progress for &gt;N minutes</option>
-            </select>
-          </div>
-          <div style="margin-bottom:20px;">
-            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-secondary);">THRESHOLD</label>
-            <input name="threshold" type="number" min="1" value="${rule?.threshold ?? 30}" required
-              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary,#111);color:var(--text);font-size:14px;box-sizing:border-box;">
-            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Minutes (or errors for error_rate)</div>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button type="button" id="modal-cancel" class="btn btn-ghost">Cancel</button>
-            <button type="submit" class="btn btn-primary">${isEdit ? 'Save Changes' : 'Create Rule'}</button>
-          </div>
-        </form>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-    modal.querySelector('#modal-cancel').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
-    modal.querySelector('#rule-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const data = {
-        name: fd.get('name'),
-        condition_type: fd.get('condition_type'),
-        threshold: parseInt(fd.get('threshold')),
-        agent_id: fd.get('agent_id') || null,
-        enabled: rule?.enabled ?? true,
-      };
-
-      try {
-        if (isEdit) {
-          await API.updateAlertRule(rule.id, data);
-        } else {
-          await API.createAlertRule(data);
-        }
-        modal.remove();
-        onSave();
-      } catch (err) {
-        alert('Failed to save rule: ' + err.message);
-      }
-    });
-  }
-
-  // ── History Tab ──────────────────────────────────────────────────────────
-  async function renderHistory(el) {
-    let history = [];
-    try {
-      history = await API.getAlertHistory();
-    } catch (e) {
-      el.innerHTML = `<div class="empty-state"><div class="empty-state-title">Failed to load history</div></div>`;
-      return;
-    }
-
-    const unacked = history.filter(h => !h.acknowledged).length;
-
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="margin:0;font-size:16px;font-weight:600;">
-          Alert History
-          ${unacked > 0 ? `<span style="background:var(--red,#ef4444);color:#fff;border-radius:9px;font-size:12px;padding:2px 8px;margin-left:8px;">${unacked} new</span>` : ''}
-        </h3>
-        <div style="display:flex;gap:8px;">
-          <button id="btn-filter-all" class="btn btn-ghost btn-sm" style="font-size:12px;">All</button>
-          <button id="btn-filter-unacked" class="btn btn-ghost btn-sm" style="font-size:12px;">Unacknowledged</button>
-        </div>
-      </div>
-      <div id="history-list"></div>
-    `;
-
-    let showAll = true;
-    const renderList = () => {
-      const items = showAll ? history : history.filter(h => !h.acknowledged);
-      renderHistoryList(items);
-    };
-
-    document.getElementById('btn-filter-all').addEventListener('click', () => { showAll = true; renderList(); });
-    document.getElementById('btn-filter-unacked').addEventListener('click', () => { showAll = false; renderList(); });
-
-    renderList();
-
-    // Bind ack on delegation
-    document.getElementById('history-list').addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-ack]');
-      if (!btn) return;
-      const id = btn.dataset.ack;
-      try {
-        await API.acknowledgeAlert(id);
-        const item = history.find(h => h.id === id);
-        if (item) item.acknowledged = true;
-        renderList();
-        updateBadge();
-      } catch (err) {
-        alert('Ack failed: ' + err.message);
-      }
-    });
-  }
-
-  function renderHistoryList(items) {
-    const list = document.getElementById('history-list');
-    if (!list) return;
-
-    if (items.length === 0) {
-      list.innerHTML = `
-        <div class="empty-state" style="padding:60px 0;">
-          <div class="empty-state-icon">✅</div>
-          <div class="empty-state-title">No alerts</div>
-          <div class="empty-state-desc">All clear — no alerts to show</div>
-        </div>
-      `;
-      return;
-    }
-
-    list.innerHTML = items.map(h => {
-      const time = new Date(h.triggered_at).toLocaleString();
-      const agentLabel = h.agent_id || 'System';
-      const ackBadge = h.acknowledged
-        ? `<span style="font-size:11px;background:var(--bg-secondary,#111);color:var(--text-secondary);padding:2px 8px;border-radius:4px;">Acknowledged</span>`
-        : `<button class="btn btn-ghost btn-sm" data-ack="${Utils.esc(h.id)}" style="font-size:11px;color:var(--accent);">Acknowledge</button>`;
-
-      return `
-        <div style="background:var(--card-bg);border:1px solid ${h.acknowledged ? 'var(--border)' : 'var(--accent)'};border-radius:8px;padding:14px 16px;margin-bottom:10px;${h.acknowledged ? 'opacity:0.7;' : ''}">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <span style="font-size:20px;flex-shrink:0;">${h.acknowledged ? '✅' : '🔔'}</span>
-            <div style="flex:1;min-width:0;">
-              <div style="font-weight:600;font-size:13px;margin-bottom:4px;">${Utils.esc(h.rule_name || 'Alert')}</div>
-              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;word-break:break-word;">${Utils.esc(h.message || '')}</div>
-              <div style="font-size:11px;color:var(--text-secondary);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                <span>🤖 ${Utils.esc(agentLabel)}</span>
-                <span>🕐 ${time}</span>
-                ${ackBadge}
+              <div>
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Rule Name *</label>
+                <input class="input" id="alertFormName" type="text" placeholder="e.g. Titan no heartbeat" style="width:100%;box-sizing:border-box">
               </div>
+
+              <div>
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Agent</label>
+                <select class="select" id="alertFormAgent" style="width:100%;box-sizing:border-box">
+                  <option value="">All agents</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Condition *</label>
+                <select class="select" id="alertFormCondition" onchange="Pages.alerts._onConditionChange()" style="width:100%;box-sizing:border-box">
+                  <option value="no_heartbeat">No Heartbeat</option>
+                  <option value="task_stuck">Task Stuck</option>
+                  <option value="error_rate">High Error Rate</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px" id="alertFormThresholdLabel">Threshold (minutes)</label>
+                <input class="input" id="alertFormThreshold" type="number" min="1" value="30" style="width:100%;box-sizing:border-box">
+              </div>
+
+              <div style="grid-column:1/-1">
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Notify via Webhook</label>
+                <select class="select" id="alertFormWebhook" style="width:100%;box-sizing:border-box">
+                  <option value="">None</option>
+                </select>
+              </div>
+
             </div>
+            <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+              <button class="btn-secondary" onclick="Pages.alerts._closeForm()">Cancel</button>
+              <button class="btn-primary" id="alertsFormSaveBtn" onclick="Pages.alerts._saveRule()">Create Rule</button>
+            </div>
+            <div id="alertsFormError" style="display:none;color:var(--red,#ef4444);font-size:12px;margin-top:8px"></div>
+          </div>
+
+          <!-- Rules List -->
+          <div id="alertsRulesList">
+            <div class="loading-state"><div class="spinner"></div><span>Loading rules...</span></div>
           </div>
         </div>
-      `;
-    }).join('');
-  }
 
-  // ── Badge Update ─────────────────────────────────────────────────────────
-  async function updateBadge() {
-    try {
-      const data = await API.getAlertUnacknowledgedCount();
-      const badge = document.getElementById('alerts-badge');
-      if (!badge) return;
-      if (data.count > 0) {
-        badge.textContent = data.count;
-        badge.style.display = 'inline';
+        <!-- History Tab -->
+        <div id="alertsHistoryTab" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="Pages.alerts._refreshHistory()" id="alertsHistRefreshBtn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="margin-right:4px" aria-hidden="true">
+                <path d="M13 2v4H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M1 12v-4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11.6 5A6 6 0 1 0 12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Refresh
+            </button>
+            <button class="btn-secondary" onclick="Pages.alerts._refreshHistory(true)" style="font-size:12px">
+              Unacknowledged only
+            </button>
+            <button class="btn-secondary" onclick="Pages.alerts._refreshHistory(false)" style="font-size:12px">
+              All
+            </button>
+            <span id="alertsHistTs" style="color:var(--text-tertiary);font-size:12px;margin-left:4px"></span>
+          </div>
+          <div id="alertsHistList">
+            <div class="loading-state"><div class="spinner"></div><span>Loading fired alerts...</span></div>
+          </div>
+        </div>
+
+      </div>`;
+
+    // Load data in parallel
+    await Promise.all([
+      this._loadAgents(),
+      this._loadWebhooks(),
+      this._loadRules(),
+      this._loadUnackCount(),
+    ]);
+
+    // Auto-refresh every 60s
+    this._refreshTimer = setInterval(() => {
+      if (this._tab === 'rules') {
+        this._loadRules(true);
       } else {
-        badge.style.display = 'none';
+        this._refreshHistory(this._histUnackOnly);
+      }
+      this._loadUnackCount();
+    }, 60000);
+  },
+
+  destroy() {
+    if (this._refreshTimer) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+  },
+
+  _switchTab(tab) {
+    this._tab = tab;
+    const rulesTab = document.getElementById('alertsRulesTab');
+    const histTab = document.getElementById('alertsHistoryTab');
+    const btnRules = document.getElementById('alertsTabRules');
+    const btnHist = document.getElementById('alertsTabHistory');
+
+    if (tab === 'rules') {
+      rulesTab.style.display = '';
+      histTab.style.display = 'none';
+      btnRules.style.borderBottomColor = 'var(--accent)';
+      btnRules.style.color = 'var(--text-primary)';
+      btnRules.style.fontWeight = '600';
+      btnHist.style.borderBottomColor = 'transparent';
+      btnHist.style.color = 'var(--text-tertiary)';
+      btnHist.style.fontWeight = '500';
+    } else {
+      rulesTab.style.display = 'none';
+      histTab.style.display = '';
+      btnRules.style.borderBottomColor = 'transparent';
+      btnRules.style.color = 'var(--text-tertiary)';
+      btnRules.style.fontWeight = '500';
+      btnHist.style.borderBottomColor = 'var(--accent)';
+      btnHist.style.color = 'var(--text-primary)';
+      btnHist.style.fontWeight = '600';
+      this._refreshHistory();
+    }
+  },
+
+  // ── Data Loading ────────────────────────────────────────────
+
+  async _loadAgents() {
+    try {
+      const agents = await apiFetch('/api/agents');
+      this._agents = agents || [];
+      const sel = document.getElementById('alertFormAgent');
+      if (!sel) return;
+      while (sel.options.length > 1) sel.remove(1);
+      for (const a of this._agents) {
+        const opt = document.createElement('option');
+        opt.value = a.id || a.name;
+        opt.textContent = a.name || a.id;
+        sel.appendChild(opt);
       }
     } catch (_) {}
-  }
+  },
 
-  // ── Destroy ──────────────────────────────────────────────────────────────
-  function destroy() {
-    if (_pollInterval) clearInterval(_pollInterval);
-    _container = null;
-  }
+  async _loadWebhooks() {
+    try {
+      this._webhooks = await apiFetch('/api/webhooks') || [];
+      const sel = document.getElementById('alertFormWebhook');
+      if (!sel) return;
+      while (sel.options.length > 1) sel.remove(1);
+      for (const wh of this._webhooks) {
+        const opt = document.createElement('option');
+        opt.value = wh.id;
+        opt.textContent = wh.name || wh.url;
+        sel.appendChild(opt);
+      }
+    } catch (_) {}
+  },
 
-  return { render, destroy };
-})();
+  async _loadRules(silent = false) {
+    if (!silent) {
+      const el = document.getElementById('alertsRulesList');
+      if (el) el.innerHTML = `<div class="loading-state"><div class="spinner"></div><span>Loading rules...</span></div>`;
+    }
+    try {
+      this._rules = await apiFetch('/api/alerts/rules') || [];
+      this._renderRules();
+    } catch (e) {
+      const el = document.getElementById('alertsRulesList');
+      if (el) el.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 8L43 40H5L24 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="24" y1="22" x2="24" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="37" r="1.5" fill="currentColor"/></svg></div>
+        <div class="empty-state-title">Failed to load rules</div>
+        <div class="empty-state-desc">${Utils.esc(e.message)}</div>
+      </div>`;
+    }
+  },
+
+  async _loadUnackCount() {
+    try {
+      const data = await apiFetch('/api/alerts/unacknowledged-count');
+      const count = data.count || 0;
+      // Update badge in sidebar nav
+      const badge = document.getElementById('alerts-badge');
+      if (badge) {
+        badge.style.display = count > 0 ? '' : 'none';
+        badge.textContent = count > 99 ? '99+' : count;
+      }
+      // Update in-page badge
+      const tabBadge = document.getElementById('alertsUnackBadge');
+      if (tabBadge) {
+        tabBadge.style.display = count > 0 ? '' : 'none';
+        tabBadge.textContent = count;
+      }
+    } catch (_) {}
+  },
+
+  _histUnackOnly: false,
+
+  async _refreshHistory(unackOnly) {
+    if (typeof unackOnly === 'boolean') this._histUnackOnly = unackOnly;
+    const btn = document.getElementById('alertsHistRefreshBtn');
+    if (btn) btn.disabled = true;
+    try {
+      const qs = this._histUnackOnly ? '?acknowledged=false' : '';
+      this._history = await apiFetch('/api/alerts/history' + qs) || [];
+      this._renderHistory();
+      const ts = document.getElementById('alertsHistTs');
+      if (ts) ts.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch (e) {
+      const el = document.getElementById('alertsHistList');
+      if (el) el.innerHTML = `<div class="empty-state">
+        <div class="empty-state-title">Failed to load history</div>
+        <div class="empty-state-desc">${Utils.esc(e.message)}</div>
+      </div>`;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  // ── Render ───────────────────────────────────────────────────
+
+  _renderRules() {
+    const el = document.getElementById('alertsRulesList');
+    if (!el) return;
+    if (!this._rules.length) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M24 6a12 12 0 0 1 12 12c0 8 3 11 3 11H9s3-3 3-11A12 12 0 0 1 24 6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M19 41a5 5 0 0 0 10 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="empty-state-title">No alert rules yet</div>
+          <div class="empty-state-desc">Click "New Rule" to create your first alert.</div>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Condition</th>
+            <th>Agent</th>
+            <th>Threshold</th>
+            <th>Webhook</th>
+            <th>Status</th>
+            <th style="width:80px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this._rules.map(r => this._ruleRow(r)).join('')}
+        </tbody>
+      </table>`;
+  },
+
+  _ruleRow(r) {
+    const condLabels = {
+      no_heartbeat: 'No Heartbeat',
+      task_stuck: 'Task Stuck',
+      error_rate: 'High Error Rate',
+    };
+    const condUnits = {
+      no_heartbeat: 'min',
+      task_stuck: 'min',
+      error_rate: 'errors/hr',
+    };
+    const statusColor = r.enabled ? 'var(--green,#22c55e)' : 'var(--text-tertiary)';
+    const statusText = r.enabled ? '● Active' : '○ Disabled';
+
+    // Find webhook name
+    let webhookName = '—';
+    if (r.notify_webhook_id) {
+      const wh = this._webhooks.find(w => w.id === r.notify_webhook_id);
+      webhookName = wh ? Utils.esc(wh.name || wh.url) : '<span style="color:var(--text-tertiary)">Unknown</span>';
+    }
+
+    return `<tr>
+      <td style="font-weight:500">${Utils.esc(r.name)}</td>
+      <td><span class="badge badge--neutral">${Utils.esc(condLabels[r.condition_type] || r.condition_type)}</span></td>
+      <td style="color:var(--text-secondary)">${r.agent_id ? Utils.esc(r.agent_id) : '<span style="color:var(--text-tertiary)">All</span>'}</td>
+      <td>${r.threshold} <span style="color:var(--text-tertiary);font-size:12px">${condUnits[r.condition_type] || ''}</span></td>
+      <td style="font-size:12px;color:var(--text-secondary)">${webhookName}</td>
+      <td style="color:${statusColor};font-size:12px;font-weight:600">${statusText}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn-icon" title="${r.enabled ? 'Disable' : 'Enable'}"
+            onclick="Pages.alerts._toggleRule('${Utils.esc(r.id)}', ${!r.enabled})"
+            style="color:${r.enabled ? 'var(--accent)' : 'var(--text-tertiary)'}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              ${r.enabled
+                ? '<rect x="2" y="4" width="4" height="6" rx="1" fill="currentColor"/><rect x="8" y="4" width="4" height="6" rx="1" fill="currentColor"/>'
+                : '<polygon points="3,2 11,7 3,12" fill="currentColor"/>'}
+            </svg>
+          </button>
+          <button class="btn-icon" title="Delete rule"
+            onclick="Pages.alerts._deleteRule('${Utils.esc(r.id)}', '${Utils.esc(r.name)}')"
+            style="color:var(--text-tertiary)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <polyline points="2,3.5 12,3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M5 3.5V2h4v1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M3.5 3.5l.5 8h6l.5-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  },
+
+  _renderHistory() {
+    const el = document.getElementById('alertsHistList');
+    if (!el) return;
+    if (!this._history.length) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <circle cx="24" cy="24" r="18" stroke="currentColor" stroke-width="2"/>
+              <path d="M24 14v12l6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="empty-state-title">No alerts fired</div>
+          <div class="empty-state-desc">${this._histUnackOnly ? 'No unacknowledged alerts.' : 'All quiet — no alerts triggered yet.'}</div>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Rule</th>
+            <th>Agent</th>
+            <th>Message</th>
+            <th>Status</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this._history.slice(0, 50).map(h => this._histRow(h)).join('')}
+        </tbody>
+      </table>`;
+  },
+
+  _histRow(h) {
+    const ts = new Date(h.triggered_at);
+    const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const statusColor = h.acknowledged ? 'var(--text-tertiary)' : 'var(--yellow,#f59e0b)';
+    const statusText = h.acknowledged ? '✓ Acked' : '⚠ Active';
+
+    return `<tr style="${h.acknowledged ? 'opacity:0.65' : ''}">
+      <td style="font-family:var(--font-display);font-size:11px;color:var(--text-secondary);white-space:nowrap">${Utils.esc(timeStr)}</td>
+      <td style="font-weight:500;font-size:12px">${Utils.esc(h.rule_name || '—')}</td>
+      <td style="font-size:12px;color:var(--text-secondary)">${h.agent_id ? Utils.esc(h.agent_id) : '—'}</td>
+      <td style="font-size:12px;color:var(--text-secondary);max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${Utils.esc(h.message)}">${Utils.esc(h.message || '—')}</td>
+      <td style="color:${statusColor};font-size:11px;font-weight:600;white-space:nowrap">${statusText}</td>
+      <td>
+        ${!h.acknowledged ? `<button class="btn-secondary" style="font-size:11px;padding:2px 8px" onclick="Pages.alerts._ackAlert('${Utils.esc(h.id)}')">Ack</button>` : ''}
+      </td>
+    </tr>`;
+  },
+
+  // ── Form ─────────────────────────────────────────────────────
+
+  _openForm() {
+    this._showForm = true;
+    const wrap = document.getElementById('alertsFormWrap');
+    if (wrap) wrap.style.display = '';
+    const errEl = document.getElementById('alertsFormError');
+    if (errEl) errEl.style.display = 'none';
+    this._onConditionChange();
+  },
+
+  _closeForm() {
+    this._showForm = false;
+    const wrap = document.getElementById('alertsFormWrap');
+    if (wrap) wrap.style.display = 'none';
+    // Reset form fields
+    const fields = ['alertFormName', 'alertFormAgent', 'alertFormCondition', 'alertFormThreshold', 'alertFormWebhook'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else if (el.type === 'number') el.value = '30';
+      else el.value = '';
+    });
+  },
+
+  _onConditionChange() {
+    const cond = document.getElementById('alertFormCondition');
+    const label = document.getElementById('alertFormThresholdLabel');
+    const input = document.getElementById('alertFormThreshold');
+    if (!cond || !label || !input) return;
+
+    switch (cond.value) {
+      case 'no_heartbeat':
+        label.textContent = 'Threshold (minutes without heartbeat)';
+        input.value = input.value || '10';
+        input.min = '1';
+        break;
+      case 'task_stuck':
+        label.textContent = 'Threshold (minutes task in-progress)';
+        input.value = input.value || '60';
+        input.min = '1';
+        break;
+      case 'error_rate':
+        label.textContent = 'Threshold (error count per hour)';
+        input.value = input.value || '5';
+        input.min = '1';
+        break;
+    }
+  },
+
+  async _saveRule() {
+    const name = (document.getElementById('alertFormName')?.value || '').trim();
+    const agentId = document.getElementById('alertFormAgent')?.value || '';
+    const condType = document.getElementById('alertFormCondition')?.value || '';
+    const threshold = parseInt(document.getElementById('alertFormThreshold')?.value || '30', 10);
+    const webhookId = document.getElementById('alertFormWebhook')?.value || '';
+
+    const errEl = document.getElementById('alertsFormError');
+    const saveBtn = document.getElementById('alertsFormSaveBtn');
+
+    if (!name || !condType) {
+      if (errEl) { errEl.textContent = 'Name and Condition are required.'; errEl.style.display = ''; }
+      return;
+    }
+    if (isNaN(threshold) || threshold < 1) {
+      if (errEl) { errEl.textContent = 'Threshold must be a positive number.'; errEl.style.display = ''; }
+      return;
+    }
+
+    if (saveBtn) saveBtn.disabled = true;
+    if (errEl) errEl.style.display = 'none';
+
+    try {
+      const body = {
+        name,
+        condition_type: condType,
+        threshold,
+        enabled: true,
+      };
+      if (agentId) body.agent_id = agentId;
+      if (webhookId) body.notify_webhook_id = webhookId;
+
+      await apiFetch('/api/alerts/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      this._closeForm();
+      await this._loadRules();
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = 'Failed to create rule: ' + e.message;
+        errEl.style.display = '';
+      }
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  },
+
+  // ── Actions ──────────────────────────────────────────────────
+
+  async _toggleRule(id, enable) {
+    try {
+      await apiFetch(`/api/alerts/rules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: enable }),
+      });
+      await this._loadRules(true);
+    } catch (e) {
+      alert('Failed to update rule: ' + e.message);
+    }
+  },
+
+  async _deleteRule(id, name) {
+    if (!confirm(`Delete alert rule "${name}"? This cannot be undone.`)) return;
+    try {
+      await apiFetch(`/api/alerts/rules/${id}`, { method: 'DELETE' });
+      await this._loadRules(true);
+    } catch (e) {
+      alert('Failed to delete rule: ' + e.message);
+    }
+  },
+
+  async _ackAlert(id) {
+    try {
+      await apiFetch(`/api/alerts/history/${id}/acknowledge`, { method: 'POST' });
+      // Re-render in place
+      const h = this._history.find(x => x.id === id);
+      if (h) h.acknowledged = true;
+      this._renderHistory();
+      this._loadUnackCount();
+    } catch (e) {
+      alert('Failed to acknowledge alert: ' + e.message);
+    }
+  },
+};
