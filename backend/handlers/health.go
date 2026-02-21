@@ -14,6 +14,54 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// getLatestSessionMtime returns the modification time of the most recently
+// modified .jsonl session file for the given agent, or nil if none found.
+// It checks {openclawDir}/agents/{agentID}/sessions/ and for thunder/main/titan
+// also falls back to {openclawDir}/agents/main/sessions/ (same logic as soul files).
+func getLatestSessionMtime(agentID string) *time.Time {
+	openClawDir := config.GetOpenClawDir()
+
+	// Candidate session directories to check
+	sessionDirs := []string{
+		filepath.Join(openClawDir, "agents", agentID, "sessions"),
+	}
+	// Special case: thunder and titan are aliases for the main agent's sessions
+	if agentID == "thunder" || agentID == "main" || agentID == "titan" {
+		mainSessions := filepath.Join(openClawDir, "agents", "main", "sessions")
+		// Avoid duplicate if agentID is already "main"
+		if agentID != "main" {
+			sessionDirs = append(sessionDirs, mainSessions)
+		}
+	}
+
+	var latest *time.Time
+	for _, dir := range sessionDirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			name := e.Name()
+			if len(name) < 6 || name[len(name)-6:] != ".jsonl" {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			mt := info.ModTime()
+			if latest == nil || mt.After(*latest) {
+				t := mt
+				latest = &t
+			}
+		}
+	}
+	return latest
+}
+
 // ─── Health types ───────────────────────────────────────────────────────────
 
 type HealthCheck struct {
@@ -117,6 +165,15 @@ func computeAgentHealth(id string) AgentHealth {
 	actRow := db.DB.QueryRow(`SELECT MAX(created_at) FROM activity_log WHERE agent_id = $1`, id)
 	actRow.Scan(&lastActivity)
 
+	// Also check OpenClaw session JSONL file mtimes — agents like thunder may have
+	// zero activity_log entries even when actively running (e.g. all actions logged
+	// as "system"). Use whichever timestamp is more recent.
+	if sessionMtime := getLatestSessionMtime(id); sessionMtime != nil {
+		if lastActivity == nil || sessionMtime.After(*lastActivity) {
+			lastActivity = sessionMtime
+		}
+	}
+
 	checks := []HealthCheck{}
 	now := time.Now()
 
@@ -163,22 +220,35 @@ func computeAgentHealth(id string) AgentHealth {
 	workspacePassed := false
 	workspaceMsg := "Workspace not configured"
 	openClawDir := config.GetOpenClawDir()
-	wsDir := filepath.Join(openClawDir, "workspace-"+id)
-	if _, statErr := os.Stat(wsDir); statErr == nil {
+	// Build workspace candidates — same special-case as soul file resolution
+	wsCandidates := []string{filepath.Join(openClawDir, "workspace-"+id)}
+	if id == "thunder" || id == "main" || id == "titan" {
+		wsCandidates = append(wsCandidates, filepath.Join(openClawDir, "workspace"))
+	}
+	var resolvedWsDir string
+	for _, c := range wsCandidates {
+		if _, statErr := os.Stat(c); statErr == nil {
+			resolvedWsDir = c
+			break
+		}
+	}
+	if resolvedWsDir != "" {
 		workspacePassed = true
-		workspaceMsg = fmt.Sprintf("Workspace found: %s", wsDir)
+		workspaceMsg = fmt.Sprintf("Workspace found: %s", resolvedWsDir)
 	} else {
-		workspaceMsg = fmt.Sprintf("Workspace directory not found: %s", wsDir)
+		workspaceMsg = fmt.Sprintf("Workspace directory not found: %s", wsCandidates[0])
 	}
 	checks = append(checks, HealthCheck{Name: "workspace", Passed: workspacePassed, Message: workspaceMsg})
 
 	// Check 4: No KILL signal file present
 	killPassed := true
 	killMsg := "No kill signal present"
-	killFile := filepath.Join(openClawDir, "workspace-"+id, "KILL")
-	if _, statErr := os.Stat(killFile); statErr == nil {
-		killPassed = false
-		killMsg = "KILL signal file is present"
+	if resolvedWsDir != "" {
+		killFile := filepath.Join(resolvedWsDir, "KILL")
+		if _, statErr := os.Stat(killFile); statErr == nil {
+			killPassed = false
+			killMsg = "KILL signal file is present"
+		}
 	}
 	checks = append(checks, HealthCheck{Name: "kill_signal", Passed: killPassed, Message: killMsg})
 
