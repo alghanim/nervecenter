@@ -50,7 +50,7 @@ Pages.kanban = {
         <select class="select" id="kanbanFilterTeam" onchange="Pages.kanban._onFilter('team', this.value)">
           <option value="">Team ▾</option>
         </select>
-        <button class="btn-primary" onclick="Pages.kanban._newTask()" style="margin-left:auto">+ New Task</button>
+        <button class="btn-primary" onclick="window.TaskModal.open()" style="margin-left:auto">+ New Task</button>
       </div>
 
       <div class="kanban-board" id="kanbanBoard">
@@ -154,7 +154,7 @@ Pages.kanban = {
         }
         .quick-assign-dropdown button:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
       </style>
-      <div id="taskModal">
+      <div id="taskModal" onclick="if(event.target===this)window.TaskModal.close()">
         <div class="task-modal-card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <span id="taskModalTitle" style="font:600 var(--text-lg)/24px var(--font-body);color:var(--text-primary)">New Task</span>
@@ -234,9 +234,16 @@ Pages.kanban = {
         </div>
       </div>`;
 
-    // ESC key to close drawer
+    // ESC key to close drawer or modal
     this._escHandler = (e) => {
-      if (e.key === 'Escape') this._closeDrawer();
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('taskModal');
+        if (modal && modal.classList.contains('is-open')) {
+          this._closeModal();
+        } else {
+          this._closeDrawer();
+        }
+      }
     };
     document.addEventListener('keydown', this._escHandler);
 
