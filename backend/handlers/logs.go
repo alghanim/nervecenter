@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +16,17 @@ import (
 // LogsHandler serves /api/logs, /api/logs/search, /api/logs/files
 type LogsHandler struct{}
 
-// LogEntry represents a parsed log line
+// SessionEntry is the standard log-viewer entry derived from session JSONL files.
+type SessionEntry struct {
+	AgentID        string    `json:"agent_id"`
+	SessionID      string    `json:"session_id"`
+	Timestamp      time.Time `json:"timestamp"`
+	Role           string    `json:"role"`
+	ContentPreview string    `json:"content_preview"`
+	Level          string    `json:"level"`
+}
+
+// LogEntry represents a parsed log line (legacy / raw log files)
 type LogEntry struct {
 	Timestamp  time.Time `json:"timestamp"`
 	Level      string    `json:"level"`
@@ -35,330 +46,375 @@ type LogFileInfo struct {
 	LineCount int       `json:"line_count"`
 }
 
-// GetLogs handles GET /api/logs
+// GetLogs handles GET /api/logs?agent=&search=&level=&limit=100
+// Scans ~/.openclaw/agents/*/sessions/*.jsonl session files.
 func (h *LogsHandler) GetLogs(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	agentID := q.Get("agent_id")
-	level := q.Get("level")
-	fromStr := q.Get("from")
-	toStr := q.Get("to")
-	limitStr := q.Get("limit")
-	offsetStr := q.Get("offset")
-	fileFilter := q.Get("file")
+
+	// Accept both "agent" (new) and "agent_id" (legacy)
+	agentFilter := q.Get("agent")
+	if agentFilter == "" {
+		agentFilter = q.Get("agent_id")
+	}
+	if strings.ToLower(agentFilter) == "all" {
+		agentFilter = ""
+	}
+
+	searchTerm := q.Get("search")
+	if searchTerm == "" {
+		searchTerm = q.Get("q")
+	}
+
+	levelFilter := strings.ToLower(q.Get("level"))
+	if levelFilter == "all" {
+		levelFilter = ""
+	}
 
 	limit := 100
-	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+	if l, err := strconv.Atoi(q.Get("limit")); err == nil && l > 0 && l <= 2000 {
 		limit = l
 	}
-	offset := 0
-	if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
-		offset = o
-	}
 
-	var from, to time.Time
-	var fromSet, toSet bool
-	if fromStr != "" {
-		if t, err := time.Parse(time.RFC3339, fromStr); err == nil {
-			from = t
-			fromSet = true
-		}
-	}
-	if toStr != "" {
-		if t, err := time.Parse(time.RFC3339, toStr); err == nil {
-			to = t
-			toSet = true
-		}
-	}
-
-	entries := readAllLogs(agentID, level, from, to, fromSet, toSet, fileFilter, limit+offset)
-
-	// Apply offset + limit
-	total := len(entries)
-	if offset >= total {
-		entries = []LogEntry{}
-	} else {
-		entries = entries[offset:]
-		if len(entries) > limit {
-			entries = entries[:limit]
-		}
-	}
+	entries := scanSessionLogs(agentFilter, searchTerm, levelFilter, limit)
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"entries": entries,
-		"total":   total,
-		"offset":  offset,
+		"total":   len(entries),
 		"limit":   limit,
 	})
 }
 
-// SearchLogs handles GET /api/logs/search
+// SearchLogs handles GET /api/logs/search (legacy endpoint kept for compat)
 func (h *LogsHandler) SearchLogs(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	searchTerm := q.Get("q")
-	agentID := q.Get("agent_id")
-	level := q.Get("level")
-	fromStr := q.Get("from")
-	toStr := q.Get("to")
-	limitStr := q.Get("limit")
-
-	limit := 100
-	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 500 {
+	if searchTerm == "" {
+		searchTerm = q.Get("search")
+	}
+	agentFilter := q.Get("agent_id")
+	if agentFilter == "" {
+		agentFilter = q.Get("agent")
+	}
+	levelFilter := strings.ToLower(q.Get("level"))
+	if levelFilter == "all" {
+		levelFilter = ""
+	}
+	limit := 200
+	if l, err := strconv.Atoi(q.Get("limit")); err == nil && l > 0 && l <= 1000 {
 		limit = l
 	}
 
-	var from, to time.Time
-	var fromSet, toSet bool
-	if fromStr != "" {
-		if t, err := time.Parse(time.RFC3339, fromStr); err == nil {
-			from = t
-			fromSet = true
-		}
-	}
-	if toStr != "" {
-		if t, err := time.Parse(time.RFC3339, toStr); err == nil {
-			to = t
-			toSet = true
-		}
-	}
-
-	allEntries := readAllLogs(agentID, level, from, to, fromSet, toSet, "", 10000)
-
-	// Full-text filter
-	filtered := []LogEntry{}
-	lowerTerm := strings.ToLower(searchTerm)
-	for _, e := range allEntries {
-		if searchTerm == "" {
-			filtered = append(filtered, e)
-		} else if strings.Contains(strings.ToLower(e.Message), lowerTerm) ||
-			strings.Contains(strings.ToLower(e.Raw), lowerTerm) ||
-			strings.Contains(strings.ToLower(e.AgentID), lowerTerm) {
-			filtered = append(filtered, e)
-		}
-		if len(filtered) >= limit {
-			break
-		}
-	}
+	entries := scanSessionLogs(agentFilter, searchTerm, levelFilter, limit)
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"entries": filtered,
-		"total":   len(filtered),
+		"entries": entries,
+		"total":   len(entries),
 		"query":   searchTerm,
 	})
 }
 
-// GetLogFiles handles GET /api/logs/files
+// GetLogFiles handles GET /api/logs/files — returns agent list with session counts
 func (h *LogsHandler) GetLogFiles(w http.ResponseWriter, r *http.Request) {
-	logsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "logs")
-	files, err := os.ReadDir(logsDir)
+	agentsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "agents")
+	agentDirs, err := os.ReadDir(agentsDir)
 	if err != nil {
 		respondJSON(w, http.StatusOK, []LogFileInfo{})
 		return
 	}
 
 	result := []LogFileInfo{}
-	for _, f := range files {
-		if f.IsDir() {
+	for _, d := range agentDirs {
+		if !d.IsDir() {
 			continue
 		}
-		path := filepath.Join(logsDir, f.Name())
-		info, err := f.Info()
+		sessDir := filepath.Join(agentsDir, d.Name(), "sessions")
+		sessions, err := os.ReadDir(sessDir)
 		if err != nil {
 			continue
 		}
 
-		lfi := LogFileInfo{
-			Name:      f.Name(),
-			Path:      path,
-			SizeBytes: info.Size(),
-			FirstSeen: info.ModTime(),
-			LastSeen:  info.ModTime(),
-		}
+		var totalSize int64
+		var totalLines int
+		var earliest, latest time.Time
 
-		// Quick scan to count lines and find time range
-		fh, err := os.Open(path)
-		if err == nil {
+		for _, s := range sessions {
+			if !strings.HasSuffix(s.Name(), ".jsonl") {
+				continue
+			}
+			info, err := s.Info()
+			if err != nil {
+				continue
+			}
+			totalSize += info.Size()
+
+			fh, err := os.Open(filepath.Join(sessDir, s.Name()))
+			if err != nil {
+				continue
+			}
 			scanner := bufio.NewScanner(fh)
-			scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-			count := 0
-			var firstTs, lastTs time.Time
+			scanner.Buffer(make([]byte, 512*1024), 512*1024)
 			for scanner.Scan() {
-				count++
+				totalLines++
 				line := scanner.Text()
-				if ts := extractTimestampFromLine(line); !ts.IsZero() {
-					if firstTs.IsZero() {
-						firstTs = ts
+				var raw map[string]interface{}
+				if err := json.Unmarshal([]byte(line), &raw); err == nil {
+					if tsStr, ok := raw["timestamp"].(string); ok {
+						if t, err := time.Parse(time.RFC3339, tsStr); err == nil {
+							if earliest.IsZero() || t.Before(earliest) {
+								earliest = t
+							}
+							if t.After(latest) {
+								latest = t
+							}
+						} else if t, err := time.Parse(time.RFC3339Nano, tsStr); err == nil {
+							if earliest.IsZero() || t.Before(earliest) {
+								earliest = t
+							}
+							if t.After(latest) {
+								latest = t
+							}
+						}
 					}
-					lastTs = ts
 				}
 			}
 			fh.Close()
-			lfi.LineCount = count
-			if !firstTs.IsZero() {
-				lfi.FirstSeen = firstTs
-			}
-			if !lastTs.IsZero() {
-				lfi.LastSeen = lastTs
-			}
 		}
 
-		result = append(result, lfi)
+		if earliest.IsZero() {
+			earliest = time.Now()
+		}
+		if latest.IsZero() {
+			latest = time.Now()
+		}
+
+		result = append(result, LogFileInfo{
+			Name:      d.Name(),
+			Path:      sessDir,
+			SizeBytes: totalSize,
+			FirstSeen: earliest,
+			LastSeen:  latest,
+			LineCount: totalLines,
+		})
 	}
 
 	respondJSON(w, http.StatusOK, result)
 }
 
-// --- Helpers ---
+// --- Session file scanner ---
 
-func readAllLogs(agentID, level string, from, to time.Time, fromSet, toSet bool, fileFilter string, maxEntries int) []LogEntry {
-	logsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "logs")
-	files, err := os.ReadDir(logsDir)
+// scanSessionLogs reads ~/.openclaw/agents/*/sessions/*.jsonl and returns matching entries.
+func scanSessionLogs(agentFilter, searchTerm, levelFilter string, limit int) []SessionEntry {
+	agentsDir := filepath.Join(os.Getenv("HOME"), ".openclaw", "agents")
+	agentDirs, err := os.ReadDir(agentsDir)
 	if err != nil {
 		return nil
 	}
 
-	entries := []LogEntry{}
+	lowerSearch := strings.ToLower(searchTerm)
+	entries := []SessionEntry{}
 
-	for _, f := range files {
-		if f.IsDir() {
+	for _, d := range agentDirs {
+		if !d.IsDir() {
 			continue
 		}
-		if fileFilter != "" && f.Name() != fileFilter {
+		agentID := d.Name()
+
+		// Agent filter
+		if agentFilter != "" && !strings.EqualFold(agentID, agentFilter) {
 			continue
 		}
 
-		path := filepath.Join(logsDir, f.Name())
-		fh, err := os.Open(path)
+		sessDir := filepath.Join(agentsDir, agentID, "sessions")
+		sessions, err := os.ReadDir(sessDir)
 		if err != nil {
 			continue
 		}
 
-		scanner := bufio.NewScanner(fh)
-		scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-		lineNum := 0
-		for scanner.Scan() {
-			lineNum++
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" {
+		for _, s := range sessions {
+			if !strings.HasSuffix(s.Name(), ".jsonl") {
+				continue
+			}
+			sessionID := strings.TrimSuffix(s.Name(), ".jsonl")
+			path := filepath.Join(sessDir, s.Name())
+
+			fh, err := os.Open(path)
+			if err != nil {
 				continue
 			}
 
-			entry := parseLogLine(line, f.Name(), lineNum)
+			scanner := bufio.NewScanner(fh)
+			scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if line == "" {
+					continue
+				}
 
-			// Filters
-			if agentID != "" && !strings.EqualFold(entry.AgentID, agentID) {
-				continue
-			}
-			if level != "" && !strings.EqualFold(entry.Level, level) {
-				continue
-			}
-			if fromSet && entry.Timestamp.Before(from) {
-				continue
-			}
-			if toSet && entry.Timestamp.After(to) {
-				continue
-			}
+				var raw map[string]interface{}
+				if err := json.Unmarshal([]byte(line), &raw); err != nil {
+					continue
+				}
 
-			entries = append(entries, entry)
-			if len(entries) >= maxEntries {
-				break
+				// Only process "message" type entries
+				recType, _ := raw["type"].(string)
+				if recType != "message" {
+					continue
+				}
+
+				// Extract the inner message object
+				msgObj, ok := raw["message"].(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				role, _ := msgObj["role"].(string)
+				if role == "" {
+					continue
+				}
+
+				// Extract content preview
+				contentPreview := extractContentPreview(msgObj["content"], 200)
+
+				// Determine level
+				level := roleToLevel(role, msgObj["content"])
+
+				// Level filter
+				if levelFilter != "" && level != levelFilter {
+					continue
+				}
+
+				// Search filter
+				if lowerSearch != "" {
+					if !strings.Contains(strings.ToLower(contentPreview), lowerSearch) &&
+						!strings.Contains(strings.ToLower(agentID), lowerSearch) {
+						continue
+					}
+				}
+
+				// Parse timestamp
+				var ts time.Time
+				if tsStr, ok := raw["timestamp"].(string); ok {
+					if t, err := time.Parse(time.RFC3339, tsStr); err == nil {
+						ts = t
+					} else if t, err := time.Parse(time.RFC3339Nano, tsStr); err == nil {
+						ts = t
+					}
+				}
+				if ts.IsZero() {
+					ts = time.Now()
+				}
+
+				entries = append(entries, SessionEntry{
+					AgentID:        agentID,
+					SessionID:      sessionID,
+					Timestamp:      ts,
+					Role:           role,
+					ContentPreview: contentPreview,
+					Level:          level,
+				})
 			}
-		}
-		fh.Close()
-		if len(entries) >= maxEntries {
-			break
+			fh.Close()
 		}
 	}
 
 	// Sort descending by timestamp
-	sortLogEntries(entries)
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Timestamp.After(entries[j].Timestamp)
+	})
+
+	// Apply limit
+	if len(entries) > limit {
+		entries = entries[:limit]
+	}
+
 	return entries
 }
 
-func parseLogLine(line, filename string, lineNum int) LogEntry {
-	entry := LogEntry{
-		Timestamp:  time.Now(),
-		Level:      "info",
-		AgentID:    "system",
-		SourceFile: filename,
-		Raw:        truncateStr(line, 1000),
+// extractContentPreview extracts up to maxLen chars from message content.
+// Content can be a string or an array of content blocks.
+func extractContentPreview(content interface{}, maxLen int) string {
+	if content == nil {
+		return ""
 	}
 
-	var raw map[string]interface{}
-	if err := json.Unmarshal([]byte(line), &raw); err != nil {
-		// Plain text log
-		entry.Message = truncateStr(line, 500)
-		lower := strings.ToLower(line)
-		if strings.Contains(lower, "error") || strings.Contains(lower, "fatal") {
-			entry.Level = "error"
-		} else if strings.Contains(lower, "warn") {
-			entry.Level = "warn"
-		} else if strings.Contains(lower, "debug") {
-			entry.Level = "debug"
-		}
-		return entry
-	}
+	var parts []string
 
-	// Parse timestamp
-	for _, key := range []string{"timestamp", "ts", "time", "created_at"} {
-		if v, ok := raw[key].(string); ok {
-			if t, err := time.Parse(time.RFC3339, v); err == nil {
-				entry.Timestamp = t
-				break
+	switch v := content.(type) {
+	case string:
+		parts = append(parts, v)
+	case []interface{}:
+		for _, block := range v {
+			blockMap, ok := block.(map[string]interface{})
+			if !ok {
+				continue
 			}
-			if t, err := time.Parse(time.RFC3339Nano, v); err == nil {
-				entry.Timestamp = t
-				break
-			}
-		}
-	}
-
-	// Parse level
-	if v, ok := raw["level"].(string); ok {
-		entry.Level = strings.ToLower(v)
-	} else {
-		// Heuristic from content
-		lower := strings.ToLower(line)
-		if strings.Contains(lower, "error") || strings.Contains(lower, "fatal") {
-			entry.Level = "error"
-		} else if strings.Contains(lower, "warn") {
-			entry.Level = "warn"
-		} else if strings.Contains(lower, "debug") {
-			entry.Level = "debug"
-		}
-	}
-
-	// Parse agent ID
-	for _, key := range []string{"agent_id", "agentId", "agent", "sessionKey", "senderId"} {
-		if v, ok := raw[key].(string); ok && v != "" {
-			entry.AgentID = v
-			break
-		}
-	}
-
-	// Parse message
-	for _, key := range []string{"message", "msg", "content", "event", "action"} {
-		if v, ok := raw[key].(string); ok && v != "" {
-			entry.Message = truncateStr(v, 500)
-			break
-		}
-	}
-	if entry.Message == "" {
-		// Use source + event as message
-		parts := []string{}
-		for _, key := range []string{"source", "event", "action", "type"} {
-			if v, ok := raw[key].(string); ok && v != "" {
-				parts = append(parts, fmt.Sprintf("%s=%s", key, v))
+			blockType, _ := blockMap["type"].(string)
+			switch blockType {
+			case "text":
+				if text, ok := blockMap["text"].(string); ok {
+					parts = append(parts, text)
+				}
+			case "tool_use":
+				name, _ := blockMap["name"].(string)
+				if name != "" {
+					parts = append(parts, fmt.Sprintf("[tool: %s]", name))
+				} else {
+					parts = append(parts, "[tool call]")
+				}
+			case "tool_result":
+				parts = append(parts, "[tool result]")
+			case "thinking":
+				if text, ok := blockMap["thinking"].(string); ok && len(text) > 0 {
+					preview := text
+					if len(preview) > 60 {
+						preview = preview[:60] + "…"
+					}
+					parts = append(parts, fmt.Sprintf("[thinking: %s]", preview))
+				}
 			}
 		}
-		if len(parts) > 0 {
-			entry.Message = strings.Join(parts, " ")
-		} else {
-			entry.Message = truncateStr(line, 200)
-		}
 	}
 
-	return entry
+	result := strings.Join(parts, " ")
+	result = strings.TrimSpace(result)
+
+	if len(result) > maxLen {
+		// Try to cut at a word boundary
+		cut := result[:maxLen]
+		if idx := strings.LastIndexAny(cut, " \t\n"); idx > maxLen-30 {
+			cut = cut[:idx]
+		}
+		result = cut + "…"
+	}
+
+	return result
 }
+
+// roleToLevel derives a display level from role and content.
+func roleToLevel(role string, content interface{}) string {
+	switch role {
+	case "user":
+		return "info"
+	case "assistant":
+		// Check if content contains tool_use blocks → "tool"
+		if arr, ok := content.([]interface{}); ok {
+			for _, block := range arr {
+				bm, ok := block.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if t, ok := bm["type"].(string); ok && t == "tool_use" {
+					return "tool"
+				}
+			}
+		}
+		return "info"
+	default:
+		return "info"
+	}
+}
+
+// --- Legacy helpers (kept for SearchLogs / GetLogFiles fallback) ---
 
 func extractTimestampFromLine(line string) time.Time {
 	var raw map[string]interface{}
@@ -378,11 +434,9 @@ func extractTimestampFromLine(line string) time.Time {
 	return time.Time{}
 }
 
-func sortLogEntries(entries []LogEntry) {
-	// Simple insertion sort descending by timestamp
-	for i := 1; i < len(entries); i++ {
-		for j := i; j > 0 && entries[j].Timestamp.After(entries[j-1].Timestamp); j-- {
-			entries[j], entries[j-1] = entries[j-1], entries[j]
-		}
+func truncateStr(s string, max int) string {
+	if len(s) <= max {
+		return s
 	}
+	return s[:max]
 }

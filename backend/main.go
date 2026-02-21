@@ -162,9 +162,6 @@ func main() {
 	api.HandleFunc("/documents", documentsHandler.ListDocuments).Methods("GET")
 	api.HandleFunc("/documents/content", documentsHandler.GetDocumentContent).Methods("GET")
 
-	// Errors
-	api.HandleFunc("/errors", errorsHandler.GetErrors).Methods("GET")
-
 	// Agent control (pause/resume/kill)
 	api.HandleFunc("/agents/{id}/kill", controlHandler.Kill).Methods("POST")
 	api.HandleFunc("/agents/{id}/pause", controlHandler.Pause).Methods("POST")
