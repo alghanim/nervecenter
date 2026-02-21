@@ -5,8 +5,8 @@ agentboard
 # Environment
 .env
 
-# Compiled agents config (keep example, not the real one)
-agents.yaml
+# agents.yaml is now tracked in git (committed 2026-02-22)
+# agents.yaml
 
 # Go
 backend/vendor/
