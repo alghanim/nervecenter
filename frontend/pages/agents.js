@@ -192,7 +192,12 @@ Pages.agents = {
     if (!el) return;
 
     if (tab === 'activity') {
-      Pages.activity._renderFeed(el, agentId);
+      // Wrap in a container so we can append commits below
+      el.innerHTML = `
+        <div id="agentActivityFeed"></div>
+        <div id="agentCommitsSection" style="margin-top:24px"></div>`;
+      Pages.activity._renderFeed(document.getElementById('agentActivityFeed'), agentId);
+      Pages.agents._loadCommitsSection(document.getElementById('agentCommitsSection'), agentId);
       return;
     }
 
@@ -476,6 +481,67 @@ Pages.agents = {
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load skills', e.message);
     }
+  },
+
+  async _loadCommitsSection(el, agentId) {
+    if (!el) return;
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div class="spinner" style="width:14px;height:14px;border-width:2px"></div>
+      <span style="font-size:12px;color:var(--text-tertiary)">Loading commits…</span>
+    </div>`;
+
+    let commits = [];
+    try {
+      commits = await API.getAgentCommits(agentId, 15);
+    } catch (_) {}
+
+    if (!commits || commits.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+
+    function relTime(isoStr) {
+      const ms = Date.now() - new Date(isoStr).getTime();
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return 'just now';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    const rows = commits.map(c => `
+      <div class="activity-item" style="align-items:center">
+        <div class="activity-item__avatar" style="background:rgba(34,197,94,0.12);color:#22c55e;font-size:14px;display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="2.5" stroke="#22c55e" stroke-width="1.5"/>
+            <line x1="7" y1="1" x2="7" y2="4.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="9.5" x2="7" y2="13" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="activity-item__body">
+          <div class="activity-item__header" style="gap:8px;flex-wrap:wrap">
+            <code style="font-family:var(--font-mono,monospace);font-size:11px;background:rgba(34,197,94,0.12);color:#22c55e;padding:1px 6px;border-radius:4px;flex-shrink:0">${Utils.esc(c.hash)}</code>
+            <span style="color:var(--text-primary);font-size:13px">${Utils.esc(c.message)}</span>
+          </div>
+          <div class="activity-item__detail" style="margin-top:2px">
+            <span style="font-size:11px;color:var(--text-tertiary);background:var(--bg-surface);border:1px solid var(--border-default);padding:0 5px;border-radius:3px">${Utils.esc(c.repo)}</span>
+          </div>
+        </div>
+        <div class="activity-item__time">${Utils.esc(relTime(c.date))}</div>
+      </div>`).join('');
+
+    el.innerHTML = `
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="2.5" stroke="#22c55e" stroke-width="1.5"/>
+          <line x1="7" y1="1" x2="7" y2="4.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="7" y1="9.5" x2="7" y2="13" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em">Recent Commits</span>
+      </div>
+      <div class="activity-list">${rows}</div>`;
   },
 
   _buildActionButtons(status, agentId) {

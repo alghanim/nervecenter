@@ -3,7 +3,24 @@
 const API_BASE = window.AGENTBOARD_API || '';
 
 window.apiFetch = async function apiFetch(path, options = {}) {
+  // Inject auth token for write requests
+  const isWrite = options.method && options.method !== 'GET';
+  if (isWrite && window.Auth) {
+    const token = Auth.getToken();
+    if (token) {
+      options.headers = Object.assign({}, options.headers, {
+        'Authorization': 'Bearer ' + token
+      });
+    }
+  }
+
   const res = await fetch(API_BASE + path, options);
+
+  // On 401 for write requests, show login modal then retry
+  if (res.status === 401 && isWrite && window.Auth) {
+    return Auth.handle401(() => apiFetch(path, options));
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`API ${path} → ${res.status}: ${text}`);
@@ -166,4 +183,16 @@ window.API = {
     const qs = new URLSearchParams(params).toString();
     return apiFetch('/api/audit' + (qs ? '?' + qs : ''));
   },
+
+  // Git Commits
+  getAgentCommits: (agentId, limit = 10) =>
+    apiFetch(`/api/agents/${encodeURIComponent(agentId)}/commits?limit=${limit}`),
+
+  // Auth
+  authLogin: (password) => apiFetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  }),
+  authMe: () => apiFetch('/api/auth/me'),
 };

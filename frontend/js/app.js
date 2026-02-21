@@ -115,6 +115,9 @@ window.Branding = (function () {
     // Init theme & branding in parallel
     await Promise.all([Theme.init(), Branding.init()]);
 
+    // Auth: show logout button if already logged in
+    if (window.Auth) Auth._renderLogoutBtn();
+
     // Sidebar toggle (desktop collapse)
     const toggleBtn = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
