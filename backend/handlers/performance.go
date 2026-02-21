@@ -25,7 +25,7 @@ func (h *PerformanceHandler) GetPerformance(w http.ResponseWriter, r *http.Reque
 	rows, err := db.DB.Query(`
 		SELECT
 			a.id as agent_id,
-			a.name,
+			COALESCE(a.display_name, a.id) as name,
 			COUNT(CASE WHEN t.status='done' AND t.updated_at >= NOW()-INTERVAL '1 day' THEN 1 END) as today,
 			COUNT(CASE WHEN t.status='done' AND t.updated_at >= NOW()-INTERVAL '7 days' THEN 1 END) as week,
 			COUNT(CASE WHEN t.status='progress' THEN 1 END) as in_progress,
@@ -38,7 +38,7 @@ func (h *PerformanceHandler) GetPerformance(w http.ResponseWriter, r *http.Reque
 			) as avg_hours
 		FROM agents a
 		LEFT JOIN tasks t ON t.assignee = a.id
-		GROUP BY a.id, a.name
+		GROUP BY a.id, a.display_name
 		ORDER BY week DESC
 	`)
 	if err != nil {

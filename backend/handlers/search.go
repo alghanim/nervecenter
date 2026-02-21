@@ -83,9 +83,9 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	// --- Agents ---
 	agentRows, err := db.DB.Query(`
-		SELECT id::text, name, COALESCE(role,''), COALESCE(team,'')
+		SELECT id::text, COALESCE(display_name, id), COALESCE(role,''), COALESCE(team,'')
 		FROM agents
-		WHERE name ILIKE $1 OR role ILIKE $1
+		WHERE display_name ILIKE $1 OR role ILIKE $1
 		LIMIT $2
 	`, pattern, limit)
 	if err == nil {
@@ -99,7 +99,7 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 				Type:    "agent",
 				ID:      id,
 				Title:   name,
-				Excerpt: truncate(role, 120),
+				Excerpt: truncateExcerpt(role, 120),
 				Meta:    map[string]string{"role": role, "team": team},
 			})
 		}
@@ -108,7 +108,7 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	// --- Comments ---
 	commentRows, err := db.DB.Query(`
 		SELECT c.id::text, c.content, c.task_id::text, t.title as task_title
-		FROM task_comments c
+		FROM comments c
 		JOIN tasks t ON c.task_id = t.id
 		WHERE c.content ILIKE $1
 		LIMIT $2
@@ -124,7 +124,7 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 				Type:    "comment",
 				ID:      id,
 				Title:   taskTitle,
-				Excerpt: truncate(content, 120),
+				Excerpt: truncateExcerpt(content, 120),
 				Meta:    map[string]string{"task_id": taskID},
 			})
 		}
@@ -139,14 +139,14 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	tasks := []SearchResult{}
 	agents := []SearchResult{}
 	comments := []SearchResult{}
-	for _, r := range results {
-		switch r.Type {
+	for _, sr := range results {
+		switch sr.Type {
 		case "task":
-			tasks = append(tasks, r)
+			tasks = append(tasks, sr)
 		case "agent":
-			agents = append(agents, r)
+			agents = append(agents, sr)
 		case "comment":
-			comments = append(comments, r)
+			comments = append(comments, sr)
 		}
 	}
 
