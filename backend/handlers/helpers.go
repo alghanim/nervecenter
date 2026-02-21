@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/alghanim/agentboard/backend/db"
 )
@@ -39,6 +40,20 @@ func logActivity(agentID, action, taskID string, details map[string]string) {
 		`INSERT INTO activity_log (agent_id, action, task_id, details) VALUES ($1, $2, NULLIF($3,'')::uuid, $4)`,
 		agentID, action, taskID, detailsJSON,
 	)
+
+	// Fire agent_error webhook for error/fail actions
+	lower := strings.ToLower(action)
+	if strings.Contains(lower, "error") || strings.Contains(lower, "fail") {
+		payload := map[string]interface{}{
+			"agent_id": agentID,
+			"action":   action,
+			"task_id":  taskID,
+		}
+		for k, v := range details {
+			payload[k] = v
+		}
+		go TriggerWebhooks("agent_error", payload)
+	}
 }
 
 func calculateSuccessRate(completed, failed int) float64 {

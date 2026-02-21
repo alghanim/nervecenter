@@ -272,5 +272,14 @@ func (h *AgentHandler) UpdateAgentStatus(w http.ResponseWriter, r *http.Request)
 	}
 
 	logActivity(id, "status_changed", "", map[string]string{"status": data.Status})
+
+	// Trigger agent_offline webhook when agent goes offline
+	if data.Status == "offline" {
+		go TriggerWebhooks("agent_offline", map[string]interface{}{
+			"agent_id": id,
+			"status":   "offline",
+		})
+	}
+
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Status updated"})
 }

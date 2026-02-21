@@ -105,6 +105,7 @@ window.Branding = (function () {
     costs:       { title: 'Costs',      subtitle: 'Token usage and cost tracking' },
     documents:   { title: 'Documents',  subtitle: 'Browse agent-generated files and specs' },
     errors:      { title: 'Errors',     subtitle: 'Error and failure dashboard' },
+    logs:        { title: 'Logs',       subtitle: 'Live log viewer with search and filtering' },
     alerts:      { title: 'Alerts',     subtitle: 'Alerting rules and triggered notifications' },
     graph:       { title: 'Graph',      subtitle: 'Agent dependency and collaboration graph' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
@@ -282,6 +283,7 @@ window.Branding = (function () {
       case 'costs':      page = Pages.costs; break;
       case 'documents':  page = Pages.documents; break;
       case 'errors':     page = Pages.errors; break;
+      case 'logs':       page = Pages.logs; break;
       case 'alerts':     page = Pages.alerts; break;
       case 'graph':      page = Pages.graph; break;
       case 'settings':   page = Pages.settings; break;
