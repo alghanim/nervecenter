@@ -39,7 +39,7 @@ window.Search = (function () {
         box-shadow:0 24px 64px rgba(0,0,0,0.5);
       ">
         <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border-primary);">
-          <span style="font-size:18px;margin-right:8px;opacity:0.5;">🔍</span>
+          <span style="margin-right:8px;color:var(--text-tertiary);display:flex;align-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
           <input id="searchInput"
             placeholder="Search tasks, agents, comments…"
             autocomplete="off"
@@ -190,7 +190,7 @@ window.Search = (function () {
           border-left:3px solid transparent;
           transition:background 100ms;
         ">
-          <span style="font-size:16px;">📋</span>
+          <span style="color:var(--text-tertiary);display:flex;align-items:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4.5" y1="10" x2="7" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               ${_highlight(Utils.esc(t.title || '(untitled)'), q)}

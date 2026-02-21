@@ -130,9 +130,9 @@ Pages.activity = {
         return;
       }
 
-      container.innerHTML = items.map(item => this._itemHTML(item)).join('');
+      container.innerHTML = `<div class="activity-list">${items.map(item => this._itemHTML(item)).join('')}</div>`;
     } catch (e) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load activity</div><div class="empty-state-desc">${Utils.esc(e.message)}</div></div>`;
+      Utils.showEmpty(container, '⚠️', 'Failed to load activity', e.message);
     }
   },
 
@@ -191,7 +191,7 @@ Pages.activity = {
 
   _typeLabel(type, toolName) {
     switch (type) {
-      case 'command': return `ran <code style="font-family:var(--font-display);font-size:11px;background:var(--bg-tertiary);padding:1px 5px;border-radius:3px">${Utils.esc(toolName || 'tool')}</code>`;
+      case 'command': return `ran <code style="font-family:var(--font-display);font-size:11px;background:var(--bg-inset);padding:1px 5px;border-radius:3px;color:var(--accent)">${Utils.esc(toolName || 'tool')}</code>`;
       case 'response': return 'sent a response';
       case 'result': return 'received result';
       case 'prompt': return 'received prompt';

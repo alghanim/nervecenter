@@ -44,8 +44,7 @@ Pages.orgChart = {
       this._buildLegend();
       this._renderTree();
     } catch (e) {
-      document.getElementById('orgChartSvgWrap').innerHTML =
-        `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load hierarchy</div><div class="empty-state-desc">${Utils.esc(e.message)}</div></div>`;
+      Utils.showEmpty(document.getElementById('orgChartSvgWrap'), '⚠️', 'Failed to load hierarchy', e.message);
     }
 
     // Live status updates
@@ -117,8 +116,7 @@ Pages.orgChart = {
 
   _renderTree() {
     if (!window.d3) {
-      document.getElementById('orgChartSvgWrap').innerHTML =
-        `<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-title">D3.js not loaded</div><div class="empty-state-desc">Check CDN connectivity</div></div>`;
+      Utils.showEmpty(document.getElementById('orgChartSvgWrap'), '⚠️', 'D3.js not loaded', 'Check CDN connectivity');
       return;
     }
 
@@ -162,7 +160,7 @@ Pages.orgChart = {
       .append('svg')
       .attr('width', W)
       .attr('height', H)
-      .style('background', 'var(--bg-primary)');
+      .style('background', 'var(--bg-inset)');
 
     // Zoom + pan
     const g = svgEl.append('g');
@@ -186,7 +184,7 @@ Pages.orgChart = {
       .append('path')
       .attr('class', 'org-link')
       .attr('fill', 'none')
-      .attr('stroke', 'var(--border-subtle)')
+      .attr('stroke', 'var(--border-default)')
       .attr('stroke-width', 1.5)
       .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
 
@@ -242,7 +240,7 @@ Pages.orgChart = {
     const teamColor = agent ? Utils.teamColor(agent) : (nodeData.teamColor || '#55556A');
 
     return `
-      <div style="width:180px;min-height:64px;background:var(--bg-secondary);border:1.5px solid ${teamColor}40;border-left:3px solid ${teamColor};border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
+      <div style="width:180px;min-height:64px;background:var(--bg-surface);border:1.5px solid ${teamColor}40;border-left:3px solid ${teamColor};border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s"
         onmouseover="this.style.borderColor='${teamColor}';this.style.boxShadow='0 0 16px rgba(181,204,24,0.15)'"
         onmouseout="this.style.borderColor='${teamColor}40';this.style.boxShadow='none';this.style.borderLeftColor='${teamColor}'">
         <div class="org-node-status-dot" style="position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--status-${statusCls})"></div>

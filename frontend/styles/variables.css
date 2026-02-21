@@ -24,8 +24,9 @@
   --border-active:  #3A3A48;
 
   /* Legacy aliases */
-  --border-subtle: #1F1F28;
-  --border-focus:  #3A3A48;
+  --border-subtle:  #1F1F28;
+  --border-focus:   #3A3A48;
+  --border-primary: #1F1F28;
 
   /* TEXT */
   --text-primary:   #ECECF1;
@@ -122,6 +123,7 @@ body.theme-light {
   --border-active:  #A1A1AA;
   --border-subtle:  #E4E4E7;
   --border-focus:   #A1A1AA;
+  --border-primary: #E4E4E7;
 
   --text-primary:   #09090B;
   --text-secondary: #52525B;

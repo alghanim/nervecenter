@@ -28,7 +28,12 @@ Pages.kanban = {
     container.innerHTML = `
       <div class="kanban-filters">
         <div class="search-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
           <input class="input" type="text" placeholder="Search tasks..." id="kanbanSearch"
             oninput="Pages.kanban._onSearch(this.value)">
         </div>
@@ -69,7 +74,9 @@ Pages.kanban = {
         <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <span style="font:600 var(--text-lg)/24px var(--font-body);color:var(--text-primary)">New Task</span>
-            <button class="btn-icon" onclick="Pages.kanban._closeModal()">✕</button>
+            <button class="btn-icon" onclick="Pages.kanban._closeModal()" aria-label="Close">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
           </div>
           <div style="display:flex;flex-direction:column;gap:14px">
             <div>
@@ -275,13 +282,13 @@ Pages.kanban = {
       ? `<span class="task-card__avatar" title="${Utils.esc(agent?.name || assignee)}">${Utils.esc(emoji || '👤')}</span><span>${Utils.esc(agent?.name || assignee)}</span>`
       : `<span class="task-card__unassigned">Unassigned</span>`;
 
-    const stuckStyle = isStuck ? 'border-left: 3px solid #F59E0B;' : '';
+    const priorityClass = isStuck ? 'task-card--high' : `task-card--${priority}`;
     const stuckBadge = isStuck
-      ? `<span style="background:#F59E0B;color:#000;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;white-space:nowrap">⚠️ Stuck</span>`
+      ? `<span style="background:var(--warning-muted);color:var(--warning);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1.5l4 7H1l4-7Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Stuck</span>`
       : '';
 
     return `
-      <div class="task-card" data-task-id="${Utils.esc(t.id)}" draggable="true" style="${stuckStyle}">
+      <div class="task-card ${priorityClass}" data-task-id="${Utils.esc(t.id)}" draggable="true">
         <div class="task-card__header-row">
           ${inProgress ? '<span class="task-card__progress-dot" title="In Progress"></span>' : ''}
           <div class="task-card__title">${Utils.esc(t.title || 'Untitled')}</div>
@@ -290,7 +297,7 @@ Pages.kanban = {
         <div class="task-card__meta">
           ${assigneeHTML}
           ${priority ? `<span class="${Utils.priorityClass(priority)}">${Utils.capitalize(priority)}</span>` : ''}
-          ${t.estimate ? `<span>⏱ ${Utils.esc(t.estimate)}</span>` : ''}
+          ${t.estimate ? `<span style="color:var(--text-tertiary)">${Utils.esc(t.estimate)}</span>` : ''}
         </div>
         ${tags.length ? `<div class="task-card__tags">${tags.map(tag => `<span class="task-card__tag">#${Utils.esc(tag)}</span>`).join('')}</div>` : ''}
       </div>`;
@@ -331,7 +338,7 @@ Pages.kanban = {
     } catch (_) { history = []; }
 
     if (!task) {
-      if (content) content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Task not found</div></div>';
+      if (content) Utils.showEmpty(content, '⚠️', 'Task not found');
       return;
     }
 
@@ -350,7 +357,9 @@ Pages.kanban = {
               <span class="${Utils.priorityClass(priority)}" style="font-size:12px">${Utils.capitalize(priority)}</span>
             </div>
           </div>
-          <button class="slide-panel-close" onclick="Pages.kanban._closeDrawer()">✕</button>
+          <button class="slide-panel-close" onclick="Pages.kanban._closeDrawer()" aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
         </div>
 
         <!-- Meta -->

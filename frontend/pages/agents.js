@@ -30,8 +30,7 @@ Pages.agents = {
       this._agents = await API.getAgents();
       this._paintGrid();
     } catch (e) {
-      document.getElementById('agentsGrid').innerHTML =
-        `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load agents</div><div class="empty-state-desc">${Utils.esc(e.message)}</div></div>`;
+      Utils.showEmpty(document.getElementById('agentsGrid'), '⚠️', 'Failed to load agents', e.message);
     }
 
     // WS live status
@@ -66,7 +65,6 @@ Pages.agents = {
     }
 
     grid.innerHTML = this._agents.map(a => {
-      const statusClass = Utils.statusClass(a.status);
       const teamStyle = Utils.teamBadgeStyle(a);
       const team = a.team || '';
       const model = Utils.formatModel(a.currentModel || a.model);
@@ -78,16 +76,12 @@ Pages.agents = {
               <span class="agent-card__emoji">${Utils.esc(a.emoji || '🤖')}</span>
               <span class="agent-card__name">${Utils.esc(a.name || a.displayName || agentId)}</span>
             </div>
-            <div class="agent-card__status">
-              <span class="status-dot status-dot--${statusClass}${statusClass === 'online' ? ' status-dot--pulse' : ''}"></span>
-              <span>${Utils.statusLabel(a.status)}</span>
-            </div>
+            ${Utils.statusPill(a.status)}
           </div>
           <div class="agent-card__role">${Utils.esc(a.role || '')}</div>
-          ${team ? `<span class="badge" style="${teamStyle}">${Utils.esc(team)}</span>` : ''}
           <div class="agent-card__footer">
             <span class="agent-card__model">${Utils.esc(model)}</span>
-            <span class="agent-card__view">View →</span>
+            ${team ? `<span class="badge" style="${teamStyle}">${Utils.esc(team)}</span>` : ''}
           </div>
         </div>`;
     }).join('');
@@ -102,35 +96,34 @@ Pages.agents = {
       const agents = await API.getAgents();
       agent = agents.find(a => a.id === agentId || a.name === agentId);
     } catch (e) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Agent not found</div></div>`;
+      Utils.showEmpty(container, '⚠️', 'Agent not found');
       return;
     }
 
     if (!agent) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">Agent "${agentId}" not found</div></div>`;
+      Utils.showEmpty(container, '🔍', `Agent "${agentId}" not found`);
       return;
     }
 
-    const statusClass = Utils.statusClass(agent.status);
     const teamStyle = agent.team ? `style="${Utils.teamBadgeStyle(agent)}"` : '';
 
     container.innerHTML = `
       <div class="agent-detail-header">
         <button class="agent-detail-back" onclick="App.navigate('agents')">
-          ← Back to Agents
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Agents
         </button>
         <div class="agent-detail-title">
           <span class="agent-detail-emoji">${Utils.esc(agent.emoji || '🤖')}</span>
           <span class="agent-detail-name">${Utils.esc(agent.name || agent.displayName || agentId)}</span>
           <div class="agent-detail-status">
-            <span class="status-dot status-dot--${statusClass}${statusClass === 'online' ? ' status-dot--pulse' : ''}"></span>
-            <span>${Utils.statusLabel(agent.status)}</span>
+            ${Utils.statusPill(agent.status)}
           </div>
         </div>
         <div class="agent-detail-meta">
           <span>${Utils.esc(agent.role || '')}</span>
-          ${agent.team ? `<span>·</span><span class="badge" ${teamStyle}>${Utils.esc(agent.team)}</span>` : ''}
-          ${agent.currentModel ? `<span>·</span><span style="font-family:var(--font-display);font-size:12px;color:var(--text-tertiary)">${Utils.esc(agent.currentModel)}</span>` : ''}
+          ${agent.team ? `<span style="color:var(--text-tertiary)">·</span><span class="badge" ${teamStyle}>${Utils.esc(agent.team)}</span>` : ''}
+          ${agent.currentModel ? `<span style="color:var(--text-tertiary)">·</span><span class="model-badge">${Utils.esc(agent.currentModel)}</span>` : ''}
         </div>
       </div>
 
@@ -212,7 +205,9 @@ Pages.agents = {
           <span class="content-timestamp-text" id="tsText_${tab}" title="${modTime ? Utils.absTime(fileData.modified) : ''}">
             ${modTime ? 'Updated ' + Utils.relTime(fileData.modified) : ''}
           </span>
-          <button class="content-timestamp-refresh" onclick=\"Pages.agents._loadTab('${tab}', '${agentId}')\" title="Refresh">↻</button>
+          <button class="content-timestamp-refresh" onclick=\"Pages.agents._loadTab('${tab}', '${agentId}')\" title="Refresh" aria-label="Refresh">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 6A4.5 4.5 0 106 1.5a4.5 4.5 0 00-3.2 1.3L1.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 1.5V4H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>`;
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load data', e.message);
@@ -241,7 +236,7 @@ Pages.agents = {
         html += `<div style="display:flex;flex-direction:column;gap:8px">`;
         skills.forEach(skill => {
           html += `
-            <div style="background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;padding:12px 16px;display:flex;align-items:baseline;gap:12px">
+            <div style="background:var(--bg-surface);border:1px solid var(--border-default);border-radius:8px;padding:12px 16px;display:flex;align-items:baseline;gap:12px">
               <span style="font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-primary);min-width:160px">${Utils.esc(skill.name)}</span>
               <span style="font-size:13px;color:var(--text-secondary)">${Utils.esc(skill.description || 'No description')}</span>
             </div>`;

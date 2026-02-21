@@ -189,32 +189,34 @@ func (r *registry) load() error {
 		branding.Theme = "dark"
 	}
 
-	// Auto-discover agents from openclaw agents directory
-	// Build temporary name/ID sets for fast lookup
-	knownNames := make(map[string]bool, len(flat))
-	knownIDs := make(map[string]bool, len(flat))
-	for _, a := range flat {
-		knownNames[a.Name] = true
-		knownIDs[a.ID] = true
+	// Official 19 team agents — only these are shown on the board.
+	officialAgents := map[string]bool{
+		"thunder": true, "titan": true, "sage": true, "muse": true,
+		"maven": true, "sentinel": true, "forge": true, "pixel": true,
+		"glass": true, "anvil": true, "scout": true, "chrono": true,
+		"gear": true, "prism": true, "ink": true, "flare": true,
+		"bolt": true, "ledger": true, "quill": true,
 	}
-	legacyAliases := make(map[string]bool)
-	for _, aliases := range af.LegacyDirs {
-		for _, alias := range aliases {
-			legacyAliases[alias] = true
+
+	// Filter YAML-loaded agents to only official ones
+	filtered := make([]Agent, 0, len(officialAgents))
+	seen := make(map[string]bool)
+	for _, a := range flat {
+		if officialAgents[a.ID] && !seen[a.ID] {
+			filtered = append(filtered, a)
+			seen[a.ID] = true
 		}
 	}
 
+	// Auto-add any official agents not yet in the YAML
 	agentsDir := filepath.Join(openClawDir, "agents")
-	if dirEntries, err := os.ReadDir(agentsDir); err == nil {
-		for _, entry := range dirEntries {
-			if !entry.IsDir() {
-				continue
-			}
-			name := entry.Name()
-			if knownNames[name] || knownIDs[name] || legacyAliases[name] {
-				continue
-			}
-			flat = append(flat, Agent{
+	for name := range officialAgents {
+		if seen[name] {
+			continue
+		}
+		// Check if the agent directory exists
+		if info, err := os.Stat(filepath.Join(agentsDir, name)); err == nil && info.IsDir() {
+			filtered = append(filtered, Agent{
 				ID:        name,
 				Name:      name,
 				Emoji:     "🤖",
@@ -222,11 +224,11 @@ func (r *registry) load() error {
 				Team:      "Discovered",
 				TeamColor: "#6B7280",
 			})
-			knownNames[name] = true
-			knownIDs[name] = true
-			log.Printf("[config] Auto-discovered agent: %s", name)
+			seen[name] = true
+			log.Printf("[config] Added official agent from agents dir: %s", name)
 		}
 	}
+	flat = filtered
 
 	// Build maps after all agents are finalized (avoids pointer invalidation)
 	byName := make(map[string]*Agent, len(flat))

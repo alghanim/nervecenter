@@ -74,19 +74,19 @@ Pages.dashboard = {
     ];
 
     const stuckCard = stuckCount > 0
-      ? `<div class="stat-card" style="border-color:#F59E0B">
-          <div class="stat-number" style="color:#F59E0B">⚠️ ${stuckCount}</div>
-          <div class="stat-label" style="color:#F59E0B">Stuck Tasks</div>
+      ? `<div class="stat-card" style="border-color:var(--warning)">
+          <div class="stat-label" style="color:var(--warning)">Stuck Tasks</div>
+          <div class="stat-number" style="color:var(--warning)">${stuckCount}</div>
         </div>`
-      : `<div class="stat-card" style="opacity:0.5">
-          <div class="stat-number" style="color:var(--text-tertiary)">✓</div>
+      : `<div class="stat-card">
           <div class="stat-label" style="color:var(--text-tertiary)">All Clear</div>
+          <div class="stat-number" style="color:var(--success)">✓</div>
         </div>`;
 
     grid.innerHTML = items.map(({ num, label }) => `
       <div class="stat-card">
-        <div class="stat-number">${num}</div>
         <div class="stat-label">${label}</div>
+        <div class="stat-number">${num}</div>
       </div>`).join('') + stuckCard;
   },
 
@@ -106,11 +106,10 @@ Pages.dashboard = {
 
     el.innerHTML = `<div class="mini-agent-list">
       ${sorted.slice(0, 12).map(a => `
-        <div class="mini-agent-item" style="cursor:pointer" onclick="App.navigate('agents/${Utils.esc(a.id || a.name)}')">
+        <div class="mini-agent-item" onclick="App.navigate('agents/${Utils.esc(a.id || a.name)}')">
           <span class="mini-agent-emoji">${Utils.esc(a.emoji || '🤖')}</span>
           <span class="mini-agent-name">${Utils.esc(a.name || a.displayName || a.id)}</span>
-          <span class="mini-agent-status-label">${Utils.statusLabel(a.status)}</span>
-          <span class="status-dot status-dot--${Utils.statusClass(a.status)}"></span>
+          ${Utils.statusPill(a.status)}
         </div>`).join('')}
     </div>`;
   },

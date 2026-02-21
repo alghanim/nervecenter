@@ -30,41 +30,93 @@
   <!-- ══════════ SIDEBAR ══════════ -->
   <nav id="sidebar">
     <div class="sidebar-header">
-      <span class="sidebar-logo" id="sidebarLogo">🤖</span>
+      <!-- Logomark §8 -->
+      <div class="sidebar-logo" id="sidebarLogo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L21 7.5V16.5L12 22L3 16.5V7.5L12 2Z" stroke="#6366F1" stroke-width="1.5" fill="rgba(99,102,241,0.1)"/>
+          <circle cx="12" cy="12" r="3" fill="#6366F1"/>
+          <line x1="12" y1="9" x2="12" y2="5" stroke="#6366F1" stroke-width="1.5"/>
+          <line x1="14.6" y1="13.5" x2="18" y2="15.5" stroke="#6366F1" stroke-width="1.5"/>
+          <line x1="9.4" y1="13.5" x2="6" y2="15.5" stroke="#6366F1" stroke-width="1.5"/>
+        </svg>
+      </div>
       <span class="sidebar-title" id="sidebarTitle">AgentBoard</span>
-      <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/>
-          <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
-          <rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+      <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <!-- Chevron left — collapses; right when collapsed -->
+        <svg id="sidebarToggleIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </div>
 
     <div class="sidebar-nav">
       <div class="nav-section">
-        <a class="nav-item" data-nav="dashboard" href="#dashboard">
-          <span class="nav-icon">◉</span>
+        <a class="nav-item" data-nav="dashboard" href="#dashboard" title="Dashboard">
+          <span class="nav-icon">
+            <!-- layout-grid icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
           <span class="nav-label">Dashboard</span>
         </a>
-        <a class="nav-item" data-nav="agents" href="#agents">
-          <span class="nav-icon">👥</span>
+        <a class="nav-item" data-nav="agents" href="#agents" title="Agents">
+          <span class="nav-icon">
+            <!-- users icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M1 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M11 7.5c1.4 0 2.5 1.1 2.5 2.5v1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="11" cy="5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
           <span class="nav-label">Agents</span>
         </a>
-        <a class="nav-item" data-nav="org-chart" href="#org-chart">
-          <span class="nav-icon">🗺️</span>
+        <a class="nav-item" data-nav="org-chart" href="#org-chart" title="Org Chart">
+          <span class="nav-icon">
+            <!-- git-branch icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="4" cy="4" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="4" cy="12" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="12" cy="6" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4 5.5V10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M4 5.5C4 8 12 7.5 12 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
           <span class="nav-label">Org Chart</span>
         </a>
-        <a class="nav-item" data-nav="kanban" href="#kanban">
-          <span class="nav-icon">📋</span>
+        <a class="nav-item" data-nav="kanban" href="#kanban" title="Kanban">
+          <span class="nav-icon">
+            <!-- columns icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="3.5" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="6.25" y="2" width="3.5" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="10.5" y="2" width="3.5" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
           <span class="nav-label">Kanban</span>
         </a>
-        <a class="nav-item" data-nav="activity" href="#activity">
-          <span class="nav-icon">📡</span>
+        <a class="nav-item" data-nav="activity" href="#activity" title="Activity">
+          <span class="nav-icon">
+            <!-- activity/pulse icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <polyline points="1,8 4,8 6,3 8,13 10,6 12,8 15,8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <span class="nav-label">Activity</span>
         </a>
-        <a class="nav-item" data-nav="reports" href="#reports">
-          <span class="nav-icon">📊</span>
+        <a class="nav-item" data-nav="reports" href="#reports" title="Reports">
+          <span class="nav-icon">
+            <!-- bar-chart icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2" y="9" width="3" height="5" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="6.5" y="5" width="3" height="9" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+              <rect x="11" y="2" width="3" height="12" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </span>
           <span class="nav-label">Reports</span>
         </a>
       </div>
@@ -72,10 +124,19 @@
 
     <div class="sidebar-footer">
       <div class="nav-divider"></div>
-      <a class="nav-item" data-nav="settings" href="#settings">
-        <span class="nav-icon">⚙️</span>
+      <a class="nav-item" data-nav="settings" href="#settings" title="Settings">
+        <span class="nav-icon">
+          <!-- settings/gear icon -->
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span class="nav-label">Settings</span>
       </a>
+      <div class="sidebar-version">
+        <span>v2.0.0</span>
+      </div>
     </div>
   </nav>
 
@@ -85,16 +146,34 @@
     <header id="page-header">
       <!-- Mobile hamburger (only visible on ≤959px) -->
       <button id="mobileMenuBtn" class="mobile-menu-btn" title="Open navigation" aria-label="Open navigation">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <rect x="2" y="4"  width="16" height="2" rx="1" fill="currentColor"/>
-          <rect x="2" y="9"  width="16" height="2" rx="1" fill="currentColor"/>
-          <rect x="2" y="14" width="16" height="2" rx="1" fill="currentColor"/>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
-      <span class="page-header-title" id="pageTitle">◉ Dashboard</span>
+
+      <div class="page-header-info" id="pageHeaderInfo">
+        <span class="page-header-title" id="pageTitle">Dashboard</span>
+        <span class="page-header-subtitle" id="pageSubtitle">Overview of your agent fleet</span>
+      </div>
+
       <div class="page-breadcrumb" id="pageBreadcrumb" style="display:none"></div>
-      <div class="page-header-actions" style="margin-left:auto;display:flex;align-items:center;gap:8px">
-        <button id="themeToggle" class="btn-icon" title="Toggle light/dark theme" onclick="Theme.toggle()">🌙</button>
+
+      <div class="page-header-actions">
+        <!-- WS connection indicator -->
+        <div class="ws-indicator" id="wsIndicator" title="WebSocket status"></div>
+
+        <!-- Theme toggle -->
+        <button id="themeToggle" class="btn-icon" title="Toggle light/dark theme" onclick="Theme.toggle()" aria-label="Toggle theme">
+          <!-- Moon icon (dark mode indicator) -->
+          <svg id="themeIconMoon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M13.5 10.5A6 6 0 015.5 2.5a6 6 0 108 8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- Sun icon (light mode indicator) — shown in light theme -->
+          <svg id="themeIconSun" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="display:none">
+            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.6 3.6l1 1M11.4 11.4l1 1M3.6 12.4l1-1M11.4 4.6l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -112,31 +191,73 @@
 <!-- ══════════ MOBILE BOTTOM NAV ══════════ -->
 <nav id="mobile-bottom-nav" aria-label="Mobile navigation">
   <a class="bottom-nav-item" data-bottom-nav="dashboard" href="#dashboard">
-    <span class="bottom-nav-icon">◉</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Home</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="agents" href="#agents">
-    <span class="bottom-nav-icon">👥</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="7.5" cy="6.5" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M1.5 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M14 9.5c1.7 0 3 1.3 3 3V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="14" cy="6.5" r="2" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Agents</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="org-chart" href="#org-chart">
-    <span class="bottom-nav-icon">🗺️</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="5" cy="15" r="2" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="15" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5 7v6M5 7C5 10 15 9.5 15 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Org</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="kanban" href="#kanban">
-    <span class="bottom-nav-icon">📋</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="4.5" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="7.75" y="2.5" width="4.5" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="13" y="2.5" width="4.5" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Kanban</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="activity" href="#activity">
-    <span class="bottom-nav-icon">📡</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <polyline points="1.5,10 5,10 7.5,3.5 10,16.5 12.5,7.5 15,10 18.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Activity</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="reports" href="#reports">
-    <span class="bottom-nav-icon">📊</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2.5" y="11.5" width="4" height="6" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="8" y="6.5" width="4" height="11" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="13.5" y="2.5" width="4" height="15" rx="0.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Reports</span>
   </a>
   <a class="bottom-nav-item" data-bottom-nav="settings" href="#settings">
-    <span class="bottom-nav-icon">⚙️</span>
+    <span class="bottom-nav-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
     <span class="bottom-nav-label">Settings</span>
   </a>
 </nav>
@@ -158,6 +279,71 @@
 
 <!-- JS: App (must be last) -->
 <script src="js/app.js"></script>
+
+<!-- Post-load theme icon sync -->
+<script>
+  (function() {
+    // Sync theme icon on load
+    function syncThemeIcon() {
+      var isLight = document.body.classList.contains('theme-light');
+      var moon = document.getElementById('themeIconMoon');
+      var sun = document.getElementById('themeIconSun');
+      if (moon) moon.style.display = isLight ? 'none' : '';
+      if (sun) sun.style.display = isLight ? '' : 'none';
+    }
+
+    // Sidebar collapse icon sync
+    function syncSidebarIcon() {
+      var sidebar = document.getElementById('sidebar');
+      var icon = document.getElementById('sidebarToggleIcon');
+      if (!icon || !sidebar) return;
+      var isCollapsed = sidebar.classList.contains('collapsed');
+      icon.innerHTML = isCollapsed
+        ? '<path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+        : '<path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+
+    // WS indicator
+    function updateWsIndicator(connected, error) {
+      var el = document.getElementById('wsIndicator');
+      if (!el) return;
+      el.classList.remove('connected', 'error');
+      if (error) el.classList.add('error');
+      else if (connected) el.classList.add('connected');
+    }
+
+    // Expose for app.js to call
+    window._syncThemeIcon = syncThemeIcon;
+    window._syncSidebarIcon = syncSidebarIcon;
+    window._updateWsIndicator = updateWsIndicator;
+
+    // Run on load
+    window.addEventListener('DOMContentLoaded', function() {
+      syncThemeIcon();
+      syncSidebarIcon();
+
+      // Hook sidebar toggle
+      var toggle = document.getElementById('sidebarToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          setTimeout(syncSidebarIcon, 10);
+        });
+      }
+    });
+
+    // Observe theme changes
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.attributeName === 'class') {
+          syncThemeIcon();
+        }
+      });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      observer.observe(document.body, { attributes: true });
+    });
+  })();
+</script>
 
 </body>
 </html>
