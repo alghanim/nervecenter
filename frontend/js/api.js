@@ -42,6 +42,12 @@ window.API = {
     return apiFetch('/api/activity' + (qs ? '?' + qs : ''));
   },
   getAgentSoul: (id) => apiFetch(`/api/agents/${id}/soul`),
+  updateAgentSoul: (id, file, content) => apiFetch(`/api/agents/${id}/soul`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file, content })
+  }),
+  getAgentTimeline: (id, hours = 24) => apiFetch(`/api/agents/${id}/timeline?hours=${hours}`),
   getAgentSkills: (id) => apiFetch(`/api/agents/${id}/skills`),
   getStreamFiltered: (agentId, limit = 50) => apiFetch(`/api/openclaw/stream?agent_id=${encodeURIComponent(agentId)}&limit=${limit}`),
   getDashboardStats: () => apiFetch('/api/dashboard/stats'),

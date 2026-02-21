@@ -315,6 +315,300 @@ func (h *OpenClawHandler) GetAgentSoul(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, resp)
 }
 
+// UpdateAgentSoul handles PUT /api/agents/{id}/soul
+// Accepts {file: "memory"|"soul"|"heartbeat"|"agents", content: "..."}
+// and writes the content to the agent's workspace file.
+func (h *OpenClawHandler) UpdateAgentSoul(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	ca := config.GetAgentByID(id)
+	if ca == nil {
+		ca = config.GetAgent(id)
+	}
+	if ca == nil {
+		http.Error(w, "Agent not found", http.StatusNotFound)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20) // 2 MB limit
+	var req struct {
+		File    string `json:"file"`
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate file name — only allow the 4 safe files
+	allowedFiles := map[string]string{
+		"memory":    "MEMORY.md",
+		"soul":      "SOUL.md",
+		"heartbeat": "HEARTBEAT.md",
+		"agents":    "AGENTS.md",
+	}
+	filename, ok := allowedFiles[req.File]
+	if !ok {
+		http.Error(w, "Invalid file: must be one of memory, soul, heartbeat, agents", http.StatusBadRequest)
+		return
+	}
+
+	openClawDir := config.GetOpenClawDir()
+	agentID := ca.ID
+
+	// Resolve workspace directory (same logic as GetAgentSoul)
+	candidates := []string{
+		filepath.Join(openClawDir, "workspace-"+agentID),
+		filepath.Join(openClawDir, "workspace-"+ca.Name),
+	}
+	legacyDirs := config.GetLegacyDirs()
+	if aliases, ok := legacyDirs[ca.Name]; ok {
+		for _, alias := range aliases {
+			candidates = append(candidates, filepath.Join(openClawDir, "workspace-"+alias))
+		}
+	}
+	if agentID == "main" || ca.Name == "thunder" || ca.Name == "titan" {
+		candidates = append(candidates, filepath.Join(openClawDir, "workspace"))
+	}
+
+	allowedBase := filepath.Clean(openClawDir)
+
+	var workspaceDir string
+	for _, c := range candidates {
+		cleanCandidate := filepath.Clean(c)
+		if !strings.HasPrefix(cleanCandidate, allowedBase) {
+			continue
+		}
+		if info, err := os.Stat(cleanCandidate); err == nil && info.IsDir() {
+			workspaceDir = cleanCandidate
+			break
+		}
+	}
+	if workspaceDir == "" {
+		http.Error(w, "Workspace directory not found for agent", http.StatusNotFound)
+		return
+	}
+
+	// Construct target path and verify it stays within workspace
+	targetPath := filepath.Clean(filepath.Join(workspaceDir, filename))
+	if !strings.HasPrefix(targetPath, filepath.Clean(workspaceDir)+string(os.PathSeparator)) &&
+		targetPath != filepath.Clean(workspaceDir) {
+		http.Error(w, "Path traversal detected", http.StatusForbidden)
+		return
+	}
+
+	if err := os.WriteFile(targetPath, []byte(req.Content), 0644); err != nil {
+		http.Error(w, "Failed to write file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, map[string]string{"message": "File saved successfully", "file": filename})
+}
+
+// GetAgentTimeline handles GET /api/agents/{id}/timeline?hours=24
+// Returns a chronological list of key events from the agent's JSONL sessions.
+func (h *OpenClawHandler) GetAgentTimeline(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	ca := config.GetAgentByID(id)
+	if ca == nil {
+		ca = config.GetAgent(id)
+	}
+	if ca == nil {
+		http.Error(w, "Agent not found", http.StatusNotFound)
+		return
+	}
+
+	hoursParam := r.URL.Query().Get("hours")
+	hours := 24
+	if hoursParam != "" {
+		var n int
+		if _, err := fmt.Sscanf(hoursParam, "%d", &n); err == nil && n > 0 && n <= 168 {
+			hours = n
+		}
+	}
+
+	cutoff := time.Now().Add(-time.Duration(hours) * time.Hour)
+	agent := agentFromConfig(*ca)
+
+	openClawDir := config.GetOpenClawDir()
+	var allJSONLFiles []string
+
+	for _, dirName := range getSessionDirs(agent) {
+		sessionsDir := filepath.Join(openClawDir, "agents", dirName, "sessions")
+		entries, err := os.ReadDir(sessionsDir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".jsonl") {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			// Only include files modified within the time window (rough filter)
+			if info.ModTime().After(cutoff) {
+				allJSONLFiles = append(allJSONLFiles, filepath.Join(sessionsDir, e.Name()))
+			}
+		}
+	}
+
+	type TimelineEvent struct {
+		Timestamp string `json:"timestamp"`
+		Type      string `json:"type"` // tool_call | response | error | task
+		Title     string `json:"title"`
+		Detail    string `json:"detail"`
+	}
+
+	var events []TimelineEvent
+	seenTS := make(map[string]bool) // deduplicate by exact timestamp+type+title
+
+	for _, jsonlPath := range allJSONLFiles {
+		file, err := os.Open(jsonlPath)
+		if err != nil {
+			continue
+		}
+
+		scanner := bufio.NewScanner(file)
+		scanner.Buffer(make([]byte, 0, 256*1024), 1024*1024)
+
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			if len(line) == 0 {
+				continue
+			}
+			var entry map[string]interface{}
+			if err := json.Unmarshal(line, &entry); err != nil {
+				continue
+			}
+
+			entryType, _ := entry["type"].(string)
+			if entryType != "message" {
+				continue
+			}
+
+			ts := parseTS(entry)
+			if ts.Before(cutoff) {
+				continue
+			}
+
+			msg, ok := entry["message"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			role, _ := msg["role"].(string)
+
+			tsStr := ts.UTC().Format(time.RFC3339)
+
+			switch role {
+			case "user":
+				text := extractUserContent(msg)
+				if text == "" {
+					continue
+				}
+				// Filter out heartbeat messages (too noisy)
+				if strings.Contains(text, "HEARTBEAT") || strings.Contains(text, "heartbeat") {
+					continue
+				}
+				title := truncate(text, 80)
+				key := tsStr + ":task:" + title
+				if seenTS[key] {
+					continue
+				}
+				seenTS[key] = true
+				events = append(events, TimelineEvent{
+					Timestamp: tsStr,
+					Type:      "task",
+					Title:     title,
+					Detail:    text,
+				})
+
+			case "assistant":
+				content, ok := msg["content"].([]interface{})
+				if !ok {
+					continue
+				}
+				for _, block := range content {
+					bm, ok := block.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					blockType, _ := bm["type"].(string)
+					switch blockType {
+					case "text":
+						text, _ := bm["text"].(string)
+						text = strings.TrimSpace(text)
+						if text == "" || text == "HEARTBEAT_OK" {
+							continue
+						}
+						title := truncate(text, 80)
+						key := tsStr + ":response:" + title
+						if seenTS[key] {
+							continue
+						}
+						seenTS[key] = true
+						events = append(events, TimelineEvent{
+							Timestamp: tsStr,
+							Type:      "response",
+							Title:     title,
+							Detail:    text,
+						})
+					case "tool_use", "toolCall":
+						toolName, _ := bm["name"].(string)
+						args := extractToolArgs(bm)
+						cmd := formatCommand(toolName, args)
+						key := tsStr + ":tool_call:" + cmd
+						if seenTS[key] {
+							continue
+						}
+						seenTS[key] = true
+						argBytes, _ := json.Marshal(args)
+						events = append(events, TimelineEvent{
+							Timestamp: tsStr,
+							Type:      "tool_call",
+							Title:     cmd,
+							Detail:    string(argBytes),
+						})
+					}
+				}
+
+			case "toolResult":
+				toolName, _ := msg["toolName"].(string)
+				isError, _ := msg["isError"].(bool)
+				content := extractToolResultContent(msg)
+				if !isError {
+					continue // only record errors for tool results
+				}
+				title := toolName + ": " + truncate(content, 60)
+				key := tsStr + ":error:" + title
+				if seenTS[key] {
+					continue
+				}
+				seenTS[key] = true
+				events = append(events, TimelineEvent{
+					Timestamp: tsStr,
+					Type:      "error",
+					Title:     title,
+					Detail:    content,
+				})
+			}
+		}
+		file.Close()
+	}
+
+	// Sort by timestamp ascending
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].Timestamp < events[j].Timestamp
+	})
+
+	if events == nil {
+		events = []TimelineEvent{}
+	}
+	writeJSON(w, events)
+}
+
 // GetAgentSkills handles GET /api/agents/{id}/skills
 // Returns list of skills from global ~/.openclaw/skills/ directory.
 func (h *OpenClawHandler) GetAgentSkills(w http.ResponseWriter, r *http.Request) {
