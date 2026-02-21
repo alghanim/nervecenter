@@ -64,6 +64,7 @@ func main() {
 	searchHandler := &handlers.SearchHandler{}
 	performanceHandler := &handlers.PerformanceHandler{}
 	reportHandler := &handlers.ReportHandler{}
+	documentsHandler := &handlers.DocumentsHandler{}
 	metricsHandler := &handlers.MetricsHandler{}
 
 	// Agent status poller
@@ -139,6 +140,10 @@ func main() {
 	api.HandleFunc("/metrics/latency", metricsHandler.GetLatencyMetrics).Methods("GET")
 	api.HandleFunc("/metrics/cost-forecast", metricsHandler.GetCostForecast).Methods("GET")
 	api.HandleFunc("/metrics/efficiency", metricsHandler.GetEfficiencyScores).Methods("GET")
+
+	// Documents
+	api.HandleFunc("/documents", documentsHandler.ListDocuments).Methods("GET")
+	api.HandleFunc("/documents/content", documentsHandler.GetDocumentContent).Methods("GET")
 
 	// Global search
 	api.HandleFunc("/search", searchHandler.Search).Methods("GET")

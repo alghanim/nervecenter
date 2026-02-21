@@ -103,6 +103,7 @@ window.Branding = (function () {
     messaging:   { title: 'Messages',   subtitle: 'Send direct instructions to agents' },
     reports:     { title: 'Reports',    subtitle: 'Analytics and performance insights' },
     costs:       { title: 'Costs',      subtitle: 'Token usage and cost tracking' },
+    documents:   { title: 'Documents',  subtitle: 'Browse agent-generated files and specs' },
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
   };
 
@@ -276,6 +277,7 @@ window.Branding = (function () {
       case 'messaging':  page = Pages.messaging; break;
       case 'reports':    page = Pages.reports; break;
       case 'costs':      page = Pages.costs; break;
+      case 'documents':  page = Pages.documents; break;
       case 'settings':   page = Pages.settings; break;
       default:
         content.innerHTML = `<div class="empty-state">
