@@ -1,52 +1,57 @@
-/* AgentBoard — CSS Custom Properties */
-/* Following Prism's UX Spec §2 */
+/* AgentBoard — CSS Custom Properties v2.0 */
+/* Design Spec §1 — Professional Redesign */
 /* Note: fonts loaded via <link> in index.html */
 
 /* ═══════════════════════════
-   LIGHT THEME OVERRIDES
-   Applied via body.theme-light
+   DARK THEME (Primary)
 ═══════════════════════════ */
-body.theme-light {
-  --bg-primary:    #F8F9FA;
-  --bg-secondary:  #FFFFFF;
-  --bg-tertiary:   #F0F2F5;
-  --bg-elevated:   #FFFFFF;
-  --border-subtle: #E2E8F0;
-  --border-focus:  #CBD5E1;
-  --text-primary:   #1A1A2E;
-  --text-secondary: #4A4A6A;
-  --text-tertiary:  #9090A8;
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
-  --shadow-xl: 0 16px 48px rgba(0,0,0,0.12);
-}
-
 :root {
   /* BACKGROUND */
-  --bg-primary:    #0A0A0F;
-  --bg-secondary:  #12121A;
-  --bg-tertiary:   #1A1A25;
-  --bg-elevated:   #222230;
+  --bg-base:          #09090B;
+  --bg-surface:       #111113;
+  --bg-surface-hover: #18181B;
+  --bg-elevated:      #1C1C22;
+  --bg-inset:         #0C0C0E;
+
+  /* Legacy aliases (keep for compatibility) */
+  --bg-primary:   #09090B;
+  --bg-secondary: #111113;
+  --bg-tertiary:  #18181B;
 
   /* BORDERS */
-  --border-subtle: #2A2A3A;
-  --border-focus:  #3A3A50;
+  --border-default: #1F1F28;
+  --border-hover:   #2A2A35;
+  --border-active:  #3A3A48;
+
+  /* Legacy aliases */
+  --border-subtle: #1F1F28;
+  --border-focus:  #3A3A48;
 
   /* TEXT */
-  --text-primary:   #E8E8ED;
-  --text-secondary: #8888A0;
-  --text-tertiary:  #55556A;
+  --text-primary:   #ECECF1;
+  --text-secondary: #8B8BA3;
+  --text-tertiary:  #52525B;
+  --text-inverse:   #09090B;
 
-  /* ACCENT */
-  --accent:       #B5CC18;
-  --accent-hover: #C8DD30;
-  --accent-muted: rgba(181, 204, 24, 0.12);
+  /* ACCENT — Indigo */
+  --accent:       #6366F1;
+  --accent-hover: #818CF8;
+  --accent-muted: rgba(99, 102, 241, 0.10);
+  --accent-glow:  rgba(99, 102, 241, 0.15);
 
   /* STATUS */
-  --status-online:  #22C55E;
+  --success:       #10B981;
+  --success-muted: rgba(16, 185, 129, 0.10);
+  --warning:       #F59E0B;
+  --warning-muted: rgba(245, 158, 11, 0.10);
+  --danger:        #EF4444;
+  --danger-muted:  rgba(239, 68, 68, 0.10);
+  --neutral:       #52525B;
+
+  /* Legacy status aliases */
+  --status-online:  #10B981;
   --status-busy:    #F59E0B;
-  --status-offline: #55556A;
+  --status-offline: #52525B;
   --status-error:   #EF4444;
 
   /* TEAM COLORS */
@@ -60,9 +65,10 @@ body.theme-light {
   --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* TEXT SCALE */
-  --text-xs:   12px;
-  --text-sm:   13px;
-  --text-base: 14px;
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
   --text-lg:   16px;
   --text-xl:   20px;
   --text-2xl:  24px;
@@ -70,12 +76,60 @@ body.theme-light {
   --text-4xl:  40px;
 
   /* SHADOWS */
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
-  --shadow-xl: 0 16px 48px rgba(0,0,0,0.35);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.5);
 
-  /* SIDEBAR */
-  --sidebar-width:    240px;
-  --sidebar-collapsed: 64px;
+  /* RADIUS */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-pill: 9999px;
+
+  /* LAYOUT */
+  --sidebar-width:     240px;
+  --sidebar-collapsed: 56px;
+  --header-height:     56px;
+  --content-max:       1400px;
+
+  /* TRANSITIONS */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast:   150ms;
+  --dur-normal: 200ms;
+  --dur-slow:   300ms;
+}
+
+/* ═══════════════════════════
+   LIGHT THEME OVERRIDES
+   Applied via body.theme-light
+═══════════════════════════ */
+body.theme-light {
+  --bg-base:          #FAFAFA;
+  --bg-surface:       #FFFFFF;
+  --bg-surface-hover: #F4F4F5;
+  --bg-elevated:      #FFFFFF;
+  --bg-inset:         #F4F4F5;
+
+  --bg-primary:   #FAFAFA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary:  #F4F4F5;
+
+  --border-default: #E4E4E7;
+  --border-hover:   #D4D4D8;
+  --border-active:  #A1A1AA;
+  --border-subtle:  #E4E4E7;
+  --border-focus:   #A1A1AA;
+
+  --text-primary:   #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary:  #A1A1AA;
+  --text-inverse:   #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.12);
 }

@@ -180,14 +180,6 @@ func (r *registry) load() error {
 		hierarchy = append(hierarchy, buildHierarchyNode(root, ""))
 	}
 
-	byName := make(map[string]*Agent, len(flat))
-	byID := make(map[string]*Agent, len(flat))
-	for i := range flat {
-		a := &flat[i]
-		byName[a.Name] = a
-		byID[a.ID] = a
-	}
-
 	// Resolve branding defaults
 	branding := af.Branding
 	if branding.TeamName == "" {
@@ -195,6 +187,54 @@ func (r *registry) load() error {
 	}
 	if branding.Theme == "" {
 		branding.Theme = "dark"
+	}
+
+	// Auto-discover agents from openclaw agents directory
+	// Build temporary name/ID sets for fast lookup
+	knownNames := make(map[string]bool, len(flat))
+	knownIDs := make(map[string]bool, len(flat))
+	for _, a := range flat {
+		knownNames[a.Name] = true
+		knownIDs[a.ID] = true
+	}
+	legacyAliases := make(map[string]bool)
+	for _, aliases := range af.LegacyDirs {
+		for _, alias := range aliases {
+			legacyAliases[alias] = true
+		}
+	}
+
+	agentsDir := filepath.Join(openClawDir, "agents")
+	if dirEntries, err := os.ReadDir(agentsDir); err == nil {
+		for _, entry := range dirEntries {
+			if !entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			if knownNames[name] || knownIDs[name] || legacyAliases[name] {
+				continue
+			}
+			flat = append(flat, Agent{
+				ID:        name,
+				Name:      name,
+				Emoji:     "🤖",
+				Role:      "",
+				Team:      "Discovered",
+				TeamColor: "#6B7280",
+			})
+			knownNames[name] = true
+			knownIDs[name] = true
+			log.Printf("[config] Auto-discovered agent: %s", name)
+		}
+	}
+
+	// Build maps after all agents are finalized (avoids pointer invalidation)
+	byName := make(map[string]*Agent, len(flat))
+	byID := make(map[string]*Agent, len(flat))
+	for i := range flat {
+		a := &flat[i]
+		byName[a.Name] = a
+		byID[a.ID] = a
 	}
 
 	r.mu.Lock()

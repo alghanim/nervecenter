@@ -239,6 +239,13 @@ func (h *OpenClawHandler) GetAgentSoul(w http.ResponseWriter, r *http.Request) {
 		filepath.Join(openClawDir, "workspace-"+agentID),
 		filepath.Join(openClawDir, "workspace-"+ca.Name),
 	}
+	// Also try legacy directory aliases as workspace names
+	legacyDirs := config.GetLegacyDirs()
+	if aliases, ok := legacyDirs[ca.Name]; ok {
+		for _, alias := range aliases {
+			candidates = append(candidates, filepath.Join(openClawDir, "workspace-"+alias))
+		}
+	}
 	// Special case: if id/name is "titan" or the root, also try workspace (no suffix)
 	if agentID == "main" || ca.Name == "thunder" || ca.Name == "titan" {
 		candidates = append(candidates,
@@ -586,14 +593,23 @@ func getOCStream(limit int, agentFilter string) []OCStreamEntry {
 		}
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].Timestamp.After(all[j].Timestamp)
+	// Filter out stale entries older than 48 hours
+	cutoff := time.Now().Add(-48 * time.Hour)
+	filtered := make([]OCStreamEntry, 0, len(all))
+	for _, e := range all {
+		if e.Timestamp.After(cutoff) {
+			filtered = append(filtered, e)
+		}
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Timestamp.After(filtered[j].Timestamp)
 	})
 
-	if len(all) > limit {
-		all = all[:limit]
+	if len(filtered) > limit {
+		filtered = filtered[:limit]
 	}
-	return all
+	return filtered
 }
 
 func getOCStats() OCStats {
@@ -965,8 +981,21 @@ func formatCommand(toolName string, args map[string]interface{}) string {
 }
 
 func parseTS(entry map[string]interface{}) time.Time {
+	// Try float64 (milliseconds since epoch)
 	if ts, ok := entry["timestamp"].(float64); ok {
 		return time.Unix(0, int64(ts)*int64(time.Millisecond))
+	}
+	// Try ISO 8601 string
+	if ts, ok := entry["timestamp"].(string); ok {
+		if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
+			return t
+		}
+		if t, err := time.Parse(time.RFC3339, ts); err == nil {
+			return t
+		}
+		if t, err := time.Parse("2006-01-02T15:04:05.000Z", ts); err == nil {
+			return t
+		}
 	}
 	return time.Now()
 }

@@ -1,5 +1,5 @@
-/* AgentBoard — Shell & Layout */
-/* Prism's UX Spec §1 */
+/* AgentBoard — Shell & Layout v2.0 */
+/* Design Spec §3, §4.1, §4.2 */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -9,12 +9,25 @@
 
 html, body {
   height: 100%;
-  background: var(--bg-primary);
+  background: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: var(--text-base);
-  line-height: 22px;
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════
+   PAGE ENTRANCE ANIMATION
+═══════════════════════════ */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-enter 150ms var(--ease-entrance) both;
 }
 
 /* ═══════════════════════════
@@ -27,16 +40,16 @@ html, body {
 }
 
 /* ═══════════════════════════
-   SIDEBAR
+   SIDEBAR  §4.1
 ═══════════════════════════ */
 #sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  transition: width var(--dur-normal) var(--ease-default);
   overflow: hidden;
   position: relative;
   z-index: 50;
@@ -46,71 +59,83 @@ html, body {
   width: var(--sidebar-collapsed);
 }
 
-/* Sidebar header */
+/* ── Sidebar Header ── */
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 16px;
-  border-bottom: 1px solid var(--border-subtle);
-  height: 64px;
+  gap: 10px;
+  padding: 0 14px;
+  height: var(--header-height);
+  border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
   overflow: hidden;
 }
 
 .sidebar-logo {
-  font-size: 20px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-title {
-  font: 700 var(--text-lg)/24px var(--font-display);
-  color: var(--accent);
+  font: 600 var(--text-md)/1 var(--font-body);
+  color: var(--text-primary);
   white-space: nowrap;
-  transition: opacity 0.15s;
+  letter-spacing: -0.01em;
+  transition: opacity var(--dur-fast) var(--ease-default), width var(--dur-fast) var(--ease-default);
+  flex: 1;
+  overflow: hidden;
 }
 
 #sidebar.collapsed .sidebar-title {
   opacity: 0;
+  width: 0;
   pointer-events: none;
+  overflow: hidden;
 }
 
-/* Hamburger toggle */
+/* Collapse toggle button */
 .sidebar-toggle {
   margin-left: auto;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--text-secondary);
-  border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease-default), color var(--dur-fast) var(--ease-default);
 }
 .sidebar-toggle:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-surface-hover);
   color: var(--text-primary);
 }
+#sidebar.collapsed .sidebar-toggle {
+  margin-left: 0;
+}
 
-/* Nav */
+/* ── Nav ── */
 .sidebar-nav {
   flex: 1;
-  padding: 12px 8px;
+  padding: 8px 8px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .nav-section {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .nav-divider {
   height: 1px;
-  background: var(--border-subtle);
+  background: var(--border-default);
   margin: 8px 8px;
 }
 
@@ -118,49 +143,81 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--text-secondary);
-  font: 500 var(--text-base)/20px var(--font-body);
-  transition: background 0.15s, color 0.15s;
+  font: 500 var(--text-md)/1 var(--font-body);
+  transition: background var(--dur-fast) var(--ease-default), color var(--dur-fast) var(--ease-default), border-color var(--dur-fast) var(--ease-default);
   white-space: nowrap;
   overflow: hidden;
   text-decoration: none;
   user-select: none;
+  position: relative;
+  border-left: 2px solid transparent;
+  margin-bottom: 2px;
 }
 
 .nav-item:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-surface-hover);
   color: var(--text-primary);
 }
 
 .nav-item.active {
-  background: var(--accent-muted);
-  color: var(--accent);
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-left-color: var(--accent);
 }
 
 .nav-item .nav-icon {
-  font-size: 16px;
   flex-shrink: 0;
-  width: 20px;
-  text-align: center;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
 }
 
 .nav-item .nav-label {
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast) var(--ease-default);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 #sidebar.collapsed .nav-label {
   opacity: 0;
   pointer-events: none;
+  width: 0;
+  overflow: hidden;
 }
 
-/* Sidebar footer (settings) */
+/* Sidebar tooltip for collapsed state */
+.nav-item[title]:not(:has(.nav-label:not([style*="opacity: 0"]))) {
+  position: relative;
+}
+
+/* ── Sidebar Footer ── */
 .sidebar-footer {
-  padding: 8px 8px 16px;
-  border-top: 1px solid var(--border-subtle);
+  padding: 8px 8px 8px;
   overflow: hidden;
+}
+
+.sidebar-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity var(--dur-fast) var(--ease-default);
+}
+
+#sidebar.collapsed .sidebar-version {
+  opacity: 0;
 }
 
 /* ═══════════════════════════
@@ -172,27 +229,48 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  background: var(--bg-base);
 }
 
-/* Page header */
+/* ── Page Header §4.2 ── */
 #page-header {
-  height: 56px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
-  padding: 0 32px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
+  padding: 0 24px;
+  box-shadow: inset 0 -1px 0 var(--border-default);
+  background: var(--bg-surface);
   flex-shrink: 0;
-  gap: 16px;
+  gap: 12px;
+}
+
+.page-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .page-header-title {
-  font: 700 var(--text-2xl)/32px var(--font-display);
+  font: 600 var(--text-xl)/1.2 var(--font-body);
   color: var(--text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-header-subtitle {
+  font: 400 var(--text-sm)/1 var(--font-body);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .page-breadcrumb {
-  font: 400 var(--text-sm)/18px var(--font-body);
+  font: 400 var(--text-sm)/1 var(--font-body);
   color: var(--text-tertiary);
   display: flex;
   align-items: center;
@@ -200,17 +278,44 @@ html, body {
 }
 .page-breadcrumb span { color: var(--text-secondary); }
 .page-breadcrumb a {
-  color: var(--accent);
+  color: var(--text-secondary);
   text-decoration: none;
   cursor: pointer;
+  transition: color var(--dur-fast);
 }
-.page-breadcrumb a:hover { text-decoration: underline; }
+.page-breadcrumb a:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
 
-/* Content area */
+.page-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* WS connection indicator */
+.ws-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neutral);
+  transition: background var(--dur-normal);
+}
+.ws-indicator.connected {
+  background: var(--success);
+}
+.ws-indicator.error {
+  background: var(--danger);
+}
+
+/* ── Content Area ── */
 #content {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
+  padding: 24px;
 }
 
 /* ═══════════════════════════
@@ -223,16 +328,17 @@ html, body {
   gap: 12px;
   padding: 48px;
   color: var(--text-secondary);
-  font: 400 var(--text-base)/22px var(--font-body);
+  font: 400 var(--text-base)/1.4 var(--font-body);
 }
 
+/* Minimal spinner — spec §5 */
 .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-subtle);
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-active);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.65s linear infinite;
   flex-shrink: 0;
 }
 
@@ -240,34 +346,50 @@ html, body {
   to { transform: rotate(360deg); }
 }
 
+/* ── Empty States §4.9 ── */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 64px 32px;
+  padding: 48px;
   color: var(--text-secondary);
 }
 
 .empty-state-icon {
-  font-size: 48px;
+  width: 48px;
+  height: 48px;
   margin-bottom: 16px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--text-tertiary);
+  stroke-width: 1.5;
 }
 
 .empty-state-title {
-  font: 600 var(--text-lg)/24px var(--font-body);
-  color: var(--text-primary);
-  margin-bottom: 8px;
+  font: 500 var(--text-md)/1.4 var(--font-body);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
 }
 
 .empty-state-desc {
-  font: 400 var(--text-sm)/18px var(--font-body);
+  font: 400 var(--text-sm)/1.5 var(--font-body);
   color: var(--text-tertiary);
 }
 
 /* ═══════════════════════════
    MOBILE HAMBURGER BUTTON
-   (shown only on ≤959px)
 ═══════════════════════════ */
 .mobile-menu-btn {
-  display: none; /* hidden on desktop */
+  display: none;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -277,27 +399,27 @@ html, body {
   border: none;
   cursor: pointer;
   color: var(--text-secondary);
-  border-radius: 8px;
-  transition: background 0.15s, color 0.15s;
+  border-radius: var(--radius-lg);
+  transition: background var(--dur-fast), color var(--dur-fast);
   margin-right: 4px;
 }
 .mobile-menu-btn:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-surface-hover);
   color: var(--text-primary);
 }
 
 /* ═══════════════════════════
-   MOBILE BOTTOM NAVIGATION
+   MOBILE BOTTOM NAV
 ═══════════════════════════ */
 #mobile-bottom-nav {
-  display: none; /* hidden on desktop */
+  display: none;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: 56px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
   z-index: 150;
   justify-content: space-around;
   align-items: center;
@@ -313,8 +435,8 @@ html, body {
   height: 100%;
   text-decoration: none;
   color: var(--text-tertiary);
-  font: 500 10px/13px var(--font-body);
-  transition: color 0.15s;
+  font: 500 10px/1 var(--font-body);
+  transition: color var(--dur-fast);
   padding: 4px 2px;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -330,9 +452,17 @@ html, body {
 }
 
 .bottom-nav-icon {
-  font-size: 18px;
-  line-height: 1;
-  transition: transform 0.15s;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-fast);
+}
+
+.bottom-nav-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .bottom-nav-label {
@@ -347,10 +477,25 @@ html, body {
 }
 
 /* ═══════════════════════════
+   MOBILE OVERLAY
+═══════════════════════════ */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+.mobile-overlay.visible {
+  display: block;
+}
+
+/* ═══════════════════════════
    RESPONSIVE BREAKPOINTS
 ═══════════════════════════ */
 
-/* 960–1279px: Collapse sidebar */
+/* 960–1279px: Auto-collapse sidebar */
 @media (max-width: 1279px) and (min-width: 960px) {
   #sidebar {
     width: var(--sidebar-collapsed);
@@ -358,21 +503,15 @@ html, body {
   #sidebar .sidebar-title,
   #sidebar .nav-label {
     opacity: 0;
+    width: 0;
     pointer-events: none;
   }
 }
 
 /* ≤959px: Drawer sidebar + bottom nav */
 @media (max-width: 959px) {
-  /* Show mobile hamburger in header */
-  .mobile-menu-btn {
-    display: flex;
-  }
-
-  /* Show bottom nav bar */
-  #mobile-bottom-nav {
-    display: flex;
-  }
+  .mobile-menu-btn { display: flex; }
+  #mobile-bottom-nav { display: flex; }
 
   #sidebar {
     position: fixed;
@@ -381,7 +520,7 @@ html, body {
     height: 100%;
     width: var(--sidebar-width);
     transform: translateX(-100%);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s var(--ease-default);
     z-index: 200;
   }
 
@@ -396,34 +535,26 @@ html, body {
   #sidebar.collapsed .sidebar-title,
   #sidebar.collapsed .nav-label {
     opacity: 1;
+    width: auto;
     pointer-events: auto;
   }
 
-  #main {
-    width: 100%;
-  }
-
-  .mobile-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 199;
-    display: none;
-  }
-  .mobile-overlay.visible {
-    display: block;
-  }
+  #main { width: 100%; }
 
   #content {
     padding: 16px;
-    /* leave room for fixed bottom nav */
     padding-bottom: 72px;
   }
 }
 
-/* ≤768px: tighten header padding */
+/* ≤768px: Tighten header */
 @media (max-width: 768px) {
   #page-header {
     padding: 0 12px;
   }
+}
+
+/* ≤480px: Content padding */
+@media (max-width: 480px) {
+  #content { padding: 12px; padding-bottom: 72px; }
 }
