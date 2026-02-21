@@ -246,8 +246,9 @@ func (h *OpenClawHandler) GetAgentSoul(w http.ResponseWriter, r *http.Request) {
 			candidates = append(candidates, filepath.Join(openClawDir, "workspace-"+alias))
 		}
 	}
-	// Special case: if id/name is "titan" or the root, also try workspace (no suffix)
-	if agentID == "main" || ca.Name == "thunder" || ca.Name == "titan" {
+	// Special case: if agent id is "thunder" or "main", also try workspace (no suffix).
+	// Note: ca.Name may have different casing (e.g. "Thunder"), so we use agentID (always lowercase).
+	if agentID == "main" || agentID == "thunder" || agentID == "titan" {
 		candidates = append(candidates,
 			filepath.Join(openClawDir, "workspace-"+agentID),
 			filepath.Join(openClawDir, "workspace"),
@@ -367,7 +368,7 @@ func (h *OpenClawHandler) UpdateAgentSoul(w http.ResponseWriter, r *http.Request
 			candidates = append(candidates, filepath.Join(openClawDir, "workspace-"+alias))
 		}
 	}
-	if agentID == "main" || ca.Name == "thunder" || ca.Name == "titan" {
+	if agentID == "main" || agentID == "thunder" || agentID == "titan" {
 		candidates = append(candidates, filepath.Join(openClawDir, "workspace"))
 	}
 

@@ -143,6 +143,7 @@ agents:
 
 # Legacy directory aliases — if an agent's sessions live under a different
 # directory name in OpenClaw's agents/ folder, list the aliases here.
+# Also used by GetAgentSoul() to resolve workspace-{alias} directories.
 legacy_dirs:
   ink:
     - reports
@@ -150,3 +151,5 @@ legacy_dirs:
     - timing
   forge:
     - backend
+  sentinel:
+    - qa
