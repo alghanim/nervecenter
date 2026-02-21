@@ -109,6 +109,7 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		task.ParentTaskID = models.NullStringToPtr(parentID)
 		task.DueDate = models.NullTimeToPtr(dueDate)
 		task.CompletedAt = models.NullTimeToPtr(completedAt)
+		task.Stuck = isStuck(task)
 
 		tasks = append(tasks, task)
 	}
@@ -152,6 +153,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	task.ParentTaskID = models.NullStringToPtr(parentID)
 	task.DueDate = models.NullTimeToPtr(dueDate)
 	task.CompletedAt = models.NullTimeToPtr(completedAt)
+	task.Stuck = isStuck(task)
 
 	respondJSON(w, http.StatusOK, task)
 }
@@ -330,12 +332,114 @@ func (h *TaskHandler) TransitionTask(w http.ResponseWriter, r *http.Request) {
 		db.DB.Exec(`UPDATE tasks SET completed_at = NOW() WHERE id = $1`, id)
 	}
 
-	logActivity(getAgentFromContext(r), "task_transitioned", id, map[string]string{
+	// Record status transition in task_history
+	changedBy := getAgentFromContext(r)
+	_, _ = db.DB.Exec(`
+		INSERT INTO task_history (task_id, from_status, to_status, changed_by, changed_at)
+		VALUES ($1, $2, $3, $4, NOW())`,
+		id, currentStatus, data.Status, changedBy)
+
+	logActivity(changedBy, "task_transitioned", id, map[string]string{
 		"from": currentStatus, "to": data.Status,
 	})
 	h.Hub.Broadcast("task_transitioned", map[string]string{"task_id": id, "status": data.Status})
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Task status updated"})
+}
+
+// isStuck returns true if the task has been in-progress (status="progress")
+// for more than 2 hours without an update.
+func isStuck(task models.Task) bool {
+	return task.Status == "progress" && task.UpdatedAt.Before(time.Now().Add(-2*time.Hour))
+}
+
+// GetStuckTasks handles GET /api/tasks/stuck
+func (h *TaskHandler) GetStuckTasks(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DB.Query(`
+		SELECT id, title, description, status, priority, assignee, team,
+		       due_date, created_at, updated_at, completed_at, parent_task_id, labels
+		FROM tasks
+		WHERE status = 'progress'
+		  AND updated_at < NOW() - INTERVAL '2 hours'
+		ORDER BY updated_at ASC
+	`)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	tasks := []models.Task{}
+	for rows.Next() {
+		var task models.Task
+		var desc, assignee, team, parentID sql.NullString
+		var dueDate, completedAt sql.NullTime
+
+		if err := rows.Scan(&task.ID, &task.Title, &desc, &task.Status,
+			&task.Priority, &assignee, &team, &dueDate,
+			&task.CreatedAt, &task.UpdatedAt, &completedAt,
+			&parentID, &task.Labels); err != nil {
+			respondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		task.Description = models.NullStringToPtr(desc)
+		task.Assignee = models.NullStringToPtr(assignee)
+		task.Team = models.NullStringToPtr(team)
+		task.ParentTaskID = models.NullStringToPtr(parentID)
+		task.DueDate = models.NullTimeToPtr(dueDate)
+		task.CompletedAt = models.NullTimeToPtr(completedAt)
+		task.Stuck = true // all results from this query are stuck by definition
+
+		tasks = append(tasks, task)
+	}
+	if err := rows.Err(); err != nil {
+		respondError(w, http.StatusInternalServerError, "row iteration error: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, tasks)
+}
+
+// GetTaskHistory handles GET /api/tasks/{id}/history
+func (h *TaskHandler) GetTaskHistory(w http.ResponseWriter, r *http.Request) {
+	taskID := mux.Vars(r)["id"]
+
+	rows, err := db.DB.Query(`
+		SELECT id, task_id, from_status, to_status, changed_by, changed_at, note
+		FROM task_history
+		WHERE task_id = $1
+		ORDER BY changed_at ASC
+	`, taskID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	history := []models.TaskHistory{}
+	for rows.Next() {
+		var h models.TaskHistory
+		var fromStatus, changedBy, note sql.NullString
+
+		if err := rows.Scan(&h.ID, &h.TaskID, &fromStatus, &h.ToStatus,
+			&changedBy, &h.ChangedAt, &note); err != nil {
+			respondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		h.FromStatus = models.NullStringToPtr(fromStatus)
+		h.ChangedBy = models.NullStringToPtr(changedBy)
+		h.Note = models.NullStringToPtr(note)
+
+		history = append(history, h)
+	}
+	if err := rows.Err(); err != nil {
+		respondError(w, http.StatusInternalServerError, "row iteration error: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, history)
 }
 
 // GetMyTasks handles GET /api/tasks/mine?agent_id=ID

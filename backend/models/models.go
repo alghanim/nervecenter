@@ -22,6 +22,18 @@ type Task struct {
 	CompletedAt  *time.Time     `json:"completed_at,omitempty"`
 	ParentTaskID *string        `json:"parent_task_id,omitempty"`
 	Labels       pq.StringArray `json:"labels,omitempty"`
+	Stuck        bool           `json:"stuck"`
+}
+
+// TaskHistory represents a single status transition event for a task.
+type TaskHistory struct {
+	ID          int        `json:"id"`
+	TaskID      string     `json:"task_id"`
+	FromStatus  *string    `json:"from_status"`
+	ToStatus    string     `json:"to_status"`
+	ChangedBy   *string    `json:"changed_by"`
+	ChangedAt   time.Time  `json:"changed_at"`
+	Note        *string    `json:"note"`
 }
 
 // Comment represents a comment on a task.
