@@ -197,41 +197,42 @@ Connect to `ws://localhost:8891/ws/stream` to receive real-time events on task, 
 
 Empower your agents to be proactive by integrating them with AgentBoard! Agents can fetch tasks assigned to them, update status, and report progress.
 
-**Add this to your agent's `HEARTBEAT.md` or `AGENTS.md` to enable task integration:**
+Your agents can use these API calls in their `HEARTBEAT.md` or `AGENTS.md` to stay connected to the board:
 
-**1. Check for assigned tasks:**
+1. **Check for assigned tasks:**
 
-```bash
-curl -s "http://localhost:8891/api/tasks/mine?agent_id=YOUR_AGENT_ID"
-```
+   ```bash
+   curl -s "http://localhost:8891/api/tasks/mine?agent_id=YOUR_AGENT_ID"
+   ```
 
-> Replace `YOUR_AGENT_ID` with your agent's `id` from `agents.yaml` (e.g. `forge`, `pixel`)
+   > Replace `YOUR_AGENT_ID` with your agent's `id` from `agents.yaml` (e.g. `forge`, `pixel`)
 
-**2. Pick up a task — move it to in-progress:**
+2. **Pick up a task — move it to in-progress:**
 
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-     -d '{"status": "in-progress"}' \
-     http://localhost:8891/api/tasks/TASK_ID/transition
-```
+   ```bash
+   curl -s -X POST -H "Content-Type: application/json" \
+        -d '{"status": "in-progress"}' \
+        http://localhost:8891/api/tasks/TASK_ID/transition
+   ```
 
-**3. Do the work**, then mark it done:
+3. **Do the work**, then mark it done:
 
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-     -d '{"status": "done"}' \
-     http://localhost:8891/api/tasks/TASK_ID/transition
-```
+   ```bash
+   curl -s -X POST -H "Content-Type: application/json" \
+        -d '{"status": "done"}' \
+        http://localhost:8891/api/tasks/TASK_ID/transition
+   ```
 
-**4. (Optional) Leave a summary comment:**
+4. **(Optional) Leave a summary comment:**
 
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-     -d '{"content": "Done. Here is what I did...", "author": "YOUR_AGENT_ID"}' \
-     http://localhost:8891/api/tasks/TASK_ID/comments
-```
+   ```bash
+   curl -s -X POST -H "Content-Type: application/json" \
+        -d '{"content": "Done. Here is what I did...", "author": "YOUR_AGENT_ID"}' \
+        http://localhost:8891/api/tasks/TASK_ID/comments
+   ```
 
 > **Tip:** Instead of polling, subscribe to `ws://localhost:8891/ws/stream` for real-time task assignment events.
+
 ---
 
 ## ❓ FAQ
