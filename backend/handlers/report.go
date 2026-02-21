@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -77,10 +78,37 @@ func (h *ReportHandler) buildReport(period string) (*ReportData, error) {
 		r.CompletionRate = float64(r.CompletedTasks) / float64(r.TotalTasks) * 100.0
 	}
 
-	// Cost data from token_usage if table exists
-	db.DB.QueryRow(`SELECT COALESCE(SUM(estimated_cost),0) FROM token_usage WHERE recorded_at >= date_trunc('week', NOW())`).Scan(&r.CostThisWeek)
-	db.DB.QueryRow(`SELECT COALESCE(SUM(estimated_cost),0) FROM token_usage`).Scan(&r.CostAllTime)
-	db.DB.QueryRow(`SELECT COALESCE(SUM(input_tokens + output_tokens),0) FROM token_usage`).Scan(&r.TokensAllTime)
+	// Cost data from JSONL session files
+	allMsgs := parseAllTokenData()
+	now := time.Now()
+	weekStart := now.AddDate(0, 0, -int(now.Weekday()))
+	weekStart = time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, now.Location())
+	for _, msg := range allMsgs {
+		r.CostAllTime += msg.CostTotal
+		r.TokensAllTime += msg.TotalTokens
+		if !msg.Timestamp.Before(weekStart) {
+			r.CostThisWeek += msg.CostTotal
+		}
+	}
+
+	// Top cost agents from JSONL
+	agentCostMap := make(map[string]*CostRow)
+	for _, msg := range allMsgs {
+		c, ok := agentCostMap[msg.AgentID]
+		if !ok {
+			c = &CostRow{AgentID: msg.AgentID}
+			agentCostMap[msg.AgentID] = c
+		}
+		c.TotalCost += msg.CostTotal
+		c.Tokens += msg.TotalTokens
+	}
+	for _, c := range agentCostMap {
+		r.TopCosts = append(r.TopCosts, *c)
+	}
+	sort.Slice(r.TopCosts, func(i, j int) bool { return r.TopCosts[i].TotalCost > r.TopCosts[j].TotalCost })
+	if len(r.TopCosts) > 10 {
+		r.TopCosts = r.TopCosts[:10]
+	}
 
 	// Per-agent stats
 	agentRows, err := db.DB.Query(`
@@ -143,19 +171,6 @@ func (h *ReportHandler) buildReport(period string) (*ReportData, error) {
 			var t TaskReportRow
 			bRows.Scan(&t.ID, &t.Title, &t.Status, &t.Priority, &t.Assignee, &t.Team, &t.CreatedAt)
 			r.Blocked = append(r.Blocked, t)
-		}
-	}
-
-	// Top cost agents
-	costRows, err := db.DB.Query(`
-		SELECT agent_id, COALESCE(SUM(estimated_cost),0), COALESCE(SUM(input_tokens+output_tokens),0)
-		FROM token_usage GROUP BY agent_id ORDER BY SUM(estimated_cost) DESC LIMIT 10`)
-	if err == nil {
-		defer costRows.Close()
-		for costRows.Next() {
-			var c CostRow
-			costRows.Scan(&c.AgentID, &c.TotalCost, &c.Tokens)
-			r.TopCosts = append(r.TopCosts, c)
 		}
 	}
 
