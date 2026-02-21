@@ -131,7 +131,7 @@ Pages.settings = {
       }
     } catch (e) {
       const el = document.getElementById('settingsAgents');
-      if (el) el.innerHTML = `<div style="color:var(--status-error);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
+      if (el) el.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:8px 0">${Utils.esc(e.message)}</div>`;
     }
   },
 

@@ -58,7 +58,7 @@ window.Search = (function () {
             padding:2px 6px;
             border:1px solid var(--border-default);
             border-radius:4px;
-            color:var(--text-muted);
+            color:var(--text-tertiary);
             background:var(--bg-tertiary,#0d0d1a);
             font-family:inherit;
           ">Esc</kbd>
@@ -67,7 +67,7 @@ window.Search = (function () {
         <div style="
           padding:8px 16px;
           font-size:11px;
-          color:var(--text-muted);
+          color:var(--text-tertiary);
           border-top:1px solid var(--border-subtle,var(--border-default));
           display:flex;
           gap:16px;
@@ -126,7 +126,7 @@ window.Search = (function () {
     _items = [];
     _selectedIdx = -1;
     _results.innerHTML = `
-      <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:14px;">
+      <div style="padding:40px 20px;text-align:center;color:var(--text-tertiary);font-size:14px;">
         Type to search tasks, agents, and comments…
       </div>`;
   }
@@ -135,14 +135,14 @@ window.Search = (function () {
     _items = [];
     _selectedIdx = -1;
     _results.innerHTML = `
-      <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:14px;">
+      <div style="padding:40px 20px;text-align:center;color:var(--text-tertiary);font-size:14px;">
         No results found
       </div>`;
   }
 
   function _renderLoading() {
     _results.innerHTML = `
-      <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:14px;">
+      <div style="padding:40px 20px;text-align:center;color:var(--text-tertiary);font-size:14px;">
         <div class="spinner" style="display:inline-block;margin-right:8px;"></div>Searching…
       </div>`;
   }
@@ -226,7 +226,7 @@ window.Search = (function () {
             </div>
             ${role ? `<div style="font-size:12px;color:var(--text-secondary);">${Utils.esc(role)}</div>` : ''}
           </div>
-          <span style="font-size:11px;color:var(--text-muted);">Agent</span>
+          <span style="font-size:11px;color:var(--text-tertiary);">Agent</span>
         </div>`;
       });
     }
@@ -251,7 +251,7 @@ window.Search = (function () {
             <div style="font-size:13px;color:var(--text-primary);line-height:1.4;word-break:break-word;">
               ${_highlight(Utils.esc(excerpt), q)}${excerpt.length >= 120 ? '…' : ''}
             </div>
-            ${taskTitle ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">on: ${Utils.esc(taskTitle)}</div>` : ''}
+            ${taskTitle ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">on: ${Utils.esc(taskTitle)}</div>` : ''}
           </div>
         </div>`;
       });
@@ -269,7 +269,7 @@ window.Search = (function () {
       font-weight:700;
       letter-spacing:0.08em;
       text-transform:uppercase;
-      color:var(--text-muted);
+      color:var(--text-tertiary);
       display:flex;
       justify-content:space-between;
     ">
