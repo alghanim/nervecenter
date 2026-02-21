@@ -104,11 +104,23 @@ window.API = {
   deleteWebhook: (id) => apiFetch(`/api/webhooks/${id}`, { method: 'DELETE' }),
   testWebhook: (id) => apiFetch(`/api/webhooks/${id}/test`, { method: 'POST' }),
 
-  // Errors
-  getErrors: (agentId) => {
-    const qs = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : '';
-    return apiFetch(`/api/errors${qs}`);
+  // Errors & Failures
+  getErrors: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch('/api/errors' + (qs ? '?' + qs : ''));
   },
+  getErrorsSummary: () => apiFetch('/api/errors/summary'),
+
+  // Logs Viewer
+  getLogs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch('/api/logs' + (qs ? '?' + qs : ''));
+  },
+  searchLogs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch('/api/logs/search' + (qs ? '?' + qs : ''));
+  },
+  getLogFiles: () => apiFetch('/api/logs/files'),
 
   // Token & Cost Analytics
   getTokenUsage: () => apiFetch('/api/analytics/tokens'),
