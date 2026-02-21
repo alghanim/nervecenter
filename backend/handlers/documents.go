@@ -12,10 +12,12 @@ import (
 
 type DocumentsHandler struct{}
 
-// Allowed directories for document browsing
+// Allowed directories for document browsing (both host and container paths)
 var allowedDirs = []string{
 	"/home/aalghanim/agentboard/",
 	"/home/aalghanim/.openclaw/workspace/",
+	"/app/repo/",
+	"/data/openclaw/workspace/",
 }
 
 // Allowed file extensions
@@ -51,12 +53,16 @@ func isPathAllowed(p string) bool {
 func (h *DocumentsHandler) ListDocuments(w http.ResponseWriter, r *http.Request) {
 	var docs []DocumentInfo
 
-	// Scan patterns
+	// Scan patterns (both host and container paths)
 	patterns := []string{
 		"/home/aalghanim/agentboard/*.md",
 		"/home/aalghanim/.openclaw/workspace/brand-samples/*.png",
 		"/home/aalghanim/.openclaw/workspace/brand-samples/*.jpg",
 		"/home/aalghanim/.openclaw/workspace/*.pdf",
+		"/app/repo/*.md",
+		"/data/openclaw/workspace/brand-samples/*.png",
+		"/data/openclaw/workspace/brand-samples/*.jpg",
+		"/data/openclaw/workspace/*.pdf",
 	}
 
 	for _, pattern := range patterns {

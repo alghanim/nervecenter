@@ -34,6 +34,7 @@ services:
       - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:ro
       - ./agents.yaml:/app/agents.yaml:ro
       - ./frontend:/app/frontend:ro
+      - .:/app/repo:ro
     depends_on:
       postgres:
         condition: service_healthy
