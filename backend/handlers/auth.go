@@ -153,10 +153,16 @@ func validateToken(r *http.Request) (*jwt.Token, bool) {
 
 // RequireAuth wraps write endpoints (POST/PUT/DELETE).
 // GET requests are always passed through.
+// Auth endpoints themselves (/api/auth/*) are always allowed.
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Let GETs through; only protect writes
+		// Let GETs and OPTIONS through; only protect writes
 		if r.Method == http.MethodGet || r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Always allow auth endpoints (login/logout)
+		if strings.HasPrefix(r.URL.Path, "/api/auth/") {
 			next.ServeHTTP(w, r)
 			return
 		}

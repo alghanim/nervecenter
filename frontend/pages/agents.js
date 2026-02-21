@@ -22,9 +22,24 @@ Pages.agents = {
 
   /* ─── Grid View ─── */
   async _renderGrid(container) {
+    this._selected = new Set();
     container.innerHTML = `
-      <div class="agents-grid" id="agentsGrid">
-        <div class="loading-state"><div class="spinner"></div><span>Loading agents...</span></div>
+      <div id="agentsPageWrapper" style="position:relative;padding-bottom:72px">
+        <div id="agentsGridToolbar" style="display:none;align-items:center;gap:12px;margin-bottom:12px;padding:8px 0">
+          <button class="btn-secondary" id="agentsSelectAllBtn" onclick="Pages.agents._toggleSelectAll()" style="font-size:12px;padding:4px 10px">Select All</button>
+          <span id="agentsSelectCount" style="font-size:13px;color:var(--text-secondary)"></span>
+        </div>
+        <div class="agents-grid" id="agentsGrid">
+          <div class="loading-state"><div class="spinner"></div><span>Loading agents...</span></div>
+        </div>
+      </div>
+      <div id="bulkActionBar" style="display:none;position:fixed;bottom:0;left:var(--sidebar-width,220px);right:0;z-index:100;background:var(--bg-surface);border-top:1px solid var(--border-default);padding:12px 24px;display:none;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.15)">
+        <span id="bulkSelectedCount" style="font-size:13px;font-weight:600;color:var(--text-primary);flex:1"></span>
+        <span id="bulkProgress" style="font-size:12px;color:var(--text-tertiary);display:none"></span>
+        <button class="btn-secondary" onclick="Pages.agents._bulkPause()" style="font-size:13px;padding:5px 14px">⏸️ Pause Selected</button>
+        <button class="btn-secondary" onclick="Pages.agents._bulkResume()" style="font-size:13px;padding:5px 14px;color:var(--success,#22c55e)">▶️ Resume Selected</button>
+        <button class="btn-secondary" onclick="Pages.agents._bulkKill()" style="font-size:13px;padding:5px 14px;color:var(--danger,#ef4444);border-color:var(--danger,#ef4444)">💀 Kill Selected</button>
+        <button class="btn-secondary" onclick="Pages.agents._clearSelection()" style="font-size:12px;padding:4px 8px;color:var(--text-tertiary)" title="Clear selection">✕</button>
       </div>`;
 
     try {
@@ -65,27 +80,42 @@ Pages.agents = {
       return;
     }
 
+    // Show toolbar
+    const toolbar = document.getElementById('agentsGridToolbar');
+    if (toolbar) toolbar.style.display = 'flex';
+
     grid.innerHTML = this._agents.map(a => {
       const teamStyle = Utils.teamBadgeStyle(a);
       const team = a.team || '';
       const model = Utils.formatModel(a.currentModel || a.model);
       const agentId = a.id || a.name;
+      const isSelected = this._selected.has(agentId);
       return `
-        <div class="agent-card" onclick="App.navigate('agents/${Utils.esc(agentId)}')">
-          <div class="agent-card__header">
-            <div class="agent-card__name-row">
-              <span class="agent-card__emoji">${Utils.esc(a.emoji || '🤖')}</span>
-              <span class="agent-card__name">${Utils.esc(a.name || a.displayName || agentId)}</span>
-            </div>
-            ${Utils.statusPill(a.status)}
+        <div class="agent-card${isSelected ? ' agent-card--selected' : ''}" style="position:relative" data-agent-id="${Utils.esc(agentId)}">
+          <div class="agent-card__checkbox" style="position:absolute;top:8px;left:8px;z-index:2"
+               onclick="event.stopPropagation(); Pages.agents._toggleSelect('${Utils.esc(agentId)}')">
+            <input type="checkbox" ${isSelected ? 'checked' : ''}
+                   onclick="event.stopPropagation()"
+                   style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent,#6366f1)">
           </div>
-          <div class="agent-card__role">${Utils.esc(a.role || '')}</div>
-          <div class="agent-card__footer">
-            <span class="agent-card__model">${Utils.esc(model)}</span>
-            ${team ? `<span class="badge" style="${teamStyle}">${Utils.esc(team)}</span>` : ''}
+          <div onclick="App.navigate('agents/${Utils.esc(agentId)}')" style="cursor:pointer;padding-left:20px">
+            <div class="agent-card__header">
+              <div class="agent-card__name-row">
+                <span class="agent-card__emoji">${Utils.esc(a.emoji || '🤖')}</span>
+                <span class="agent-card__name">${Utils.esc(a.name || a.displayName || agentId)}</span>
+              </div>
+              ${Utils.statusPill(a.status)}
+            </div>
+            <div class="agent-card__role">${Utils.esc(a.role || '')}</div>
+            <div class="agent-card__footer">
+              <span class="agent-card__model">${Utils.esc(model)}</span>
+              ${team ? `<span class="badge" style="${teamStyle}">${Utils.esc(team)}</span>` : ''}
+            </div>
           </div>
         </div>`;
     }).join('');
+
+    this._updateBulkBar();
   },
 
   /* ─── Detail View ─── */
@@ -314,12 +344,14 @@ Pages.agents = {
     setTimeout(() => toast.remove(), 3000);
   },
 
-  async _loadTimelineTab(el, agentId) {
+  async _loadTimelineTab(el, agentId, hours) {
+    const h = hours || parseInt(el.dataset.timelineHours || '24', 10);
+    el.dataset.timelineHours = h;
     Utils.showLoading(el, 'Loading timeline...');
 
     let events;
     try {
-      events = await API.getAgentTimeline(agentId, 24);
+      events = await API.getAgentTimeline(agentId, h);
     } catch (e) {
       Utils.showEmpty(el, '⚠️', 'Failed to load timeline', e.message);
       return;
@@ -383,9 +415,14 @@ Pages.agents = {
 
     el.innerHTML = `
       <div style="padding:4px 0 0 0">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <span style="font-size:13px;color:var(--text-secondary)">${events.length} events in the last 24h</span>
-          <div style="display:flex;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:13px;color:var(--text-secondary)">${events.length} events</span>
+            <select id="timelineHoursSelect" style="font-size:12px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:6px;color:var(--text-secondary);padding:3px 8px;cursor:pointer" onchange="Pages.agents._loadTimelineTab(document.getElementById('agentTabContent'),'${Utils.esc(agentId)}',parseInt(this.value))">
+              ${[6,12,24,48,72].map(n => `<option value="${n}" ${n===h?'selected':''}>${n}h</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
             ${Object.entries(typeConfig).map(([k,v]) => `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${v.bg};color:${v.color};font-weight:600">${v.icon} ${v.label}</span>`).join('')}
           </div>
         </div>
@@ -491,10 +528,121 @@ Pages.agents = {
     }
   },
 
+  /* ─── Bulk Selection ─── */
+
+  _toggleSelect(agentId) {
+    if (this._selected.has(agentId)) {
+      this._selected.delete(agentId);
+    } else {
+      this._selected.add(agentId);
+    }
+    // Update checkbox and card styling without full repaint
+    const card = document.querySelector(`[data-agent-id="${CSS.escape(agentId)}"]`);
+    if (card) {
+      const chk = card.querySelector('input[type="checkbox"]');
+      if (chk) chk.checked = this._selected.has(agentId);
+      card.classList.toggle('agent-card--selected', this._selected.has(agentId));
+    }
+    this._updateBulkBar();
+  },
+
+  _toggleSelectAll() {
+    const btn = document.getElementById('agentsSelectAllBtn');
+    if (this._selected.size === this._agents.length) {
+      // Deselect all
+      this._selected.clear();
+      if (btn) btn.textContent = 'Select All';
+    } else {
+      // Select all
+      this._agents.forEach(a => this._selected.add(a.id || a.name));
+      if (btn) btn.textContent = 'Deselect All';
+    }
+    this._paintGrid();
+  },
+
+  _clearSelection() {
+    this._selected.clear();
+    const btn = document.getElementById('agentsSelectAllBtn');
+    if (btn) btn.textContent = 'Select All';
+    this._paintGrid();
+  },
+
+  _updateBulkBar() {
+    const bar = document.getElementById('bulkActionBar');
+    const countEl = document.getElementById('bulkSelectedCount');
+    const selectCountEl = document.getElementById('agentsSelectCount');
+    const selectAllBtn = document.getElementById('agentsSelectAllBtn');
+    const n = this._selected.size;
+
+    if (bar) {
+      bar.style.display = n > 0 ? 'flex' : 'none';
+    }
+    if (countEl) {
+      countEl.textContent = `${n} agent${n !== 1 ? 's' : ''} selected`;
+    }
+    if (selectCountEl) {
+      selectCountEl.textContent = n > 0 ? `${n} selected` : '';
+    }
+    if (selectAllBtn) {
+      selectAllBtn.textContent = (n === this._agents.length && n > 0) ? 'Deselect All' : 'Select All';
+    }
+  },
+
+  async _bulkAction(action) {
+    const ids = Array.from(this._selected);
+    if (ids.length === 0) return;
+
+    const progressEl = document.getElementById('bulkProgress');
+    if (progressEl) { progressEl.style.display = 'inline'; progressEl.textContent = ''; }
+
+    let done = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        if (action === 'pause')  await API.pauseAgent(id);
+        if (action === 'resume') await API.resumeAgent(id);
+        if (action === 'kill')   await API.killAgent(id);
+      } catch (e) {
+        errors.push(`${id}: ${e.message}`);
+      }
+      done++;
+      if (progressEl) progressEl.textContent = `${done}/${ids.length}`;
+    }
+
+    if (progressEl) progressEl.style.display = 'none';
+
+    if (errors.length > 0) {
+      alert(`Some actions failed:\n${errors.join('\n')}`);
+    }
+
+    // Refresh agent list
+    try {
+      this._agents = await API.getAgents();
+    } catch (_) {}
+    this._selected.clear();
+    this._paintGrid();
+  },
+
+  async _bulkPause() {
+    await this._bulkAction('pause');
+  },
+
+  async _bulkResume() {
+    await this._bulkAction('resume');
+  },
+
+  async _bulkKill() {
+    const n = this._selected.size;
+    if (!confirm(`Kill ${n} agent${n !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+    await this._bulkAction('kill');
+  },
+
   destroy() {
     this._wsHandlers.forEach(([ev, fn]) => WS.off(ev, fn));
     this._wsHandlers = [];
     if (this._refreshTimer) clearInterval(this._refreshTimer);
     this._refreshTimer = null;
+    this._selected = new Set();
   }
 };

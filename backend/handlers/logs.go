@@ -334,6 +334,7 @@ func scanSessionLogs(agentFilter, searchTerm, levelFilter string, limit int) []S
 
 // extractContentPreview extracts up to maxLen chars from message content.
 // Content can be a string or an array of content blocks.
+// OpenClaw session files use block types: "text", "thinking", "toolCall", "toolResult".
 func extractContentPreview(content interface{}, maxLen int) string {
 	if content == nil {
 		return ""
@@ -356,15 +357,32 @@ func extractContentPreview(content interface{}, maxLen int) string {
 				if text, ok := blockMap["text"].(string); ok {
 					parts = append(parts, text)
 				}
-			case "tool_use":
+			case "toolCall", "tool_use":
+				// OpenClaw uses "toolCall", standard API uses "tool_use"
 				name, _ := blockMap["name"].(string)
+				if name == "" {
+					// Check nested tool field
+					if tool, ok := blockMap["tool"].(map[string]interface{}); ok {
+						name, _ = tool["name"].(string)
+					}
+				}
 				if name != "" {
 					parts = append(parts, fmt.Sprintf("[tool: %s]", name))
 				} else {
 					parts = append(parts, "[tool call]")
 				}
-			case "tool_result":
-				parts = append(parts, "[tool result]")
+			case "toolResult", "tool_result":
+				// May have nested content
+				inner := blockMap["content"]
+				if innerStr, ok := inner.(string); ok && innerStr != "" {
+					preview := innerStr
+					if len(preview) > 80 {
+						preview = preview[:80] + "…"
+					}
+					parts = append(parts, preview)
+				} else {
+					parts = append(parts, "[tool result]")
+				}
 			case "thinking":
 				if text, ok := blockMap["thinking"].(string); ok && len(text) > 0 {
 					preview := text
@@ -393,20 +411,25 @@ func extractContentPreview(content interface{}, maxLen int) string {
 }
 
 // roleToLevel derives a display level from role and content.
+// OpenClaw session files use roles: "user", "assistant", "toolResult".
 func roleToLevel(role string, content interface{}) string {
 	switch role {
 	case "user":
 		return "info"
+	case "toolResult":
+		return "tool"
 	case "assistant":
-		// Check if content contains tool_use blocks → "tool"
+		// Check if content contains toolCall blocks → "tool"
 		if arr, ok := content.([]interface{}); ok {
 			for _, block := range arr {
 				bm, ok := block.(map[string]interface{})
 				if !ok {
 					continue
 				}
-				if t, ok := bm["type"].(string); ok && t == "tool_use" {
-					return "tool"
+				if t, ok := bm["type"].(string); ok {
+					if t == "toolCall" || t == "tool_use" {
+						return "tool"
+					}
 				}
 			}
 		}

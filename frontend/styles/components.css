@@ -710,6 +710,10 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+.agent-card--selected {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 25%, transparent);
+}
 
 .agent-card__header {
   display: flex;

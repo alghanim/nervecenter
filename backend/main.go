@@ -70,6 +70,8 @@ func main() {
 	logsHandler := &handlers.LogsHandler{}
 	webhookHandler := &handlers.WebhookHandler{}
 	controlHandler := &handlers.AgentControlHandler{}
+	authHandler := &handlers.AuthHandler{}
+	commitsHandler := &handlers.CommitsHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
@@ -80,6 +82,12 @@ func main() {
 	// Router
 	router := mux.NewRouter()
 	api := router.PathPrefix("/api").Subrouter()
+	api.Use(handlers.RequireAuth)
+
+	// Auth routes (public — no auth middleware needed, but RequireAuth allows GETs and login skips check anyway)
+	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
+	api.HandleFunc("/auth/logout", authHandler.Logout).Methods("POST")
+	api.HandleFunc("/auth/me", authHandler.Me).Methods("GET")
 
 	// Task routes  — static route MUST come before parameterised {id} route
 	api.HandleFunc("/tasks", taskHandler.GetTasks).Methods("GET")
@@ -107,6 +115,9 @@ func main() {
 	api.HandleFunc("/agents/{id}/pause", agentHandler.PauseAgent).Methods("POST")
 	api.HandleFunc("/agents/{id}/resume", agentHandler.ResumeAgent).Methods("POST")
 	api.HandleFunc("/agents/{id}/kill", agentHandler.KillAgent).Methods("POST")
+
+	// Git commits
+	api.HandleFunc("/agents/{id}/commits", commitsHandler.GetCommits).Methods("GET")
 
 	// Webhooks
 	api.HandleFunc("/webhooks", webhookHandler.ListWebhooks).Methods("GET")
