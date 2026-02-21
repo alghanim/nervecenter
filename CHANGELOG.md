@@ -11,6 +11,26 @@ See [ROADMAP.md](./ROADMAP.md) for what's coming next.
 
 ---
 
+## [0.5.1] — 2026-02-22 (post-release patches)
+
+### Fixed
+
+- **Roster completeness** — Thunder (`main`) agent was missing from `agents.yaml`; now shows 19 agents total in the sidebar (`1d23b0d`)
+- **Sentinel code review** — three correctness fixes applied (`86056b1`):
+  - `updated_at` and `completed_at` now updated atomically in the same query (no TOCTOU gap)
+  - Agent `status` field validated against allowed values before DB write
+  - Added `idx_tasks_completed_at` index for completed-task queries
+
+### Chore
+
+- **`agents.yaml` tracked in git** — file removed from `.gitignore` so team-wide agent roster changes are versioned (`8a47353`)
+
+### Documentation
+
+- Quill daily run: all changes from last 25 hours confirmed documented; README and CHANGELOG verified current as of 2:00 AM AST.
+
+---
+
 ## [0.5.0] — 2026-02-22
 
 ### 🚀 Full Platform Launch — AgentBoard Becomes Mission Control
