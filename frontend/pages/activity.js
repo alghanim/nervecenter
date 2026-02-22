@@ -28,7 +28,7 @@ Pages.activity = {
           </select>
         </div>
 
-        <div id="activityFeedContent">
+        <div id="activityFeedContent" class="terminal-bg" style="padding:12px">
           <div class="loading-state"><div class="spinner"></div><span>Loading activity...</span></div>
         </div>
       </div>`;
@@ -173,19 +173,31 @@ Pages.activity = {
       .trim();
   },
 
+  _agentColors: {},
+  _colorPalette: ['#22d3ee','#a78bfa','#f472b6','#34d399','#fbbf24','#60a5fa','#f87171','#818cf8','#2dd4bf','#fb923c'],
+
+  _getAgentColor(name) {
+    if (!this._agentColors[name]) {
+      const idx = Object.keys(this._agentColors).length % this._colorPalette.length;
+      this._agentColors[name] = this._colorPalette[idx];
+    }
+    return this._agentColors[name];
+  },
+
   _itemHTML(item) {
     const typeLabel = this._typeLabel(item.type, item.toolName);
     const cleanContent = this._stripMarkdown(item.content);
+    const agentColor = this._getAgentColor(item.agentName);
     return `
-      <div class="activity-item">
-        <div class="activity-item__avatar">${Utils.esc(item.emoji)}</div>
+      <div class="activity-item" style="border-left-color:${agentColor}">
+        <div class="activity-item__avatar" style="border-color:${agentColor}">${Utils.esc(item.emoji)}</div>
         <div class="activity-item__body">
           <div class="activity-item__header">
-            <span class="agent-name">${Utils.esc(item.agentName)}</span> ${typeLabel}
+            <span class="agent-name" style="color:${agentColor}">${Utils.esc(item.agentName)}</span> ${typeLabel}
           </div>
-          <div class="activity-item__detail">${Utils.esc(Utils.truncate(cleanContent, 120))}</div>
+          <div class="activity-item__detail" style="font-family:var(--font-display);font-size:12px">${Utils.esc(Utils.truncate(cleanContent, 120))}</div>
         </div>
-        <div class="activity-item__time">${Utils.esc(item.timeStr || '')}</div>
+        <div class="activity-item__time" style="font-family:var(--font-display);font-size:11px">${Utils.esc(item.timeStr || '')}</div>
       </div>`;
   },
 

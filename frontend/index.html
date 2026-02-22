@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="styles/variables.css">
   <link rel="stylesheet" href="styles/layout.css">
   <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/animations.css">
 
   <!-- CDN Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
@@ -32,15 +33,15 @@
     <div class="sidebar-header">
       <!-- Logomark §8 -->
       <div class="sidebar-logo" id="sidebarLogo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2L21 7.5V16.5L12 22L3 16.5V7.5L12 2Z" stroke="#6366F1" stroke-width="1.5" fill="rgba(99,102,241,0.1)"/>
-          <circle cx="12" cy="12" r="3" fill="#6366F1"/>
-          <line x1="12" y1="9" x2="12" y2="5" stroke="#6366F1" stroke-width="1.5"/>
-          <line x1="14.6" y1="13.5" x2="18" y2="15.5" stroke="#6366F1" stroke-width="1.5"/>
-          <line x1="9.4" y1="13.5" x2="6" y2="15.5" stroke="#6366F1" stroke-width="1.5"/>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L21 7.5V16.5L12 22L3 16.5V7.5L12 2Z" stroke="#22d3ee" stroke-width="1.5" fill="rgba(34,211,238,0.1)"/>
+          <circle cx="12" cy="12" r="3" fill="#22d3ee"/>
+          <line x1="12" y1="9" x2="12" y2="5" stroke="#22d3ee" stroke-width="1.5"/>
+          <line x1="14.6" y1="13.5" x2="18" y2="15.5" stroke="#22d3ee" stroke-width="1.5"/>
+          <line x1="9.4" y1="13.5" x2="6" y2="15.5" stroke="#22d3ee" stroke-width="1.5"/>
         </svg>
       </div>
-      <span class="sidebar-title" id="sidebarTitle">AgentBoard</span>
+      <span class="sidebar-title" id="sidebarTitle">NerveCenter</span>
       <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar" aria-label="Toggle sidebar">
         <!-- Chevron left — collapses; right when collapsed -->
         <svg id="sidebarToggleIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -238,7 +239,7 @@
         <span class="nav-label">Settings</span>
       </a>
       <div class="sidebar-version">
-        <span>v2.0.0</span>
+        <span style="opacity:0.6">NerveCenter v2.0</span>
       </div>
     </div>
   </nav>
@@ -296,7 +297,7 @@
     <main id="content">
       <div class="loading-state">
         <div class="spinner"></div>
-        <span>Initializing AgentBoard...</span>
+        <span>Initializing NerveCenter...</span>
       </div>
     </main>
   </div>

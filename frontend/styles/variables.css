@@ -112,7 +112,7 @@
    Applied via html[data-theme="light"]
 ═══════════════════════════ */
 [data-theme="light"] {
-  --bg-base:          #fafafa;
+  --bg-base:          #f8f9fa;
   --bg-surface:       #ffffff;
   --bg-surface-hover: #f4f4f5;
   --bg-elevated:      #ffffff;

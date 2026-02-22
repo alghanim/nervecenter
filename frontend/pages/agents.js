@@ -90,8 +90,9 @@ Pages.agents = {
       const model = Utils.formatModel(a.currentModel || a.model);
       const agentId = a.id || a.name;
       const isSelected = this._selected.has(agentId);
+      const isOnline = a.status === 'active' || a.status === 'online';
       return `
-        <div class="agent-card${isSelected ? ' agent-card--selected' : ''}" style="position:relative" data-agent-id="${Utils.esc(agentId)}">
+        <div class="agent-card${isSelected ? ' agent-card--selected' : ''}${isOnline ? ' agent-card--online' : ''} animate-fade-in" style="position:relative" data-agent-id="${Utils.esc(agentId)}">
           <div class="agent-card__checkbox" style="position:absolute;top:8px;left:8px;z-index:2"
                onclick="event.stopPropagation(); Pages.agents._toggleSelect('${Utils.esc(agentId)}')">
             <input type="checkbox" ${isSelected ? 'checked' : ''}

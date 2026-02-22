@@ -1,0 +1,238 @@
+/* NerveCenter — Premium Animations & Effects */
+
+/* ═══════════════════════════
+   KEYFRAMES
+═══════════════════════════ */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-scale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
+  50%      { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3); }
+}
+
+@keyframes status-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+@keyframes scan-line {
+  from { background-position: 0 -100%; }
+  to   { background-position: 0 200%; }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(34, 211, 238, 0.3); }
+  50%      { border-color: rgba(34, 211, 238, 0.6); }
+}
+
+/* ═══════════════════════════
+   UTILITY CLASSES
+═══════════════════════════ */
+
+.animate-fade-in {
+  animation: fade-in 0.4s var(--ease-entrance) both;
+}
+
+.animate-fade-in-delay-1 { animation-delay: 0.05s; }
+.animate-fade-in-delay-2 { animation-delay: 0.1s; }
+.animate-fade-in-delay-3 { animation-delay: 0.15s; }
+.animate-fade-in-delay-4 { animation-delay: 0.2s; }
+.animate-fade-in-delay-5 { animation-delay: 0.25s; }
+
+/* ═══════════════════════════
+   SKELETON LOADERS
+═══════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--bg-surface) 25%,
+    var(--bg-surface-hover) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text {
+  height: 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-text--short { width: 40%; }
+.skeleton-text--medium { width: 65%; }
+.skeleton-text--long { width: 90%; }
+
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-stat {
+  height: 90px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+}
+
+/* ═══════════════════════════
+   GRADIENT TEXT
+═══════════════════════════ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #22d3ee 0%, #a78bfa 50%, #22d3ee 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 6s ease infinite;
+}
+
+.gradient-text-static {
+  background: linear-gradient(135deg, #22d3ee 0%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════
+   HOVER GLOW EFFECT
+═══════════════════════════ */
+
+.hover-glow {
+  transition: border-color var(--dur-normal) var(--ease-default),
+              box-shadow var(--dur-normal) var(--ease-default),
+              transform var(--dur-normal) var(--ease-default);
+}
+
+.hover-glow:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12), 0 4px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Light mode: drop shadow instead of glow */
+[data-theme="light"] .hover-glow:hover {
+  border-color: rgba(8, 145, 178, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* ═══════════════════════════
+   ACTIVITY TERMINAL EFFECT
+═══════════════════════════ */
+
+.terminal-bg {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.01) 2px,
+    rgba(255, 255, 255, 0.01) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+[data-theme="light"] .terminal-bg::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.01) 2px,
+    rgba(0, 0, 0, 0.01) 4px
+  );
+}
+
+/* New activity item pulse */
+.activity-item--new {
+  animation: fade-in 0.3s var(--ease-entrance) both;
+}
+
+/* ═══════════════════════════
+   ONLINE AGENT GLOW BORDER
+═══════════════════════════ */
+
+.agent-card--online {
+  border-color: rgba(34, 211, 238, 0.3);
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+[data-theme="light"] .agent-card--online {
+  border-color: rgba(8, 145, 178, 0.25);
+  animation: none;
+  box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.1);
+}
+
+/* ═══════════════════════════
+   PARTICLE CANVAS BACKGROUND
+═══════════════════════════ */
+
+#particleCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 0;
+}
+
+[data-theme="light"] #particleCanvas {
+  opacity: 0.15;
+}
+
+/* ═══════════════════════════
+   EMPTY STATES — PREMIUM
+═══════════════════════════ */
+
+.empty-state {
+  animation: fade-in 0.4s var(--ease-entrance) both;
+}
+
+.empty-state-icon {
+  opacity: 0.5;
+  animation: float 4s ease-in-out infinite;
+}
