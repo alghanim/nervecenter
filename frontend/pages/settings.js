@@ -45,6 +45,49 @@ Pages.settings = {
             <span>Webhooks</span>
             <button class="btn-secondary" onclick="Pages.settings._openWebhookForm()" style="font-size:12px;padding:4px 10px">+ Add Webhook</button>
           </div>
+          <!-- Webhook info card -->
+          <div style="
+            background: rgba(34,211,238,0.05);
+            border: 1px solid rgba(34,211,238,0.2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            font-size: 13px;
+          ">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:16px">🔗</span>
+              <span style="font-weight:600;color:var(--text-primary)">How Webhooks Work</span>
+            </div>
+            <div style="color:var(--text-secondary);line-height:1.6;margin-bottom:10px">
+              <strong style="color:var(--text-primary)">What it does:</strong> Sends a POST request to your URL whenever a task is created, updated, or its status changes.<br>
+              <strong style="color:var(--text-primary)">Works with:</strong> Any HTTP endpoint — Zapier, Make, Slack, custom servers, or your own backend.
+            </div>
+            <div style="margin-top:10px">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:6px">Payload example</div>
+              <pre style="
+                background: var(--bg-elevated);
+                border: 1px solid var(--border-default);
+                border-radius: 8px;
+                padding: 10px 12px;
+                font-size: 11px;
+                font-family: var(--font-display, monospace);
+                color: #22d3ee;
+                overflow-x: auto;
+                margin: 0;
+                line-height: 1.5;
+              ">{
+  "event": "task.updated",
+  "task": {
+    "id": "abc-123",
+    "title": "Fix login bug",
+    "status": "in-progress",
+    "assignee": "pixel",
+    "priority": "high",
+    "updated_at": "2026-02-22T15:00:00Z"
+  }
+}</pre>
+            </div>
+          </div>
           <div id="settingsWebhooks">
             <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
           </div>
