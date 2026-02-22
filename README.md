@@ -51,10 +51,13 @@ AgentBoard is a full-featured operations dashboard for teams running AI agents o
 - **API Documentation** — Built-in reference for all 76 API endpoints at `/api/docs`. No external docs to maintain.
 - **Dark / Light Theme** — Full theme support with `localStorage` persistence. Ships with a polished dark-mode-first design.
 
-### 🔜 Coming Soon
+### 🛒 Marketplace *(new in v0.5.2)*
 
-- **Agent Marketplace** — Browse, install, and configure pre-built agents from a shared registry.
-- **Custom Dashboard Builder** — Drag-and-drop widget layout. Build views tailored to your team's workflow.
+- **Agent Marketplace** — Browse a curated registry of pre-built agent templates (Research Assistant, Code Review Team, Content Pipeline, DevOps Guardian, and more). Each template includes role definitions, soul files, memory seeds, and heartbeat instructions. One-click deploy scaffolds the agent config into your workspace. Templates are versioned and community-rated (stars + deploy count).
+
+### 🎨 Custom Dashboard Builder *(new in v0.5.2)*
+
+- **Custom Dashboard Builder** — Build your own views with a drag-and-drop widget grid. Choose from a library of widgets (agent status, task summary, activity feed, cost overview, error feed, git commits, latency chart, and more). Multiple dashboards supported; set any as default. Layout persists to `~/.openclaw/agentboard-dashboards.json`. Auto-refreshes every 30 seconds.
 
 ---
 

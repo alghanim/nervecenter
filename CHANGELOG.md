@@ -11,6 +11,26 @@ See [ROADMAP.md](./ROADMAP.md) for what's coming next.
 
 ---
 
+## [0.5.2] — 2026-02-23
+
+### Added
+
+- **Custom Dashboard Builder** (`b5b7304`) — Drag-and-drop widget grid builder. Users can create multiple named dashboards, add/remove/reposition widgets from a library, and set a default view. Widget types include: `agent-status`, `task-summary`, `activity-feed`, `cost-overview`, `error-feed`, `git-commits`, `latency-chart`. Layout stored in `~/.openclaw/agentboard-dashboards.json`. UI auto-refreshes every 30 seconds. Full CRUD API (`GET/POST /api/dashboards`, `GET/PUT/DELETE /api/dashboards/{id}`).
+- **Agent Marketplace** (`b5b7304`) — Browse and deploy pre-built agent templates. Includes 8+ built-in templates with roles, soul files, memory seeds, and heartbeat instructions. One-click `POST /api/marketplace/templates/{id}/deploy` scaffolds the agent into the workspace. Templates carry versioning, category tags, star ratings, and deploy counts. Endpoints: `GET /api/marketplace/templates`, `GET /api/marketplace/templates/{id}`, `POST /api/marketplace/templates/{id}/deploy`.
+
+### Fixed
+
+- **Health check accuracy** (`dab4fa7`) — `GET /api/health` now determines agent `last-seen` from JSONL session file modification times rather than in-memory state; survives server restarts and reflects true activity.
+- **Health check status consistency** (`ae59211`) — activity log is the authoritative source for status transitions; `online`/`idle`/`offline` values no longer diverge between the health endpoint and the agent list.
+- **Workspace path resolution** (`6b02237`) — `openclaw.go` handler now correctly resolves paths for Thunder (main) and aliased agent IDs, fixing "workspace not found" errors in the file editor and memory viewer.
+
+### Documentation
+
+- `README.md` — Marketplace and Custom Dashboard Builder moved from "Coming Soon" to the Features section and documented in full.
+- Quill daily run: all changes from last 25 hours confirmed documented. No other pending docs items.
+
+---
+
 ## [0.5.1] — 2026-02-22 (post-release patches)
 
 ### Fixed
