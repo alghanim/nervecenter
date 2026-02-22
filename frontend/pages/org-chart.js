@@ -137,7 +137,11 @@ Pages.orgChart = {
 
     // If the API returns an array, wrap it
     if (Array.isArray(rootData)) {
-      rootData = { name: 'AgentBoard', id: 'root', children: rootData };
+      if (rootData.length > 0 && (rootData[0].id === 'thunder' || rootData[0].id === 'main')) {
+        rootData = rootData[0]; // Thunder IS the root
+      } else {
+        rootData = { name: 'NerveCenter', id: 'root', children: rootData };
+      }
     } else if (!rootData.children && !rootData.name) {
       // Try to interpret object format
       rootData = { name: 'AgentBoard', id: 'root', children: Object.values(rootData) };
