@@ -163,7 +163,8 @@
   transition: border-color var(--dur-fast) var(--ease-default);
 }
 .card:hover {
-  border-color: var(--border-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 /* ═══════════════════════════
@@ -531,7 +532,8 @@
               box-shadow var(--dur-normal) var(--ease-default);
 }
 .stat-card:hover {
-  border-color: var(--border-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
@@ -705,8 +707,9 @@
   display: block;
 }
 .agent-card:hover {
-  border-color: var(--border-hover);
+  border-color: var(--accent);
   background: var(--bg-surface-hover);
+  box-shadow: 0 0 20px var(--accent-glow);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
@@ -1346,7 +1349,7 @@
   display: flex;
   flex-direction: column;
 }
-.kpi-card:hover { border-color: var(--border-hover); }
+.kpi-card:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
 .kpi-number {
   font: 700 var(--text-2xl)/1 var(--font-display);
   color: var(--text-primary);
@@ -1390,7 +1393,7 @@
 .chart-area--donut { min-height: 220px; }
 
 /* Light theme org chart */
-body.theme-light .org-chart-container { background: var(--bg-inset); }
+[data-theme="light"] .org-chart-container { background: var(--bg-inset); }
 
 /* ═══════════════════════════
    FOCUS STATES (accessibility)

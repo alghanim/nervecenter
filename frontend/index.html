@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AgentBoard</title>
+  <title>NerveCenter</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -430,7 +430,7 @@
   (function() {
     // Sync theme icon on load
     function syncThemeIcon() {
-      var isLight = document.body.classList.contains('theme-light');
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
       var moon = document.getElementById('themeIconMoon');
       var sun = document.getElementById('themeIconSun');
       if (moon) moon.style.display = isLight ? 'none' : '';

@@ -4,20 +4,20 @@
    THEME MODULE
 ═══════════════════════════ */
 window.Theme = (function () {
-  const LS_KEY = 'agentboard-theme';
+  const LS_KEY = 'nervecenter-theme';
 
   function apply(theme) {
     if (theme === 'light') {
-      document.body.classList.add('theme-light');
+      document.documentElement.setAttribute('data-theme', 'light');
     } else {
-      document.body.classList.remove('theme-light');
+      document.documentElement.removeAttribute('data-theme');
     }
     // Sync SVG theme icons (defined in index.html inline script)
     if (window._syncThemeIcon) window._syncThemeIcon();
   }
 
   function current() {
-    return document.body.classList.contains('theme-light') ? 'light' : 'dark';
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   }
 
   function toggle() {

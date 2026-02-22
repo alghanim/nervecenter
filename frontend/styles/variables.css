@@ -1,58 +1,58 @@
-/* AgentBoard — CSS Custom Properties v2.0 */
-/* Design Spec §1 — Professional Redesign */
+/* NerveCenter — CSS Custom Properties v2.1 */
+/* Design Spec §1 — NerveCenter Theme */
 /* Note: fonts loaded via <link> in index.html */
 
 /* ═══════════════════════════
-   DARK THEME (Primary)
+   DARK THEME (Default)
 ═══════════════════════════ */
 :root {
   /* BACKGROUND */
-  --bg-base:          #09090B;
+  --bg-base:          #0a0a0b;
   --bg-surface:       #111113;
-  --bg-surface-hover: #18181B;
-  --bg-elevated:      #1C1C22;
-  --bg-inset:         #0C0C0E;
+  --bg-surface-hover: #18181b;
+  --bg-elevated:      #1c1c22;
+  --bg-inset:         #0c0c0e;
 
   /* Legacy aliases (keep for compatibility) */
-  --bg-primary:   #09090B;
-  --bg-secondary: #111113;
-  --bg-tertiary:  #18181B;
+  --bg-primary:   #0a0a0b;
+  --bg-secondary: #18181b;
+  --bg-tertiary:  #1e1e22;
 
   /* BORDERS */
-  --border-default: #1F1F28;
-  --border-hover:   #2A2A35;
-  --border-active:  #3A3A48;
+  --border-default: rgba(255,255,255,0.06);
+  --border-hover:   rgba(255,255,255,0.10);
+  --border-active:  rgba(255,255,255,0.16);
 
   /* Legacy aliases */
-  --border-subtle:  #1F1F28;
-  --border-focus:   #3A3A48;
-  --border-primary: #1F1F28;
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-focus:   rgba(255,255,255,0.16);
+  --border-primary: rgba(255,255,255,0.06);
 
   /* TEXT */
-  --text-primary:   #ECECF1;
-  --text-secondary: #8B8BA3;
-  --text-tertiary:  #52525B;
-  --text-inverse:   #09090B;
+  --text-primary:   #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary:  #52525b;
+  --text-inverse:   #0a0a0b;
 
-  /* ACCENT — Indigo */
-  --accent:       #6366F1;
-  --accent-hover: #818CF8;
-  --accent-muted: rgba(99, 102, 241, 0.10);
-  --accent-glow:  rgba(99, 102, 241, 0.15);
+  /* ACCENT — Cyan/Teal (NerveCenter brand) */
+  --accent:       #22d3ee;
+  --accent-hover: #06b6d4;
+  --accent-muted: rgba(34, 211, 238, 0.10);
+  --accent-glow:  rgba(34, 211, 238, 0.15);
 
   /* STATUS */
-  --success:       #10B981;
-  --success-muted: rgba(16, 185, 129, 0.10);
+  --success:       #22C55E;
+  --success-muted: rgba(34, 197, 94, 0.10);
   --warning:       #F59E0B;
   --warning-muted: rgba(245, 158, 11, 0.10);
   --danger:        #EF4444;
   --danger-muted:  rgba(239, 68, 68, 0.10);
-  --neutral:       #52525B;
+  --neutral:       #52525b;
 
   /* Legacy status aliases */
-  --status-online:  #10B981;
+  --status-online:  #22C55E;
   --status-busy:    #F59E0B;
-  --status-offline: #52525B;
+  --status-offline: #52525b;
   --status-error:   #EF4444;
 
   /* TEAM COLORS */
@@ -101,37 +101,74 @@
   --dur-fast:   150ms;
   --dur-normal: 200ms;
   --dur-slow:   300ms;
+
+  /* SCROLLBAR */
+  --scrollbar-thumb: rgba(255,255,255,0.08);
+  --scrollbar-track: transparent;
 }
 
 /* ═══════════════════════════
    LIGHT THEME OVERRIDES
-   Applied via body.theme-light
+   Applied via html[data-theme="light"]
 ═══════════════════════════ */
-body.theme-light {
-  --bg-base:          #FAFAFA;
-  --bg-surface:       #FFFFFF;
-  --bg-surface-hover: #F4F4F5;
-  --bg-elevated:      #FFFFFF;
-  --bg-inset:         #F4F4F5;
+[data-theme="light"] {
+  --bg-base:          #fafafa;
+  --bg-surface:       #ffffff;
+  --bg-surface-hover: #f4f4f5;
+  --bg-elevated:      #ffffff;
+  --bg-inset:         #f4f4f5;
 
-  --bg-primary:   #FAFAFA;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary:  #F4F4F5;
+  --bg-primary:   #ffffff;
+  --bg-secondary: #f4f4f5;
+  --bg-tertiary:  #e4e4e7;
 
-  --border-default: #E4E4E7;
-  --border-hover:   #D4D4D8;
-  --border-active:  #A1A1AA;
-  --border-subtle:  #E4E4E7;
-  --border-focus:   #A1A1AA;
-  --border-primary: #E4E4E7;
+  --border-default: rgba(0,0,0,0.08);
+  --border-hover:   rgba(0,0,0,0.12);
+  --border-active:  rgba(0,0,0,0.20);
+  --border-subtle:  rgba(0,0,0,0.08);
+  --border-focus:   rgba(0,0,0,0.20);
+  --border-primary: rgba(0,0,0,0.08);
 
-  --text-primary:   #09090B;
-  --text-secondary: #52525B;
-  --text-tertiary:  #A1A1AA;
-  --text-inverse:   #FFFFFF;
+  --text-primary:   #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary:  #a1a1aa;
+  --text-inverse:   #ffffff;
+
+  --accent:       #0891b2;
+  --accent-hover: #0e7490;
+  --accent-muted: rgba(8, 145, 178, 0.08);
+  --accent-glow:  rgba(8, 145, 178, 0.12);
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
   --shadow-xl: 0 16px 48px rgba(0,0,0,0.12);
+
+  --scrollbar-thumb: rgba(0,0,0,0.12);
+  --scrollbar-track: transparent;
+}
+
+/* ═══════════════════════════
+   THEME TRANSITION
+═══════════════════════════ */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ═══════════════════════════
+   CUSTOM SCROLLBARS
+═══════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-muted);
 }
