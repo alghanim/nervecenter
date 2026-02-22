@@ -1,8 +1,10 @@
-# AgentBoard
+# NerveCenter *(formerly AgentBoard)*
 
 ### Mission Control for Your AI Agents
 
-AgentBoard is a full-featured operations dashboard for teams running AI agents on OpenClaw — giving you real-time visibility, lifecycle control, memory editing, log analysis, alerting, and analytics, all in one place.
+NerveCenter is a full-featured operations dashboard for teams running AI agents on OpenClaw — giving you real-time visibility, lifecycle control, memory editing, log analysis, alerting, and analytics, all in one place.
+
+> ⚠️ **Repository moved:** `alghanim/agentboard` → **`alghanim/nervecenter`**. Please update your remotes: `git remote set-url origin https://github.com/alghanim/nervecenter.git`
 
 > 📸 [Screenshot coming soon]
 
@@ -65,8 +67,8 @@ AgentBoard is a full-featured operations dashboard for teams running AI agents o
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/alghanim/agentboard.git
-cd agentboard
+git clone https://github.com/alghanim/nervecenter.git
+cd nervecenter
 
 # 2. Configure your agents and environment
 cp agents.yaml.example agents.yaml

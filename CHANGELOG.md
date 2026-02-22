@@ -13,21 +13,31 @@ See [ROADMAP.md](./ROADMAP.md) for what's coming next.
 
 ## [0.5.2] — 2026-02-23
 
-### Added
+### 🎨 NerveCenter — Full UI Redesign
 
-- **Custom Dashboard Builder** (`b5b7304`) — Drag-and-drop widget grid builder. Users can create multiple named dashboards, add/remove/reposition widgets from a library, and set a default view. Widget types include: `agent-status`, `task-summary`, `activity-feed`, `cost-overview`, `error-feed`, `git-commits`, `latency-chart`. Layout stored in `~/.openclaw/agentboard-dashboards.json`. UI auto-refreshes every 30 seconds. Full CRUD API (`GET/POST /api/dashboards`, `GET/PUT/DELETE /api/dashboards/{id}`).
-- **Agent Marketplace** (`b5b7304`) — Browse and deploy pre-built agent templates. Includes 8+ built-in templates with roles, soul files, memory seeds, and heartbeat instructions. One-click `POST /api/marketplace/templates/{id}/deploy` scaffolds the agent into the workspace. Templates carry versioning, category tags, star ratings, and deploy counts. Endpoints: `GET /api/marketplace/templates`, `GET /api/marketplace/templates/{id}`, `POST /api/marketplace/templates/{id}/deploy`.
+AgentBoard has been rebranded and visually overhauled as **NerveCenter** — a premium-grade operations center aesthetic. Repository moved to `alghanim/nervecenter`.
 
-### Fixed
+#### Added
 
-- **Health check accuracy** (`dab4fa7`) — `GET /api/health` now determines agent `last-seen` from JSONL session file modification times rather than in-memory state; survives server restarts and reflects true activity.
-- **Health check status consistency** (`ae59211`) — activity log is the authoritative source for status transitions; `online`/`idle`/`offline` values no longer diverge between the health endpoint and the agent list.
-- **Workspace path resolution** (`6b02237`) — `openclaw.go` handler now correctly resolves paths for Thunder (main) and aliased agent IDs, fixing "workspace not found" errors in the file editor and memory viewer.
+- **NerveCenter premium theme** (`0f58373`, `2a61069`) — Full UI redesign with a new CSS variable system. Light/dark mode toggle with `localStorage` persistence. New `variables.css` defines the complete design token set; `animations.css` ships subtle motion (fade-in, slide-in, pulse). The sidebar, agent cards, and navigation all reflect the NerveCenter visual language.
+- **Custom Dashboard Builder** (`b5b7304`) — Drag-and-drop widget grid builder. Users can create multiple named dashboards, add/remove/reposition widgets from a library, and set a default view. Widget types: `agent-status`, `task-summary`, `activity-feed`, `cost-overview`, `error-feed`, `git-commits`, `latency-chart`. Layout stored in `~/.openclaw/agentboard-dashboards.json`. Auto-refreshes every 30 seconds. Full CRUD API (`GET/POST /api/dashboards`, `GET/PUT/DELETE /api/dashboards/{id}`).
+- **Agent Marketplace** (`b5b7304`) — Browse and deploy pre-built agent templates. 8+ built-in templates with roles, souls, memory seeds, and heartbeat instructions. One-click `POST /api/marketplace/templates/{id}/deploy` scaffolds the agent into the workspace. Templates carry versioning, category tags, star ratings, and deploy counts. Endpoints: `GET /api/marketplace/templates`, `GET /api/marketplace/templates/{id}`, `POST /api/marketplace/templates/{id}/deploy`.
+
+#### Fixed
+
+- **Particle animation removed** (`9ae1056`) — Background particle animation removed from My Dashboard for cleaner, less distracting UI. My Dashboard layout redesigned.
+- **Webhook docs** (`9ae1056`) — Webhook settings page now includes inline documentation for event types and HMAC signing.
+- **Thunder root node in org chart** (`919f90b`) — Thunder (main) correctly appears as the root node in the agent org chart view.
+- **Thunder model + always-online status** (`ad3b311`) — Thunder's model label correct; status transitions respect the always-online designation.
+- **Thunder activity dot + Discovered team labels** (`1aa9e24`) — Activity indicator for Thunder resolved; agents in the "Discovered" category now display proper team labels.
+- **Health check accuracy** (`dab4fa7`) — `GET /api/health` uses JSONL session file mtimes for `last-seen`; survives restarts.
+- **Health check status consistency** (`ae59211`) — Activity log is authoritative for status transitions.
+- **Workspace path resolution** (`6b02237`) — Thunder (main) and aliased agent IDs resolve correctly in the file editor and memory viewer.
 
 ### Documentation
 
-- `README.md` — Marketplace and Custom Dashboard Builder moved from "Coming Soon" to the Features section and documented in full.
-- Quill daily run: all changes from last 25 hours confirmed documented. No other pending docs items.
+- `README.md` — Marketplace and Dashboard Builder promoted from "Coming Soon" to Features. NerveCenter branding noted.
+- Quill daily run complete: all commits in last 25 hours documented.
 
 ---
 
