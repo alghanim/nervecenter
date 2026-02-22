@@ -127,6 +127,83 @@ agents:
             team: Data
             team_color: "#F97316"
 
+      - id: glass
+        name: glass
+        emoji: "🔍"
+        role: Research & Analysis
+        team: Data
+        team_color: "#F97316"
+
+      - id: anvil
+        name: anvil
+        emoji: "⚒️"
+        role: DevOps & Deploy
+        team: Engineering
+        team_color: "#3B82F6"
+
+      - id: scout
+        name: scout
+        emoji: "🔭"
+        role: Web Scout
+        team: Data
+        team_color: "#F97316"
+
+      - id: maven
+        name: maven
+        emoji: "📊"
+        role: Business Intelligence
+        team: Business
+        team_color: "#10B981"
+
+      - id: muse
+        name: muse
+        emoji: "🎭"
+        role: Creative Writing
+        team: Creative
+        team_color: "#A855F7"
+
+      - id: gear
+        name: gear
+        emoji: "⚙️"
+        role: Automation
+        team: Engineering
+        team_color: "#3B82F6"
+
+      - id: prism
+        name: prism
+        emoji: "🌈"
+        role: Analytics & Viz
+        team: Data
+        team_color: "#F97316"
+
+      - id: flare
+        name: flare
+        emoji: "🔥"
+        role: Marketing
+        team: Business
+        team_color: "#10B981"
+
+      - id: bolt
+        name: bolt
+        emoji: "⚡"
+        role: Fast Execution
+        team: Engineering
+        team_color: "#3B82F6"
+
+      - id: ledger
+        name: ledger
+        emoji: "📒"
+        role: Finance & Accounting
+        team: Business
+        team_color: "#10B981"
+
+      - id: quill
+        name: quill
+        emoji: "✒️"
+        role: Content & Copy
+        team: Creative
+        team_color: "#A855F7"
+
       - id: veil
         name: veil
         emoji: "🕵️"
@@ -145,6 +222,8 @@ agents:
 # directory name in OpenClaw's agents/ folder, list the aliases here.
 # Also used by GetAgentSoul() to resolve workspace-{alias} directories.
 legacy_dirs:
+  Thunder:
+    - main
   ink:
     - reports
   chrono:
