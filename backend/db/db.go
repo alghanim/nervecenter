@@ -74,19 +74,20 @@ func Close() error {
 // On conflict (same id) it updates metadata but preserves the existing status.
 func UpsertAgentsFromConfig(agents []config.Agent) error {
 	const query = `
-		INSERT INTO agents (id, display_name, emoji, role, team, team_color, is_lead, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'offline')
+		INSERT INTO agents (id, display_name, emoji, role, team, team_color, is_lead, model, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), 'offline')
 		ON CONFLICT (id) DO UPDATE SET
 			display_name = EXCLUDED.display_name,
 			emoji        = EXCLUDED.emoji,
 			role         = EXCLUDED.role,
 			team         = EXCLUDED.team,
 			team_color   = EXCLUDED.team_color,
-			is_lead      = EXCLUDED.is_lead`
+			is_lead      = EXCLUDED.is_lead,
+			model        = COALESCE(NULLIF(EXCLUDED.model, ''), agents.model)`
 
 	configIDs := make([]string, 0, len(agents))
 	for _, a := range agents {
-		if _, err := DB.Exec(query, a.ID, a.Name, a.Emoji, a.Role, a.Team, a.TeamColor, a.IsLead); err != nil {
+		if _, err := DB.Exec(query, a.ID, a.Name, a.Emoji, a.Role, a.Team, a.TeamColor, a.IsLead, a.Model); err != nil {
 			return fmt.Errorf("upsert agent %q: %w", a.ID, err)
 		}
 		configIDs = append(configIDs, a.ID)

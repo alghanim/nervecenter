@@ -25,6 +25,7 @@ agents:
     team: Command
     team_color: "#4A4A4A"
     is_lead: true
+    model: "anthropic/claude-sonnet-4-6"
 
   - id: titan
     name: titan

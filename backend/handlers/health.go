@@ -258,7 +258,15 @@ func computeAgentHealth(id string) AgentHealth {
 	// Use the agent's DB status directly for consistency with header badge
 	// Only override if there's a real problem
 	displayStatus := status
-	if status == "offline" && lastActivity != nil && now.Sub(*lastActivity) < 24*time.Hour {
+
+	// Thunder is the orchestrator — always online
+	if id == "thunder" {
+		displayStatus = "online"
+		if status != "online" {
+			db.DB.Exec(`UPDATE agents SET status = 'online' WHERE id = $1`, id)
+		}
+		healthy = true
+	} else if status == "offline" && lastActivity != nil && now.Sub(*lastActivity) < 24*time.Hour {
 		// Agent has recent activity but status says offline — show as idle instead
 		displayStatus = "idle"
 		db.DB.Exec(`UPDATE agents SET status = 'idle' WHERE id = $1 AND status = 'offline'`, id)
@@ -276,6 +284,11 @@ func computeAgentHealth(id string) AgentHealth {
 
 // determineStatusFromHealth returns the new status to set (or "" if no change needed)
 func determineStatusFromHealth(health AgentHealth) string {
+	// Thunder is the orchestrator — never downgrade
+	if health.AgentID == "thunder" {
+		return ""
+	}
+
 	// Only auto-downgrade agents that are "online" or "degraded" or "idle"
 	if health.Status != "online" && health.Status != "degraded" && health.Status != "idle" {
 		return ""

@@ -23,6 +23,7 @@ type AgentNode struct {
 	Team      string       `yaml:"team"`
 	TeamColor string       `yaml:"team_color"`
 	IsLead    bool         `yaml:"is_lead"`
+	Model     string       `yaml:"model,omitempty"`
 	Children  []*AgentNode `yaml:"children,omitempty"`
 
 	// Set during flattening — not in YAML
@@ -55,6 +56,7 @@ type Agent struct {
 	Team      string
 	TeamColor string
 	IsLead    bool
+	Model     string
 	Parent    string
 }
 
@@ -122,6 +124,7 @@ func flattenNode(node *AgentNode, parent string, out *[]Agent) {
 		Team:      node.Team,
 		TeamColor: node.TeamColor,
 		IsLead:    node.IsLead,
+		Model:     node.Model,
 		Parent:    parent,
 	})
 	for _, child := range node.Children {

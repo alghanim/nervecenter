@@ -792,6 +792,18 @@ func getOCAgentStatus(agent OCAgent) OCAgentStatus {
 		status.LastActiveStr = "Never"
 	}
 
+	// Fallback: if no model found in session JSONL, try openclaw.json defaultModel
+	if status.CurrentModel == "N/A" {
+		if ocJSON, err := os.ReadFile(filepath.Join(openClawDir, "openclaw.json")); err == nil {
+			var ocConf map[string]interface{}
+			if json.Unmarshal(ocJSON, &ocConf) == nil {
+				if dm, ok := ocConf["defaultModel"].(string); ok && dm != "" {
+					status.CurrentModel = dm
+				}
+			}
+		}
+	}
+
 	status.EstimatedCost = calcCost(status.CurrentModel, totalInput, totalOutput)
 	status.CurrentTask = getLatestTask(agent.Name)
 
