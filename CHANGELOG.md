@@ -39,6 +39,11 @@ AgentBoard has been rebranded and visually overhauled as **NerveCenter** — a p
 - `README.md` — Marketplace and Dashboard Builder promoted from "Coming Soon" to Features. NerveCenter branding noted.
 - Quill daily run complete: all commits in last 25 hours documented.
 
+### Status — 2026-02-23 12:09 PM (Quill noon check)
+
+- README roadmap section updated: Marketplace and Custom Dashboard Builder moved from v2.0 future to v0.5.2 ✅ (they shipped).
+- No new source commits since yesterday's Quill run. All documentation current.
+
 ---
 
 ## [0.5.1] — 2026-02-22 (post-release patches)

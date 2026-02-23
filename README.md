@@ -265,8 +265,9 @@ AgentBoard is actively developed. Here's the brief summary:
 
 - **v0.x** ✅ — Core dashboard, kanban, memory viewer, professional redesign, dark theme
 - **v0.5** ✅ — Full feature platform: dependency graph, log viewer, error dashboard, alerting, webhooks, analytics, memory editor, snapshots, audit log, bulk ops, auth, multi-environment, API docs
+- **v0.5.2** ✅ — NerveCenter rebrand, Agent Marketplace, Custom Dashboard Builder, My Dashboard redesign, webhook inline docs, Thunder as org-chart root
 - **v1.0** 🚧 — Direct agent messaging, GitHub integration, cost forecasting dashboard, Gantt timeline
-- **v2.0** 📋 — Cloud-hosted mode, agent marketplace, custom dashboard builder
+- **v2.0** 📋 — Cloud-hosted mode, self-hosted marketplace registry
 
 → Full details in [ROADMAP.md](./ROADMAP.md)
 
