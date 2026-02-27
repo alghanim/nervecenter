@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2026-02-28] No Code Changes
+
+No commits in the last 25 hours. Documentation and README maintained.
+
+---
+
 ## [Unreleased]
 
 See [ROADMAP.md](./ROADMAP.md) for what's coming next.
