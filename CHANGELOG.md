@@ -1,5 +1,11 @@
 # Changelog
 
+## [2026-03-01] Documentation
+
+- Complete README rewrite: added full API reference (70+ endpoints), architecture diagram, FAQ, Quick Start, agents.yaml guide, agent-kanban integration examples
+- No feature commits in last 25 hours
+
+
 All notable changes to AgentBoard are documented here.  
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 

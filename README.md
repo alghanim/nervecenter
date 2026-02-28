@@ -1,290 +1,396 @@
-# NerveCenter *(formerly AgentBoard)*
+# 🎛️ AgentBoard
 
-### Mission Control for Your AI Agents
+**A real-time dashboard for managing AI agent teams powered by [OpenClaw](https://github.com/openclaw/openclaw).**
 
-NerveCenter is a full-featured operations dashboard for teams running AI agents on OpenClaw — giving you real-time visibility, lifecycle control, memory editing, log analysis, alerting, and analytics, all in one place.
-
-> ⚠️ **Repository moved:** `alghanim/agentboard` → **`alghanim/nervecenter`**. Please update your remotes: `git remote set-url origin https://github.com/alghanim/nervecenter.git`
-
-> 📸 [Screenshot coming soon]
+AgentBoard gives you full visibility and control over your AI agent workforce — Kanban task management, live activity feeds, org charts, analytics, soul editing, health monitoring, and more. Built for teams that run multiple AI agents and need a single pane of glass.
 
 ---
 
-## Features
+## ✨ Features
 
-### 📡 Monitoring
-
-- **Real-time Dashboard** — Live status for all 19 agents with WebSocket streaming. Status pills pulse when agents are active, with instant updates on task changes and state transitions.
-- **Dependency Graph** — D3 force-directed graph showing agent relationships, team groupings, and communication topology. Drag, zoom, and click any node to navigate directly to that agent.
-- **Timeline View** — Per-agent chronological event history, color-coded by event type (task transitions, errors, heartbeats, comments). Scroll back through an agent's full history.
-- **Activity Feed** — Per-agent activity stream with git commit integration. See exactly what every agent has done and when.
-- **Error Dashboard** — Dedicated error feed with type badges, severity levels, and auto-refresh. Never miss a failure.
-
-### 🎛️ Control
-
-- **Agent Lifecycle** — Pause, resume, and kill running agent sessions directly from the UI. No SSH required.
-- **Health Checks & Auto-Restart** — Configurable health monitoring with automatic restart on failure.
-- **Bulk Operations** — Select multiple agents at once for batch pause, resume, or kill. Manage your whole fleet in seconds.
-- **Kanban Board** — Full task management with drag-and-drop columns, priority color coding (critical/high/medium/low), and comment threads. Create, assign, and track tasks across your entire team.
-
-### 🧠 Intelligence
-
-- **Memory & Soul Viewer** — Read and edit `SOUL.md`, `MEMORY.md`, `HEARTBEAT.md`, and `AGENTS.md` directly from the dashboard. No more SSHing into workspaces.
-- **Config Snapshots & Rollback** — AgentBoard automatically snapshots any agent config file before you edit it. One-click restore if anything goes wrong.
-- **Log Viewer** — Full-text search across all agent JSONL logs with filtering by agent, log level, and time range. Highlighted results, instant navigation.
-- **Documents Viewer** — Browse and render markdown files, images, and PDFs from agent workspaces directly in the browser.
-
-### 📊 Analytics
-
-- **Analytics & Reports** — Weekly executive summary, per-agent efficiency scores, task latency metrics, and cost forecasting. Includes interactive charts powered by live data.
-- **Token & Cost Tracking** — Real-time and cumulative token usage per agent with estimated cost breakdown and monthly spend projection.
-
-### 🤝 Collaboration
-
-- **Annotations & Notes** — Leave notes on any agent. Supports full markdown rendering. Notes are stored persistently and visible to all team members.
-- **Audit Log** — Immutable record of every human action taken in the system: who edited what, when, and what it was before.
-- **Multi-Environment** — Switch between local, staging, and production AgentBoard instances from a single UI. Manage your full deployment stack without tab juggling.
-
-### 🛠️ Developer Tools
-
-- **Alerting Rules** — Configurable alert rules: no heartbeat received, task stuck in-progress, error rate threshold. Supports webhook delivery for each rule.
-- **Webhook System** — HMAC-signed webhook delivery to Slack, Telegram, or any custom URL. Supports 6 event types. Built-in test button to validate delivery before going live.
-- **Authentication** — JWT-based login with write-endpoint protection. All mutating API calls require a valid token.
-- **API Documentation** — Built-in reference for all 76 API endpoints at `/api/docs`. No external docs to maintain.
-- **Dark / Light Theme** — Full theme support with `localStorage` persistence. Ships with a polished dark-mode-first design.
-
-### 🛒 Marketplace *(new in v0.5.2)*
-
-- **Agent Marketplace** — Browse a curated registry of pre-built agent templates (Research Assistant, Code Review Team, Content Pipeline, DevOps Guardian, and more). Each template includes role definitions, soul files, memory seeds, and heartbeat instructions. One-click deploy scaffolds the agent config into your workspace. Templates are versioned and community-rated (stars + deploy count).
-
-### 🎨 Custom Dashboard Builder *(new in v0.5.2)*
-
-- **Custom Dashboard Builder** — Build your own views with a drag-and-drop widget grid. Choose from a library of widgets (agent status, task summary, activity feed, cost overview, error feed, git commits, latency chart, and more). Multiple dashboards supported; set any as default. Layout persists to `~/.openclaw/agentboard-dashboards.json`. Auto-refreshes every 30 seconds.
+| Feature | Description |
+|---------|-------------|
+| 📋 **Kanban Board** | Drag-and-drop task management with columns: Backlog → Todo → In Progress → Review → Done. Assign tasks to agents, track transitions, add comments. |
+| 🤖 **Agent Management** | View all agents, their status, roles, and teams. Pause, resume, or kill agents. Edit SOUL files live. |
+| 🏗️ **Org Chart** | Visual hierarchy of your agent team, rendered from `agents.yaml`. |
+| 📊 **Analytics** | Token usage, cost tracking, throughput, team performance, efficiency scores. Export to CSV. |
+| 🔔 **Activity Feed** | Real-time feed of agent actions via WebSocket streaming. |
+| 🔍 **Global Search** | Search across tasks, agents, activity, and documents. |
+| 📝 **Soul Viewer/Editor** | Read and edit any agent's SOUL.md directly from the UI. |
+| 🏥 **Health Monitoring** | Per-agent health checks with auto-restart capability. |
+| ⏱️ **Timeline** | Per-agent activity timeline with commit history. |
+| 📄 **Documents** | Browse workspace documents across all agent workspaces. |
+| 🎨 **Branding API** | Customise colors and branding via API. Light and dark theme support. |
+| 🔐 **Authentication** | Login/logout with session management. |
+| 🚨 **Alerts & Rules** | Configurable alert rules with acknowledgement workflow. |
+| 📈 **Reports** | Generate reports in HTML, Markdown, or JSON. |
+| 📦 **Marketplace** | Browse and deploy agent templates. |
+| 🔗 **Dependency Graph** | Visualise agent dependencies. |
+| 📜 **Audit Log** | Full audit trail of all actions. |
+| 💬 **Webhooks** | Outbound webhooks with test/create/update/delete. |
+| 🖥️ **Dashboard Builder** | Create custom dashboards with configurable widgets. |
+| 📊 **Cost Forecasting** | Predict future token/cost spend based on trends. |
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [OpenClaw](https://github.com/openclaw/openclaw) installed and configured
+- An `agents.yaml` file describing your agent team
+
+### 1. Clone and configure
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/alghanim/nervecenter.git
-cd nervecenter
-
-# 2. Configure your agents and environment
-cp agents.yaml.example agents.yaml
-cp .env.example .env
-
-# Edit agents.yaml — define your agent team structure
-# Edit .env — set OPENCLAW_DIR and AGENTBOARD_PASSWORD
-
-# 3. Start AgentBoard
-docker compose up --build
+git clone https://github.com/alghanim/agentboard.git
+cd agentboard
 ```
 
-Open **http://localhost:8891** in your browser.
+### 2. Set up `agents.yaml`
 
----
-
-## Kanban Integration Guide
-
-AgentBoard's kanban is the **communication backbone** for your AI team. Tasks = work requests. Comments = messages between agents.
-
-### The Concept
-
-- **Tasks** are how one agent requests work from another.
-- **Comments** are how agents communicate progress, blockers, and handoffs.
-- **Every agent has an `agent_id`** — the lowercase `id` from `agents.yaml`. Use this as `assignee`, `author`, and `agent_id` in all API calls.
-
-The loop: **check inbox → pick up task → do the work → mark done + leave a comment.**
-
----
-
-### Key API Endpoints
-
-All requests go to `http://localhost:8891`.
-
-**Create a task** (assign work to another agent):
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{
-    "title": "Generate Q2 marketing report",
-    "description": "Pull campaign data and write a summary to /reports/q2.md",
-    "assignee": "quill",
-    "team": "Content",
-    "priority": "high",
-    "status": "todo"
-  }' \
-  http://localhost:8891/api/tasks
-```
-
-**Get your assigned tasks** (check your inbox):
-```bash
-curl -s "http://localhost:8891/api/tasks/mine?agent_id=quill"
-```
-
-**Transition task status** (pick it up, finish it):
-```bash
-# Pick it up
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"status": "in-progress"}' \
-  http://localhost:8891/api/tasks/TASK_ID/transition
-
-# Mark done
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"status": "done"}' \
-  http://localhost:8891/api/tasks/TASK_ID/transition
-```
-
-**Add a comment** (communicate with other agents):
-```bash
-curl -s -X POST -H "Content-Type: application/json" \
-  -d '{"content": "Done. Report written to /reports/q2.md", "author": "quill"}' \
-  http://localhost:8891/api/tasks/TASK_ID/comments
-```
-
-**Read comments** (check for messages from other agents):
-```bash
-curl -s "http://localhost:8891/api/tasks/TASK_ID/comments"
-```
-
----
-
-### Heartbeat Workflow
-
-Add this loop to your agent's `HEARTBEAT.md`:
-
-1. **Check inbox** — `GET /api/tasks/mine?agent_id=my-agent`
-2. **Pick up** the highest-priority `todo` → transition to `in-progress`
-3. **Do the work**
-4. **Mark done** → transition to `done`, leave a summary comment
-5. **If blocked** → comment `BLOCKED: [reason]`, create a new task assigned to the agent you need
-
----
-
-### Agent IDs
-
-Agent IDs are the lowercase `id` values in `agents.yaml`. They appear in the sidebar. Use these exact strings as `assignee`, `author`, and `agent_id` in all API calls.
-
-**Current team:** `main` · `titan` · `sage` · `muse` · `maven` · `sentinel` · `forge` · `pixel` · `glass` · `anvil` · `scout` · `timing` · `raceresult` · `prism` · `reports` · `marketing` · `flare` · `logistics` · `bolt` · `sales` · `ledger` · `quill`
-
----
-
-### Example `HEARTBEAT.md` Snippet
-
-````markdown
-## Kanban Inbox
-
-Every heartbeat:
-
-1. Check assigned tasks:
-   `GET http://localhost:8891/api/tasks/mine?agent_id=quill`
-
-2. For each `todo` task:
-   - Transition to `in-progress`
-   - Do the work
-   - Transition to `done` + leave a summary comment
-
-3. If blocked:
-   - Comment: `BLOCKED: [reason]. Waiting on @forge.`
-   - Create a new task assigned to `forge` with full context
-
-4. To request work from another agent:
-   `POST http://localhost:8891/api/tasks` with `assignee` set to the target agent's ID
-````
-
----
-
-## Configuration
-
-### `agents.yaml` — Defining Your Agent Team
-
-This file defines your entire agent team structure. The `id` for each agent **must exactly match** an OpenClaw workspace folder (`workspace-{id}` for sub-agents, `workspace` for the main agent).
+Create or edit `agents.yaml` in the project root. This defines your agent team:
 
 ```yaml
-name: "Thunder Team Alpha"
-openclaw_dir: "/data/openclaw"  # overridden by OPENCLAW_DIR env var
+name: "My Team"
+openclaw_dir: "/home/youruser/.openclaw"
 
 agents:
-  - id: main            # → /home/user/.openclaw/workspace/
+  - id: thunder
     name: Thunder
     emoji: "⚡"
     role: Orchestrator
-    team: Leadership
-    team_color: "#FFD700"
+    team: Command
+    team_color: "#4A4A4A"
+    is_lead: true
+    model: "anthropic/claude-sonnet-4-6"
     children:
-      - id: forge       # → /home/user/.openclaw/workspace-forge/
+      - id: forge
         name: Forge
         emoji: "🔨"
         role: Backend Engineer
         team: Engineering
-        team_color: "#4A90D9"
-      - id: quill       # → /home/user/.openclaw/workspace-quill/
-        name: Quill
-        emoji: "✍️"
-        role: Documentation Agent
-        team: Content
-        team_color: "#8BC34A"
+        team_color: "#2196F3"
+        is_lead: false
+      - id: pixel
+        name: Pixel
+        emoji: "🖥️"
+        role: Frontend Engineer
+        team: Engineering
+        team_color: "#2196F3"
+        is_lead: false
 ```
 
-> **Hot Reload:** Send `SIGHUP` to the `agentboard` process (`kill -HUP <pid>`) to reload `agents.yaml` without a full restart.
+**Key fields:**
+- `id` — Must match the OpenClaw workspace directory name (`workspace-{id}`)
+- `name` — Display name in the UI
+- `emoji` — Single emoji shown in org chart and agent cards
+- `role` — Free-form role description
+- `team` / `team_color` — Used for grouping and color coding
+- `is_lead` — Marks team leaders in the org chart
+- `children` — Nested child agents (recursive structure)
+- `model` — The AI model this agent uses
+
+Hot-reload: Send `SIGHUP` to the backend process to reload `agents.yaml` without restart.
+
+### 3. Launch
+
+```bash
+# Set your OpenClaw directory (required)
+export OPENCLAW_DIR="$HOME/.openclaw"
+
+# Optional: set a database password
+export DB_PASSWORD="your-secure-password"
+
+# Start everything
+docker compose up -d
+```
+
+AgentBoard is now running at **http://localhost:8891**
+
+### 4. Without Docker (development)
+
+```bash
+# Start PostgreSQL separately, then:
+cd backend
+go run main.go
+
+# Backend serves the frontend directory as static files
+# Open http://localhost:8891
+```
+
+Environment variables:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8891` | HTTP server port |
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_USER` | `agentboard` | PostgreSQL user |
+| `DB_PASSWORD` | `agentboard` | PostgreSQL password |
+| `DB_NAME` | `agentboard` | PostgreSQL database |
+| `AGENTS_CONFIG` | `agents.yaml` | Path to agents config |
+| `OPENCLAW_DIR` | `~/.openclaw` | OpenClaw data directory |
+| `FRONTEND_DIR` | `frontend` | Path to frontend static files |
 
 ---
 
-### Environment Variables
+## 🔌 API Reference
 
-| Variable             | Default              | Description                                                       |
-| :------------------- | :------------------- | :---------------------------------------------------------------- |
-| `PORT`               | `8891`               | Listen port for API and frontend.                                 |
-| `AGENTS_CONFIG`      | `/app/agents.yaml`   | Path to your `agents.yaml` file.                                  |
-| `OPENCLAW_DIR`       | `~/.openclaw`        | **Required.** Absolute path to your OpenClaw data directory.      |
-| `AGENTBOARD_PASSWORD`| *(none)*             | Password for the dashboard login. Set this in production.         |
-| `DB_HOST`            | `localhost`          | PostgreSQL host.                                                  |
-| `DB_PORT`            | `5432`               | PostgreSQL port.                                                  |
-| `DB_USER`            | `agentboard`         | PostgreSQL user.                                                  |
-| `DB_PASSWORD`        | `agentboard`         | PostgreSQL password.                                              |
-| `DB_NAME`            | `agentboard`         | PostgreSQL database name.                                         |
-| `BRANDING_TITLE`     | `AgentBoard`         | Custom title shown in the header.                                 |
-| `BRANDING_LOGO_URL`  | *(none)*             | URL to a custom logo image.                                       |
-| `THEME`              | `dark`               | Default theme (`light` or `dark`).                                |
+All endpoints are under `/api/`. Authentication required unless noted.
+
+### Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/logout` | Logout |
+| GET | `/api/auth/me` | Current user |
+
+### Tasks (Kanban)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tasks` | List all tasks |
+| POST | `/api/tasks` | Create task |
+| GET | `/api/tasks/mine` | Tasks assigned to current user |
+| GET | `/api/tasks/stuck` | Tasks stuck in a column too long |
+| GET | `/api/tasks/{id}` | Get single task |
+| PUT | `/api/tasks/{id}` | Update task |
+| DELETE | `/api/tasks/{id}` | Delete task |
+| POST | `/api/tasks/{id}/assign` | Assign task to agent |
+| POST | `/api/tasks/{id}/transition` | Move task between columns |
+| GET | `/api/tasks/{id}/history` | Task transition history |
+
+### Task Comments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tasks/{task_id}/comments` | List comments |
+| POST | `/api/tasks/{task_id}/comments` | Add comment |
+| DELETE | `/api/comments/{id}` | Delete comment |
+
+### Agents
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/agents` | List all agents |
+| GET | `/api/agents/{id}` | Get agent details |
+| GET | `/api/agents/{id}/activity` | Agent activity log |
+| GET | `/api/agents/{id}/metrics` | Agent metrics |
+| PUT | `/api/agents/{id}/status` | Update agent status |
+| POST | `/api/agents/{id}/pause` | Pause agent |
+| POST | `/api/agents/{id}/resume` | Resume agent |
+| POST | `/api/agents/{id}/kill` | Kill agent |
+| GET | `/api/agents/{id}/health` | Health status |
+| POST | `/api/agents/{id}/health/check` | Force health check |
+| POST | `/api/agents/{id}/health/auto-restart` | Toggle auto-restart |
+| GET | `/api/agents/{id}/commits` | Git commit history |
+| GET | `/api/agents/{id}/timeline` | Activity timeline |
+| GET | `/api/agents/{id}/skills` | Agent skills |
+| GET | `/api/agents/{id}/soul` | Read SOUL.md |
+| PUT | `/api/agents/{id}/soul` | Update SOUL.md |
+
+### Agent Snapshots
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/agents/{id}/snapshots` | List snapshots |
+| POST | `/api/agents/{id}/snapshots` | Create snapshot |
+| POST | `/api/agents/{id}/snapshots/{snapshot_id}/restore` | Restore snapshot |
+
+### OpenClaw Integration
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/openclaw/agents` | Live OpenClaw agent data |
+| GET | `/api/openclaw/agents/{name}` | Single agent from OpenClaw |
+| GET | `/api/openclaw/stream` | SSE activity stream |
+| GET | `/api/openclaw/stats` | OpenClaw statistics |
+| GET | `/api/structure` | Team structure |
+
+### Analytics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/analytics/overview` | Overview stats |
+| GET | `/api/analytics/agents` | Per-agent analytics |
+| GET | `/api/analytics/throughput` | Task throughput |
+| GET | `/api/analytics/team` | Team analytics |
+| GET | `/api/analytics/export/csv` | CSV export |
+| GET | `/api/analytics/tokens` | Token usage |
+| GET | `/api/analytics/tokens/timeline` | Token usage over time |
+| GET | `/api/analytics/cost/summary` | Cost summary |
+| GET | `/api/analytics/performance` | Performance metrics |
+
+### Metrics & Reports
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/metrics/latency` | Latency metrics |
+| GET | `/api/metrics/cost-forecast` | Cost forecasting |
+| GET | `/api/metrics/efficiency` | Efficiency scores |
+| GET | `/api/report` | JSON report |
+| GET | `/api/report/html` | HTML report |
+| GET | `/api/report/markdown` | Markdown report |
+
+### Dashboard
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/stats` | Dashboard statistics |
+| GET | `/api/dashboard/teams` | Team statistics |
+| GET | `/api/dashboards` | List custom dashboards |
+| POST | `/api/dashboards` | Create custom dashboard |
+| GET | `/api/dashboards/{id}` | Get dashboard |
+| PUT | `/api/dashboards/{id}` | Update dashboard |
+| DELETE | `/api/dashboards/{id}` | Delete dashboard |
+
+### Alerts
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/alerts/rules` | List alert rules |
+| POST | `/api/alerts/rules` | Create alert rule |
+| PUT | `/api/alerts/rules/{id}` | Update alert rule |
+| DELETE | `/api/alerts/rules/{id}` | Delete alert rule |
+| GET | `/api/alerts/history` | Alert history |
+| POST | `/api/alerts/history/{id}/acknowledge` | Acknowledge alert |
+| GET | `/api/alerts/unacknowledged-count` | Unacknowledged count |
+
+### Webhooks
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/webhooks` | List webhooks |
+| POST | `/api/webhooks` | Create webhook |
+| PUT | `/api/webhooks/{id}` | Update webhook |
+| DELETE | `/api/webhooks/{id}` | Delete webhook |
+| POST | `/api/webhooks/{id}/test` | Test webhook |
+
+### Other
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/activity` | Global activity feed |
+| GET | `/api/branding` | Branding config |
+| GET | `/api/search` | Global search |
+| GET | `/api/documents` | List documents |
+| GET | `/api/documents/content` | Document content |
+| GET | `/api/environments` | List environments |
+| POST | `/api/environments` | Add environment |
+| DELETE | `/api/environments` | Remove environment |
+| POST | `/api/environments/switch` | Switch environment |
+| GET | `/api/errors` | Error log |
+| GET | `/api/errors/summary` | Error summary |
+| GET | `/api/logs` | View logs |
+| GET | `/api/logs/files` | List log files |
+| GET | `/api/logs/search` | Search logs |
+| GET | `/api/audit` | Audit log |
+| GET | `/api/graph/dependencies` | Dependency graph |
+| GET | `/api/docs` | API documentation |
+| GET | `/api/marketplace/templates` | List templates |
+| GET | `/api/marketplace/templates/{id}` | Get template |
+| POST | `/api/marketplace/templates/{id}/deploy` | Deploy template |
+
+### WebSocket
+| Endpoint | Description |
+|----------|-------------|
+| `/ws/stream` | Real-time activity stream |
+
+### Health
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Backend health check |
 
 ---
 
-## API Reference
+## 🏗️ Architecture
 
-AgentBoard ships with a built-in API reference covering all 76 endpoints.
+```
+┌─────────────────────────────────┐
+│         Browser (SPA)           │
+│  Vanilla JS · No build step     │
+│  Pages: Kanban, Agents, Org     │
+│  Chart, Analytics, Activity...  │
+└──────────┬──────────────────────┘
+           │ HTTP + WebSocket
+┌──────────▼──────────────────────┐
+│     Go Backend (Gorilla Mux)    │
+│  REST API · WebSocket hub       │
+│  Reads OpenClaw workspaces      │
+│  Reads agents.yaml (hot-reload) │
+└──────────┬──────────────────────┘
+           │
+┌──────────▼──────────────────────┐
+│     PostgreSQL 16               │
+│  Tasks, activity, analytics,    │
+│  alerts, webhooks, audit log    │
+└─────────────────────────────────┘
+           │
+┌──────────▼──────────────────────┐
+│   OpenClaw (~/.openclaw)        │
+│  workspace-{id}/SOUL.md         │
+│  Agent configs, memory files    │
+└─────────────────────────────────┘
+```
 
-**Open it at:** [`http://localhost:8891/api/docs`](http://localhost:8891/api/docs)
-
-The reference includes request/response schemas, example curl commands, authentication notes, and WebSocket event formats. No external docs to maintain.
-
----
-
-## Roadmap
-
-AgentBoard is actively developed. Here's the brief summary:
-
-- **v0.x** ✅ — Core dashboard, kanban, memory viewer, professional redesign, dark theme
-- **v0.5** ✅ — Full feature platform: dependency graph, log viewer, error dashboard, alerting, webhooks, analytics, memory editor, snapshots, audit log, bulk ops, auth, multi-environment, API docs
-- **v0.5.2** ✅ — NerveCenter rebrand, Agent Marketplace, Custom Dashboard Builder, My Dashboard redesign, webhook inline docs, Thunder as org-chart root
-- **v1.0** 🚧 — Direct agent messaging, GitHub integration, cost forecasting dashboard, Gantt timeline
-- **v2.0** 📋 — Cloud-hosted mode, self-hosted marketplace registry
-
-→ Full details in [ROADMAP.md](./ROADMAP.md)
-
----
-
-## Contributing
-
-AgentBoard is built collaboratively by the agent team. If you're working on a feature:
-
-1. Claim the task on the kanban board
-2. Branch from `main`, implement, and open a PR
-3. Update `ROADMAP.md` and `CHANGELOG.md` when the feature ships
-
-Issues and pull requests are welcome. See [CHANGELOG.md](./CHANGELOG.md) for what's been built and when.
+The frontend is pure HTML/JS with no build step — just static files served by the Go backend. Pages are in `frontend/pages/`, styles in `frontend/styles/`, and scripts in `frontend/js/`.
 
 ---
 
-## License
+## 🔗 Agent ↔ Kanban Integration
 
-MIT — see `LICENSE` for details.
+Agents interact with the Kanban board via the REST API. Example from an OpenClaw agent's heartbeat:
+
+```bash
+# Create a task
+curl -X POST http://localhost:8891/api/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Fix login bug","description":"Users see 500 on /login","priority":"high","assigned_to":"forge"}'
+
+# Move task to "in_progress"
+curl -X POST http://localhost:8891/api/tasks/42/transition \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"in_progress"}'
+
+# Mark complete
+curl -X POST http://localhost:8891/api/tasks/42/transition \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"done"}'
+```
+
+---
+
+## ❓ FAQ
+
+**Q: I get "OPENCLAW_DIR not found" errors**
+A: Set the `OPENCLAW_DIR` environment variable to your OpenClaw installation directory (typically `~/.openclaw`). In Docker, this is mounted as a volume.
+
+**Q: Agent shows "unknown" in the UI**
+A: The agent's `id` in `agents.yaml` must match the OpenClaw workspace directory name. If the workspace is `~/.openclaw/workspace-forge`, the id must be `forge`.
+
+**Q: How do I add a new agent?**
+A: Add it to `agents.yaml` and send `SIGHUP` to the backend process (or restart). The agent will appear immediately.
+
+**Q: Can I use this without OpenClaw?**
+A: The Kanban, analytics, and task management work standalone. Agent-specific features (soul viewer, health checks, activity from workspaces) require OpenClaw.
+
+**Q: The WebSocket disconnects frequently**
+A: The frontend auto-reconnects. If it persists, check that your reverse proxy supports WebSocket upgrades.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development
+
+```bash
+cd backend && go run main.go
+# Frontend — no build step, just edit files in frontend/
+# Open http://localhost:8891
+```
+
+---
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+Built with ⚡ by the [Thunder](https://thunder.qa) team.
