@@ -4,10 +4,13 @@
 package config
 
 import (
+	"bufio"
+	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -40,11 +43,11 @@ type Branding struct {
 
 // AgentsFile is the top-level YAML structure.
 type AgentsFile struct {
-	Name        string       `yaml:"name"`
-	OpenClawDir string       `yaml:"openclaw_dir"`
-	Agents      []*AgentNode `yaml:"agents"`
+	Name        string              `yaml:"name"`
+	OpenClawDir string              `yaml:"openclaw_dir"`
+	Agents      []*AgentNode        `yaml:"agents"`
 	LegacyDirs  map[string][]string `yaml:"legacy_dirs"`
-	Branding    Branding     `yaml:"branding"`
+	Branding    Branding            `yaml:"branding"`
 }
 
 // Agent is a flat agent record (after hierarchy flattening).
@@ -71,6 +74,21 @@ type HierarchyNode struct {
 	IsLead    bool             `json:"isLead"`
 	Parent    string           `json:"parent,omitempty"`
 	Children  []*HierarchyNode `json:"children,omitempty"`
+}
+
+// openClawAgentEntry is a single entry in openclaw.json agents.list[].
+type openClawAgentEntry struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Workspace string `json:"workspace"`
+	Model     string `json:"model"`
+}
+
+// openClawJSON is the top-level structure of openclaw.json (partial).
+type openClawJSON struct {
+	Agents struct {
+		List []openClawAgentEntry `json:"list"`
+	} `json:"agents"`
 }
 
 // registry holds the loaded config.
@@ -150,7 +168,83 @@ func buildHierarchyNode(node *AgentNode, parent string) *HierarchyNode {
 	return h
 }
 
-// load reads and parses the YAML config file.
+// isASCIIWord returns true if all runes in s are plain ASCII.
+func isASCIIWord(s string) bool {
+	for _, r := range s {
+		if r > 127 {
+			return false
+		}
+	}
+	return true
+}
+
+// parseSoulMD reads a SOUL.md file and extracts name, emoji, and role (best-effort).
+func parseSoulMD(path string) (name, emoji, role string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", "", ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	lineNum := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineNum++
+		if lineNum > 30 {
+			break
+		}
+		// First heading: # SOUL.md — Name Emoji  OR  # Name Emoji
+		if strings.HasPrefix(line, "# ") && name == "" {
+			rest := strings.TrimPrefix(line, "# ")
+			// Strip "SOUL.md — " prefix if present
+			if idx := strings.Index(rest, " — "); idx >= 0 {
+				rest = rest[idx+3:]
+			}
+			parts := strings.Fields(rest)
+			if len(parts) >= 2 {
+				last := parts[len(parts)-1]
+				if !isASCIIWord(last) {
+					emoji = last
+					name = strings.Join(parts[:len(parts)-1], " ")
+				} else {
+					name = rest
+				}
+			} else if len(parts) == 1 {
+				name = parts[0]
+			}
+		}
+		// First non-heading, non-empty line that looks like a role description
+		if role == "" && !strings.HasPrefix(line, "#") && strings.TrimSpace(line) != "" {
+			lower := strings.ToLower(line)
+			if strings.Contains(lower, "you are") || strings.Contains(lower, "lead") ||
+				strings.Contains(lower, "agent") || strings.Contains(lower, "engineer") ||
+				strings.Contains(lower, "manager") || strings.Contains(lower, "analyst") {
+				role = strings.TrimSpace(line)
+				if len(role) > 120 {
+					role = role[:120]
+				}
+			}
+		}
+	}
+	return name, emoji, role
+}
+
+// readOpenClawJSON reads openclaw.json from the given dir and returns agent entries.
+func readOpenClawJSON(openClawDir string) ([]openClawAgentEntry, error) {
+	path := filepath.Join(openClawDir, "openclaw.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var oc openClawJSON
+	if err := json.Unmarshal(data, &oc); err != nil {
+		return nil, err
+	}
+	return oc.Agents.List, nil
+}
+
+// load reads and parses agents.yaml + openclaw.json for dynamic agent discovery.
 func (r *registry) load() error {
 	path := configPath()
 	abs, _ := filepath.Abs(path)
@@ -183,6 +277,100 @@ func (r *registry) load() error {
 		hierarchy = append(hierarchy, buildHierarchyNode(root, ""))
 	}
 
+	// Build a map of YAML agents by ID
+	yamlAgents := make(map[string]Agent, len(flat))
+	for _, a := range flat {
+		yamlAgents[a.ID] = a
+	}
+
+	// Read openclaw.json for dynamic agent discovery
+	ocEntries, ocErr := readOpenClawJSON(openClawDir)
+	if ocErr != nil {
+		log.Printf("[config] Could not read openclaw.json (using agents.yaml only): %v", ocErr)
+	}
+
+	// Build map of openclaw.json agents
+	ocAgents := make(map[string]openClawAgentEntry, len(ocEntries))
+	for _, e := range ocEntries {
+		ocAgents[e.ID] = e
+	}
+
+	merged := make(map[string]Agent)
+
+	// Add all openclaw.json agents (prefer YAML hierarchy info when available)
+	for id, oc := range ocAgents {
+		if ya, ok := yamlAgents[id]; ok {
+			if ya.Model == "" && oc.Model != "" {
+				ya.Model = oc.Model
+			}
+			// Enrich yaml agent with SOUL.md if fields are missing
+			workspace := oc.Workspace
+			if workspace == "" {
+				workspace = filepath.Join(openClawDir, "workspace-"+id)
+			}
+			sName, sEmoji, sRole := parseSoulMD(filepath.Join(workspace, "SOUL.md"))
+			if ya.Name == "" && sName != "" {
+				ya.Name = sName
+			}
+			if ya.Emoji == "" && sEmoji != "" {
+				ya.Emoji = sEmoji
+			}
+			if ya.Role == "" && sRole != "" {
+				ya.Role = sRole
+			}
+			merged[id] = ya
+		} else {
+			// New agent from openclaw.json — auto-create with defaults
+			a := Agent{
+				ID:        id,
+				Name:      id,
+				Emoji:     "🤖",
+				Team:      "Discovered",
+				TeamColor: "#6B7280",
+				Model:     oc.Model,
+			}
+			if oc.Name != "" {
+				a.Name = oc.Name
+			}
+			workspace := oc.Workspace
+			if workspace == "" {
+				workspace = filepath.Join(openClawDir, "workspace-"+id)
+			}
+			sName, sEmoji, sRole := parseSoulMD(filepath.Join(workspace, "SOUL.md"))
+			if sName != "" {
+				a.Name = sName
+			}
+			if sEmoji != "" {
+				a.Emoji = sEmoji
+			}
+			if sRole != "" {
+				a.Role = sRole
+			}
+			merged[id] = a
+			log.Printf("[config] Discovered new agent from openclaw.json: %s", id)
+		}
+	}
+
+	// Also keep agents from agents.yaml not in openclaw.json (hierarchy info preserved)
+	for id, ya := range yamlAgents {
+		if _, ok := merged[id]; !ok {
+			merged[id] = ya
+			log.Printf("[config] Keeping agents.yaml agent not in openclaw.json: %s", id)
+		}
+	}
+
+	// Convert map to slice with defaults
+	result := make([]Agent, 0, len(merged))
+	for _, a := range merged {
+		if a.Name == "" {
+			a.Name = a.ID
+		}
+		if a.Emoji == "" {
+			a.Emoji = "🤖"
+		}
+		result = append(result, a)
+	}
+
 	// Resolve branding defaults
 	branding := af.Branding
 	if branding.TeamName == "" {
@@ -192,52 +380,11 @@ func (r *registry) load() error {
 		branding.Theme = "dark"
 	}
 
-	// Official 19 team agents — only these are shown on the board.
-	officialAgents := map[string]bool{
-		"thunder": true, "titan": true, "sage": true, "muse": true,
-		"maven": true, "sentinel": true, "forge": true, "pixel": true,
-		"glass": true, "anvil": true, "scout": true, "chrono": true,
-		"gear": true, "prism": true, "ink": true, "flare": true,
-		"bolt": true, "ledger": true, "quill": true,
-	}
-
-	// Filter YAML-loaded agents to only official ones
-	filtered := make([]Agent, 0, len(officialAgents))
-	seen := make(map[string]bool)
-	for _, a := range flat {
-		if officialAgents[a.ID] && !seen[a.ID] {
-			filtered = append(filtered, a)
-			seen[a.ID] = true
-		}
-	}
-
-	// Auto-add any official agents not yet in the YAML
-	agentsDir := filepath.Join(openClawDir, "agents")
-	for name := range officialAgents {
-		if seen[name] {
-			continue
-		}
-		// Check if the agent directory exists
-		if info, err := os.Stat(filepath.Join(agentsDir, name)); err == nil && info.IsDir() {
-			filtered = append(filtered, Agent{
-				ID:        name,
-				Name:      name,
-				Emoji:     "🤖",
-				Role:      "",
-				Team:      "Discovered",
-				TeamColor: "#6B7280",
-			})
-			seen[name] = true
-			log.Printf("[config] Added official agent from agents dir: %s", name)
-		}
-	}
-	flat = filtered
-
-	// Build maps after all agents are finalized (avoids pointer invalidation)
-	byName := make(map[string]*Agent, len(flat))
-	byID := make(map[string]*Agent, len(flat))
-	for i := range flat {
-		a := &flat[i]
+	// Build lookup maps
+	byName := make(map[string]*Agent, len(result))
+	byID := make(map[string]*Agent, len(result))
+	for i := range result {
+		a := &result[i]
 		byName[a.Name] = a
 		byID[a.ID] = a
 	}
@@ -245,7 +392,7 @@ func (r *registry) load() error {
 	r.mu.Lock()
 	r.teamName = af.Name
 	r.openClawDir = openClawDir
-	r.agents = flat
+	r.agents = result
 	r.agentByName = byName
 	r.agentByID = byID
 	r.legacyDirs = af.LegacyDirs
@@ -253,7 +400,7 @@ func (r *registry) load() error {
 	r.branding = branding
 	r.mu.Unlock()
 
-	log.Printf("[config] Loaded %d agents from %s (openclaw_dir=%s)", len(flat), abs, openClawDir)
+	log.Printf("[config] Loaded %d agents from %s (openclaw_dir=%s)", len(result), abs, openClawDir)
 	return nil
 }
 
@@ -270,6 +417,11 @@ func (r *registry) watchSIGHUP() {
 }
 
 // --- Public API ---
+
+// Reload re-reads agents.yaml and openclaw.json (can be called from goroutines).
+func Reload() error {
+	return global.load()
+}
 
 // GetTeamName returns the configured team name.
 func GetTeamName() string {
@@ -340,7 +492,6 @@ func GetBranding() Branding {
 func GetHierarchy() []*HierarchyNode {
 	global.mu.RLock()
 	defer global.mu.RUnlock()
-	// Return a copy of the slice (nodes themselves are read-only)
 	cp := make([]*HierarchyNode, len(global.hierarchy))
 	copy(cp, global.hierarchy)
 	return cp

@@ -86,6 +86,21 @@ func main() {
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
 
+	// Periodic agent re-sync from openclaw.json (every 5 minutes)
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		for range ticker.C {
+			log.Println("[sync] Periodic agent re-sync from openclaw.json...")
+			if err := config.Reload(); err != nil {
+				log.Printf("[sync] Config reload failed: %v", err)
+				continue
+			}
+			if err := db.UpsertAgentsFromConfig(config.GetAgents()); err != nil {
+				log.Printf("[sync] DB upsert failed: %v", err)
+			}
+		}
+	}()
+
 	// Alert evaluator
 	go handlers.StartAlertEvaluator(hub)
 

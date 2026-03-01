@@ -94,13 +94,13 @@ func UpsertAgentsFromConfig(agents []config.Agent) error {
 	}
 	log.Printf("✅ Seeded %d agents from config into DB", len(agents))
 
-	// Remove agents that are no longer in the config.
-	res, err := DB.Exec(`DELETE FROM agents WHERE id != ALL($1)`, pq.Array(configIDs))
+	// Soft-delete agents no longer in config — preserves task history.
+	res, err := DB.Exec(`UPDATE agents SET status = 'inactive' WHERE id != ALL($1) AND status != 'inactive'`, pq.Array(configIDs))
 	if err != nil {
-		return fmt.Errorf("delete stale agents: %w", err)
+		return fmt.Errorf("soft-delete stale agents: %w", err)
 	}
-	if removed, _ := res.RowsAffected(); removed > 0 {
-		log.Printf("🧹 Removed %d stale agent(s) from DB (not in config)", removed)
+	if marked, _ := res.RowsAffected(); marked > 0 {
+		log.Printf("🧹 Marked %d stale agent(s) as inactive (not in config)", marked)
 	}
 
 	return nil
