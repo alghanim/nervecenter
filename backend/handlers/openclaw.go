@@ -781,12 +781,10 @@ func getOCAgentStatus(agent OCAgent) OCAgentStatus {
 		status.LastActiveStr = formatRelTime(latestSession)
 		since := time.Since(latestSession)
 		switch {
-		case since < 5*time.Minute:
-			status.Status = "active"
-		case since < 30*time.Minute:
-			status.Status = "idle"
+		case since < 10*time.Minute:
+			status.Status = "online"
 		default:
-			status.Status = "offline"
+			status.Status = "idle"
 		}
 	} else {
 		status.LastActiveStr = "Never"
@@ -932,7 +930,7 @@ func getOCStats() OCStats {
 		agent := agentFromConfig(ca)
 		s := getOCAgentStatus(agent)
 		switch s.Status {
-		case "active":
+		case "online":
 			stats.ActiveAgents++
 		case "idle":
 			stats.IdleAgents++
@@ -947,7 +945,7 @@ func getOCStats() OCStats {
 		}
 		ts := teamMap[ca.Team]
 		ts.TotalAgents++
-		if s.Status == "active" {
+		if s.Status == "online" {
 			ts.ActiveAgents++
 		}
 		ts.TotalTokens += s.TotalTokens
