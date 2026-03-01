@@ -152,6 +152,8 @@ func GitHubWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		handlePREvent(body)
 	case "push":
 		handlePushEvent(body)
+	case "issue_comment":
+		handleIssueCommentEvent(body)
 	}
 	respondJSON(w, 200, map[string]string{"status": "ok"})
 }
@@ -164,6 +166,7 @@ func verifyGitHubSignature(payload []byte, signature, secret string) bool {
 }
 
 var taskIDPattern = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+var ncRefPattern = regexp.MustCompile(`NC-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`)
 
 func handlePREvent(body []byte) {
 	var event struct {
@@ -176,7 +179,8 @@ func handlePREvent(body []byte) {
 			Head    struct {
 				Ref string `json:"ref"`
 			} `json:"head"`
-			Body string `json:"body"`
+			Merged bool   `json:"merged"`
+			Body   string `json:"body"`
 			User struct {
 				Login string `json:"login"`
 			} `json:"user"`
@@ -210,6 +214,13 @@ func handlePREvent(body []byte) {
 			logActivity("github", "pr_closed", taskID, map[string]string{
 				"pr_number": fmt.Sprintf("%d", event.PR.Number),
 			})
+			// If PR was merged, auto-transition task to done
+			if event.PR.Merged {
+				db.DB.Exec(`UPDATE tasks SET status = 'done', completed_at = NOW(), updated_at = NOW() WHERE id = $1 AND status IN ('review', 'progress')`, taskID)
+				logActivity("github", "pr_merged_task_done", taskID, map[string]string{
+					"pr_number": fmt.Sprintf("%d", event.PR.Number),
+				})
+			}
 		}
 	}
 }
@@ -218,8 +229,16 @@ func handlePushEvent(body []byte) {
 	var event struct {
 		Ref     string `json:"ref"`
 		Commits []struct {
+			ID      string `json:"id"`
 			Message string `json:"message"`
+			Author  struct {
+				Name string `json:"name"`
+			} `json:"author"`
+			URL string `json:"url"`
 		} `json:"commits"`
+		Repository struct {
+			HTMLURL string `json:"html_url"`
+		} `json:"repository"`
 	}
 	if err := json.Unmarshal(body, &event); err != nil {
 		return
@@ -228,10 +247,54 @@ func handlePushEvent(body []byte) {
 		taskIDs := findTaskIDs(commit.Message, event.Ref, "")
 		for _, taskID := range taskIDs {
 			logActivity("github", "push", taskID, map[string]string{
-				"ref":     event.Ref,
-				"message": commit.Message,
+				"ref":       event.Ref,
+				"message":   commit.Message,
+				"commit_id": commit.ID,
+				"author":    commit.Author.Name,
+				"url":       commit.URL,
 			})
 		}
+	}
+}
+
+func handleIssueCommentEvent(body []byte) {
+	var event struct {
+		Action string `json:"action"`
+		Issue  struct {
+			Number int    `json:"number"`
+			Title  string `json:"title"`
+			Body   string `json:"body"`
+		} `json:"issue"`
+		Comment struct {
+			Body string `json:"body"`
+			User struct {
+				Login string `json:"login"`
+			} `json:"user"`
+		} `json:"comment"`
+	}
+	if err := json.Unmarshal(body, &event); err != nil {
+		return
+	}
+	if event.Action != "created" {
+		return
+	}
+	// Find task references in comment body and issue title/body
+	taskIDs := findTaskIDs(event.Comment.Body, event.Issue.Title, event.Issue.Body)
+	for _, taskID := range taskIDs {
+		// Create a comment on the linked task
+		content := fmt.Sprintf("GitHub comment by @%s on issue #%d: %s",
+			event.Comment.User.Login, event.Issue.Number, event.Comment.Body)
+		if len(content) > 2000 {
+			content = content[:2000]
+		}
+		db.DB.Exec(
+			`INSERT INTO comments (task_id, author, content) VALUES ($1, $2, $3)`,
+			taskID, "github", content,
+		)
+		logActivity("github", "issue_comment", taskID, map[string]string{
+			"issue_number": fmt.Sprintf("%d", event.Issue.Number),
+			"author":       event.Comment.User.Login,
+		})
 	}
 }
 
@@ -239,6 +302,7 @@ func findTaskIDs(sources ...string) []string {
 	seen := map[string]bool{}
 	var ids []string
 	for _, s := range sources {
+		// Check UUID pattern
 		matches := taskIDPattern.FindAllString(s, -1)
 		for _, m := range matches {
 			var exists bool
@@ -246,6 +310,21 @@ func findTaskIDs(sources ...string) []string {
 			if exists && !seen[m] {
 				seen[m] = true
 				ids = append(ids, m)
+			}
+		}
+		// Check NC-{uuid} references
+		ncMatches := ncRefPattern.FindAllStringSubmatch(s, -1)
+		for _, match := range ncMatches {
+			if len(match) > 1 {
+				m := match[1]
+				if !seen[m] {
+					var exists bool
+					db.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)`, m).Scan(&exists)
+					if exists {
+						seen[m] = true
+						ids = append(ids, m)
+					}
+				}
 			}
 		}
 	}
