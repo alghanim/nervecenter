@@ -202,6 +202,11 @@ window.Env = (function () {
     settings:    { title: 'Settings',   subtitle: 'Configuration and preferences' },
     'api-docs':  { title: 'API Reference', subtitle: 'REST API documentation and endpoint reference' },
     marketplace: { title: 'Agent Marketplace', subtitle: 'Deploy pre-built agent configurations in one click' },
+    templates:     { title: 'Templates',     subtitle: 'Reusable task templates and workflow rules' },
+    traces:        { title: 'Traces',        subtitle: 'Agent execution timeline and traces' },
+    notifications: { title: 'Notifications', subtitle: 'Notification inbox' },
+    incidents:     { title: 'Incidents',     subtitle: 'Incident tracking and postmortems' },
+    playground:    { title: 'Playground',    subtitle: 'Chat with agents directly' },
   };
 
   async function init() {
@@ -389,6 +394,11 @@ window.Env = (function () {
       case 'settings':     page = Pages.settings; break;
       case 'api-docs':     page = Pages.apiDocs; break;
       case 'marketplace':  page = Pages.marketplace; break;
+      case 'templates':    page = Pages.templates; break;
+      case 'traces':       page = Pages.traces; break;
+      case 'notifications': page = Pages.notifications; break;
+      case 'incidents':    page = Pages.incidents; break;
+      case 'playground':   page = Pages.playground; break;
       default:
         content.innerHTML = `<div class="empty-state">
           <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="22" cy="22" r="14" stroke="currentColor" stroke-width="2"/><line x1="32" y1="32" x2="44" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
