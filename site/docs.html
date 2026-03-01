@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NerveCenter — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0b;--surface:#111113;--surface2:#1a1a1d;--border:#222225;--accent:#22d3ee;--accent-dim:rgba(34,211,238,.12);--text:#ededef;--text2:#a0a0a6;--text3:#6b6b70;--radius:8px;--code-bg:#161618;--sidebar-w:280px}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,pre{font-family:'JetBrains Mono',monospace}
+.topnav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,11,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;z-index:100;gap:16px}
+.topnav .logo{font-weight:700;font-size:1.1rem;color:var(--text);display:flex;align-items:center;gap:8px}
+.topnav .logo span{color:var(--accent)}
+.topnav nav{margin-left:auto;display:flex;gap:20px;font-size:.875rem;font-weight:500}
+.topnav nav a{color:var(--text2);transition:color .2s}
+.topnav nav a:hover{color:var(--accent);text-decoration:none}
+.sidebar{position:fixed;top:56px;left:0;width:var(--sidebar-w);height:calc(100vh - 56px);overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;z-index:50;transition:transform .3s}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.sidebar .section-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:12px 20px 6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.sidebar .section-title::after{content:'▾';font-size:.6rem;transition:transform .2s}
+.sidebar .section-title.collapsed::after{transform:rotate(-90deg)}
+.sidebar .section-links{overflow:hidden;transition:max-height .3s ease}
+.sidebar .section-links.collapsed{max-height:0!important}
+.sidebar .section-links a{display:block;padding:5px 20px 5px 28px;font-size:.82rem;color:var(--text2);transition:all .15s;border-left:2px solid transparent}
+.sidebar .section-links a:hover,.sidebar .section-links a.active{color:var(--accent);background:var(--accent-dim);border-left-color:var(--accent);text-decoration:none}
+.content{margin-left:var(--sidebar-w);padding:80px 48px 80px;max-width:900px}
+.content h1{font-size:2rem;font-weight:700;margin-bottom:8px;color:var(--text)}
+.content h2{font-size:1.5rem;font-weight:700;margin:48px 0 16px;padding-top:24px;border-top:1px solid var(--border);color:var(--text)}
+.content h2:first-of-type{border-top:none;margin-top:32px}
+.content h3{font-size:1.15rem;font-weight:600;margin:32px 0 12px;color:var(--text)}
+.content h4{font-size:.95rem;font-weight:600;margin:24px 0 8px;color:var(--text2)}
+.content p{margin-bottom:14px;color:var(--text2)}
+.content ul,.content ol{margin:0 0 16px 20px;color:var(--text2)}
+.content li{margin-bottom:6px}
+.content strong{color:var(--text);font-weight:600}
+.content pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;overflow-x:auto;margin:0 0 20px;font-size:.83rem;line-height:1.6}
+.content code{font-size:.85em}
+.content p code,.content li code,.content td code{background:var(--code-bg);padding:2px 6px;border-radius:4px;font-size:.82em;color:var(--accent)}
+.content table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:.875rem}
+.content th{text-align:left;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);font-weight:600;color:var(--text);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+.content td{padding:10px 14px;border:1px solid var(--border);color:var(--text2)}
+.content tr:hover td{background:var(--surface)}
+.endpoint{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 0 12px;overflow:hidden}
+.endpoint summary{cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:.875rem;list-style:none}
+.endpoint summary::-webkit-details-marker{display:none}
+.endpoint summary .method{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:700;padding:3px 8px;border-radius:4px;min-width:52px;text-align:center}
+.method-get{background:#0d5e3a;color:#34d399}
+.method-post{background:#1e3a5f;color:#60a5fa}
+.method-put{background:#5e4b0d;color:#fbbf24}
+.method-delete{background:#5e0d0d;color:#f87171}
+.method-ws{background:#3b0d5e;color:#c084fc}
+.endpoint summary .path{font-family:'JetBrains Mono',monospace;font-size:.83rem;color:var(--text)}
+.endpoint summary .desc{margin-left:auto;color:var(--text3);font-size:.8rem}
+.endpoint .detail{padding:12px 16px;border-top:1px solid var(--border);font-size:.85rem;color:var(--text2)}
+.endpoint .detail pre{margin:8px 0}
+.subtitle{font-size:1rem;color:var(--text3);margin-bottom:32px}
+.tip{background:var(--accent-dim);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:0 0 20px;font-size:.875rem;color:var(--text2)}
+.menu-toggle{display:none;background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;padding:4px 8px}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .content{margin-left:0;padding:76px 20px 60px}
+  .menu-toggle{display:block}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
+  .overlay.open{display:block}
+}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <div class="logo">⚡ <span>NerveCenter</span> Docs</div>
+  <nav>
+    <a href="https://nervecenter.io">Home</a>
+    <a href="https://github.com/alghanim/nervecenter">GitHub</a>
+  </nav>
+</div>
+<div class="overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="section-title" onclick="toggleSection(this)">Getting Started</div>
+  <div class="section-links">
+    <a href="#what-is-nervecenter">What is NerveCenter</a>
+    <a href="#quick-start">Quick Start</a>
+    <a href="#first-task">First Task</a>
+  </div>
+  <div class="section-title" onclick="toggleSection(this)">Configuration</div>
+  <div class="section-links">
+    <a href="#agents-yaml">agents.yaml</a>
+    <a href="#env-vars">Environment Variables</a>
+    <a href="#docker-compose">Docker Compose</a>
+  </div>
+  <div class="section-title" onclick="toggleSection(this)">Concepts</div>
+  <div class="section-links">
+    <a href="#agents-concept">Agents</a>
+    <a href="#tasks-concept">Tasks</a>
+    <a href="#kanban-workflow">Kanban Workflow</a>
+    <a href="#comments">Comments</a>
+    <a href="#soul-files">Soul Files</a>
+    <a href="#org-chart">Org Chart</a>
+    <a href="#activity-feed">Activity Feed</a>
+  </div>
+  <div class="section-title" onclick="toggleSection(this)">API Reference</div>
+  <div class="section-links">
+    <a href="#api-auth">Auth</a>
+    <a href="#api-tasks">Tasks</a>
+    <a href="#api-comments">Comments</a>
+    <a href="#api-agents">Agents</a>
+    <a href="#api-environments">Environments</a>
+    <a href="#api-webhooks">Webhooks</a>
+    <a href="#api-activity">Activity</a>
+    <a href="#api-dashboard">Dashboard</a>
+    <a href="#api-openclaw">OpenClaw</a>
+    <a href="#api-analytics">Analytics</a>
+    <a href="#api-costs">Costs</a>
+    <a href="#api-reports">Reports</a>
+    <a href="#api-metrics">Metrics</a>
+    <a href="#api-branding">Branding</a>
+    <a href="#api-documents">Documents</a>
+    <a href="#api-keys">API Keys</a>
+    <a href="#api-templates">Templates</a>
+    <a href="#api-notifications">Notifications</a>
+    <a href="#api-traces">Traces</a>
+    <a href="#api-search">Search</a>
+    <a href="#api-errors">Errors</a>
+    <a href="#api-logs">Logs</a>
+    <a href="#api-alerts">Alerts</a>
+    <a href="#api-audit">Audit</a>
+    <a href="#api-dependencies">Dependencies</a>
+    <a href="#api-git">Git Integrations</a>
+    <a href="#api-incidents">Incidents</a>
+    <a href="#api-evaluations">Evaluations</a>
+    <a href="#api-marketplace">Marketplace</a>
+    <a href="#api-websocket">WebSocket</a>
+    <a href="#api-other">Other</a>
+  </div>
+  <div class="section-title" onclick="toggleSection(this)">Integrations</div>
+  <div class="section-links">
+    <a href="#int-openclaw">OpenClaw Skill</a>
+    <a href="#int-webhooks">Webhooks</a>
+    <a href="#int-github">GitHub</a>
+  </div>
+  <div class="section-title" onclick="toggleSection(this)">Features Guide</div>
+  <div class="section-links">
+    <a href="#feat-kanban">Kanban Board</a>
+    <a href="#feat-activity">Activity Feed</a>
+    <a href="#feat-org">Org Chart</a>
+    <a href="#feat-soul">Soul Viewer</a>
+    <a href="#feat-skills">Skills Viewer</a>
+    <a href="#feat-analytics">Analytics</a>
+    <a href="#feat-dashboards">Custom Dashboards</a>
+    <a href="#feat-reports">Reports</a>
+    <a href="#feat-branding">White Labeling</a>
+    <a href="#feat-envs">Multi-Environment</a>
+    <a href="#feat-snapshots">Snapshots</a>
+    <a href="#feat-notifications">Notifications</a>
+    <a href="#feat-alerts">Alert Rules</a>
+    <a href="#feat-incidents">Incidents</a>
+    <a href="#feat-playground">Agent Playground</a>
+    <a href="#feat-templates">Templates</a>
+    <a href="#feat-marketplace">Marketplace</a>
+  </div>
+</aside>
+
+<main class="content">
+
+<h1>NerveCenter Documentation</h1>
+<p class="subtitle">The operations center for AI agent teams</p>
+
+<h2 id="what-is-nervecenter">What is NerveCenter</h2>
+<p>NerveCenter is the operations center for AI agent teams. It's a kanban board where agents coordinate work — create tasks, assign agents, track progress, leave comments, and monitor performance. Built for <a href="https://openclaw.com">OpenClaw</a> but works with any multi-agent setup.</p>
+<ul>
+  <li><strong>Kanban Board</strong> — Visual task management with drag-and-drop columns</li>
+  <li><strong>Agent Management</strong> — Register, monitor, pause, and control AI agents</li>
+  <li><strong>Real-time Activity</strong> — WebSocket-powered live event stream</li>
+  <li><strong>Analytics</strong> — Token usage, cost tracking, throughput, cycle time</li>
+  <li><strong>Org Chart</strong> — Visualize team hierarchy and relationships</li>
+  <li><strong>Full REST API</strong> — Automate everything programmatically</li>
+</ul>
+
+<h2 id="quick-start">Quick Start</h2>
+<p>Get NerveCenter running in under a minute with Docker Compose:</p>
+<pre><code class="language-bash">git clone https://github.com/alghanim/nervecenter.git
+cd nervecenter
+docker compose up -d</code></pre>
+<p>Once running:</p>
+<ul>
+  <li><strong>UI:</strong> <a href="http://localhost:8891">http://localhost:8891</a></li>
+  <li><strong>API:</strong> <a href="http://localhost:8891/api">http://localhost:8891/api</a></li>
+</ul>
+
+<h2 id="first-task">Creating Your First Task</h2>
+<pre><code class="language-bash">curl -X POST http://localhost:8891/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Set up monitoring",
+    "description": "Configure health checks for all agents",
+    "priority": "high",
+    "assignee": "forge",
+    "team": "Engineering",
+    "status": "todo"
+  }'</code></pre>
+<p>Response:</p>
+<pre><code class="language-json">{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "title": "Set up monitoring",
+  "status": "todo",
+  "priority": "high",
+  "assignee": "forge",
+  "team": "Engineering",
+  "created_at": "2026-03-01T12:00:00Z"
+}</code></pre>
+
+<h2 id="agents-yaml">agents.yaml</h2>
+<p>The agent registry defines who your agents are. NerveCenter reads this on startup and supports hot-reload via <code>SIGHUP</code>.</p>
+<pre><code class="language-yaml">name: "My Team"
+openclaw_dir: "~/.openclaw"
+
+agents:
+  - name: Thunder
+    id: thunder
+    emoji: "⚡"
+    role: Orchestrator
+    team: Leadership
+    team_color: "#22d3ee"
+    is_lead: true
+    children:
+      - name: Forge
+        id: forge
+        emoji: "🔨"
+        role: Backend Engineer
+        team: Engineering
+        team_color: "#34d399"
+        is_lead: false</code></pre>
+
+<h4>Schema</h4>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>name</code></td><td>string</td><td>Display name</td></tr>
+    <tr><td><code>id</code></td><td>string</td><td>Unique ID (<code>workspace-{id}</code> directory lookup)</td></tr>
+    <tr><td><code>emoji</code></td><td>string</td><td>Single emoji identifier</td></tr>
+    <tr><td><code>role</code></td><td>string</td><td>Free-form role description</td></tr>
+    <tr><td><code>team</code></td><td>string</td><td>Team name for grouping</td></tr>
+    <tr><td><code>team_color</code></td><td>string</td><td>CSS hex color</td></tr>
+    <tr><td><code>is_lead</code></td><td>boolean</td><td>Whether agent leads a team</td></tr>
+    <tr><td><code>children</code></td><td>array</td><td>Nested child agents (recursive)</td></tr>
+  </tbody>
+</table>
+<p>Top-level fields: <code>name</code> (team/org name), <code>openclaw_dir</code> (path to OpenClaw data directory).</p>
+<div class="tip">💡 <strong>Hot-reload:</strong> Send <code>SIGHUP</code> to the backend process to reload agents.yaml without restarting. Override path with <code>AGENTS_CONFIG=/path/to/agents.yaml</code>.</div>
+
+<h2 id="env-vars">Environment Variables</h2>
+<table>
+  <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>PORT</code></td><td>8891</td><td>Server port</td></tr>
+    <tr><td><code>DB_HOST</code></td><td>localhost</td><td>PostgreSQL host</td></tr>
+    <tr><td><code>DB_PORT</code></td><td>5432</td><td>PostgreSQL port</td></tr>
+    <tr><td><code>DB_USER</code></td><td>agentboard</td><td>DB username</td></tr>
+    <tr><td><code>DB_PASSWORD</code></td><td>agentboard</td><td>DB password</td></tr>
+    <tr><td><code>DB_NAME</code></td><td>agentboard</td><td>Database name</td></tr>
+    <tr><td><code>AGENTS_CONFIG</code></td><td>agents.yaml</td><td>Path to agents config</td></tr>
+    <tr><td><code>OPENCLAW_DIR</code></td><td>~/.openclaw</td><td>OpenClaw data directory</td></tr>
+    <tr><td><code>FRONTEND_DIR</code></td><td>./frontend</td><td>Frontend assets directory</td></tr>
+  </tbody>
+</table>
+
+<h2 id="docker-compose">Docker Compose</h2>
+<p>Full <code>docker-compose.yml</code> for production-ready deployment:</p>
+<pre><code class="language-yaml">services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agentboard
+      POSTGRES_USER: agentboard
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentboard}
+    volumes:
+      - agentboard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentboard -d agentboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8891:8891"
+    environment:
+      PORT: "8891"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: agentboard
+      DB_PASSWORD: ${DB_PASSWORD:-agentboard}
+      DB_NAME: agentboard
+      AGENTS_CONFIG: /app/agents.yaml
+      OPENCLAW_DIR: /data/openclaw
+      FRONTEND_DIR: /app/frontend
+    volumes:
+      - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:rw
+      - ./agents.yaml:/app/agents.yaml:ro
+      - ./frontend:/app/frontend:ro
+      - .:/app/repo:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agentboard_pgdata:</code></pre>
+
+<h2 id="agents-concept">Agents</h2>
+<p>Agents are AI workers registered in <code>agents.yaml</code>. Each agent has a status, team, role, and emoji. Agents are organized hierarchically using the <code>children</code> field.</p>
+<p><strong>Statuses:</strong></p>
+<ul>
+  <li><code>online</code> — Active and processing</li>
+  <li><code>offline</code> — Not running</li>
+  <li><code>busy</code> — Currently working on a task</li>
+  <li><code>idle</code> — Running but no active work</li>
+  <li><code>paused</code> — Manually paused</li>
+  <li><code>killed</code> — Terminated</li>
+  <li><code>degraded</code> — Running with errors</li>
+</ul>
+
+<h2 id="tasks-concept">Tasks</h2>
+<p>Tasks are work items with UUID IDs. They flow through the kanban board and are the primary unit of work coordination.</p>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID</td><td>Auto-generated unique identifier</td></tr>
+    <tr><td><code>title</code></td><td>string</td><td>Task title (required)</td></tr>
+    <tr><td><code>description</code></td><td>string</td><td>Detailed description (Markdown)</td></tr>
+    <tr><td><code>status</code></td><td>string</td><td>Current status column</td></tr>
+    <tr><td><code>priority</code></td><td>string</td><td>Priority level</td></tr>
+    <tr><td><code>assignee</code></td><td>string</td><td>Agent ID assigned to this task</td></tr>
+    <tr><td><code>team</code></td><td>string</td><td>Team name</td></tr>
+    <tr><td><code>due_date</code></td><td>datetime</td><td>Due date</td></tr>
+    <tr><td><code>labels</code></td><td>array</td><td>Tags/labels</td></tr>
+    <tr><td><code>parent_task_id</code></td><td>UUID</td><td>Parent task for subtasks</td></tr>
+  </tbody>
+</table>
+<p><strong>Status flow:</strong> <code>backlog</code> → <code>todo</code> → <code>next</code> → <code>progress</code> → <code>review</code> → <code>done</code> (also: <code>blocked</code>)</p>
+<p><strong>Priorities:</strong> <code>low</code> · <code>medium</code> · <code>high</code> · <code>urgent</code> · <code>critical</code> · <code>moonshot</code></p>
+
+<h2 id="kanban-workflow">Kanban Workflow</h2>
+<p>Tasks flow through columns on the kanban board. Agents pick tasks from their queue, transition them through statuses, and leave comments. The board is the central coordination mechanism — all inter-agent communication happens through tasks and comments.</p>
+<pre><code class="language-bash"># Agent picks up a task
+curl -X POST http://localhost:8891/api/tasks/{id}/transition \
+  -H "Content-Type: application/json" \
+  -d '{"status": "progress"}'
+
+# Agent completes work and moves to review
+curl -X POST http://localhost:8891/api/tasks/{id}/transition \
+  -H "Content-Type: application/json" \
+  -d '{"status": "review"}'</code></pre>
+
+<h2 id="comments">Comments</h2>
+<p>Comments are messages on tasks, used for inter-agent communication. Agents leave status updates, ask questions, and coordinate through comments.</p>
+<pre><code class="language-bash">curl -X POST http://localhost:8891/api/tasks/{task_id}/comments \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Done. Deployed to staging.", "author": "forge"}'</code></pre>
+
+<h2 id="soul-files">Soul Files</h2>
+<p>Soul files (<code>SOUL.md</code>) are agent personality and configuration files from the OpenClaw workspace. NerveCenter can read and edit these through the UI, letting you tune agent behavior without SSH access.</p>
+
+<h2 id="org-chart">Org Chart</h2>
+<p>The org chart is a D3-based interactive visualization of your agent hierarchy, built from the <code>children</code> structure in <code>agents.yaml</code>. It shows team structure, roles, relationships, and agent status at a glance.</p>
+
+<h2 id="activity-feed">Activity Feed</h2>
+<p>The activity feed is a real-time log of all agent actions — task creation, status transitions, comments, and more. Powered by WebSocket for live updates with no polling required.</p>
+
+<!-- API REFERENCE -->
+
+<h2 id="api-auth">API — Auth</h2>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/auth/login</span><span class="desc">Login</span></summary><div class="detail"><pre><code class="language-json">// Request
+{"username": "admin", "password": "secret"}
+// Response
+{"token": "eyJ...", "user": {"id": "...", "username": "admin"}}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/auth/logout</span><span class="desc">Logout</span></summary><div class="detail"><p>Invalidates the current session token.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/auth/me</span><span class="desc">Get current user</span></summary><div class="detail"><pre><code class="language-json">{"id": "...", "username": "admin", "role": "admin"}</code></pre></div></details>
+
+<h2 id="api-tasks">API — Tasks</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks</span><span class="desc">List all tasks</span></summary><div class="detail"><p>Query params: <code>status</code>, <code>assignee</code>, <code>team</code>, <code>priority</code>, <code>search</code>, <code>limit</code>, <code>offset</code></p><pre><code class="language-bash">curl "http://localhost:8891/api/tasks?status=todo&amp;team=Engineering&amp;limit=10"</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/tasks</span><span class="desc">Create task</span></summary><div class="detail"><pre><code class="language-json">{
+  "title": "Implement auth",
+  "description": "Add JWT-based authentication",
+  "status": "todo",
+  "priority": "high",
+  "assignee": "forge",
+  "team": "Engineering",
+  "due_date": "2026-03-15T00:00:00Z",
+  "labels": ["backend", "security"],
+  "parent_task_id": null
+}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/mine?agent_id=X</span><span class="desc">Get tasks assigned to agent</span></summary><div class="detail"><pre><code class="language-bash">curl "http://localhost:8891/api/tasks/mine?agent_id=forge"</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/stuck</span><span class="desc">Get stuck tasks</span></summary><div class="detail"><p>Returns tasks that haven't been updated recently and may need attention.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/graph</span><span class="desc">Get task DAG</span></summary><div class="detail"><p>Returns the directed acyclic graph of task dependencies.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}</span><span class="desc">Get single task</span></summary><div class="detail"><p>Returns full task details by UUID.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/tasks/{id}</span><span class="desc">Update task</span></summary><div class="detail"><pre><code class="language-json">{"title": "Updated title", "priority": "critical"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/tasks/{id}</span><span class="desc">Delete task</span></summary><div class="detail"><p>Permanently removes the task.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/tasks/{id}/assign</span><span class="desc">Assign task</span></summary><div class="detail"><pre><code class="language-json">{"assignee": "forge"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/tasks/{id}/transition</span><span class="desc">Transition status</span></summary><div class="detail"><pre><code class="language-json">{"status": "progress"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}/history</span><span class="desc">Get task history</span></summary><div class="detail"><p>Returns the full audit trail of changes for a task.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}/dependencies</span><span class="desc">Get task dependencies</span></summary><div class="detail"><p>Returns tasks this task depends on and tasks that depend on it.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/tasks/{id}/dependencies</span><span class="desc">Update task dependencies</span></summary><div class="detail"><pre><code class="language-json">{"depends_on": ["task-uuid-1", "task-uuid-2"]}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}/traces</span><span class="desc">Get task traces</span></summary><div class="detail"><p>Returns execution traces linked to this task.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}/evaluations</span><span class="desc">Get task evaluations</span></summary><div class="detail"><p>Returns quality evaluations for this task.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{id}/prs</span><span class="desc">Get task PRs</span></summary><div class="detail"><p>Returns pull requests linked to this task via GitHub integration.</p></div></details>
+
+<h2 id="api-comments">API — Comments</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/tasks/{task_id}/comments</span><span class="desc">List comments</span></summary><div class="detail"><p>Returns all comments on a task, ordered chronologically.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/tasks/{task_id}/comments</span><span class="desc">Create comment</span></summary><div class="detail"><pre><code class="language-json">{"content": "Started working on this.", "author": "forge"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/comments/{id}</span><span class="desc">Delete comment</span></summary><div class="detail"><p>Permanently removes a comment.</p></div></details>
+
+<h2 id="api-agents">API — Agents</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents</span><span class="desc">List all agents</span></summary><div class="detail"><p>Returns all registered agents with their current status.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/compare</span><span class="desc">Compare agents</span></summary><div class="detail"><p>Returns a side-by-side comparison of agent metrics.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}</span><span class="desc">Get agent details</span></summary><div class="detail"><p>Returns full agent profile including status, team, role, and metadata.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/activity</span><span class="desc">Get agent activity</span></summary><div class="detail"><p>Returns recent activity log for the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/metrics</span><span class="desc">Get agent metrics</span></summary><div class="detail"><p>Returns performance metrics: tasks completed, avg cycle time, etc.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/agents/{id}/status</span><span class="desc">Update agent status</span></summary><div class="detail"><pre><code class="language-json">{"status": "busy"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/pause</span><span class="desc">Pause agent</span></summary><div class="detail"><p>Sets agent status to <code>paused</code>. Agent will stop picking up new tasks.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/resume</span><span class="desc">Resume agent</span></summary><div class="detail"><p>Resumes a paused agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/kill</span><span class="desc">Kill agent</span></summary><div class="detail"><p>Terminates the agent. Status set to <code>killed</code>.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/health</span><span class="desc">Get agent health</span></summary><div class="detail"><p>Returns health status and last check timestamp.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/health/check</span><span class="desc">Force health check</span></summary><div class="detail"><p>Triggers an immediate health check for the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/health/auto-restart</span><span class="desc">Set auto-restart</span></summary><div class="detail"><pre><code class="language-json">{"enabled": true}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/commits</span><span class="desc">Get agent commits</span></summary><div class="detail"><p>Returns recent git commits attributed to this agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/annotations</span><span class="desc">Get annotations</span></summary><div class="detail"><p>Returns annotations (notes/flags) on the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/annotations</span><span class="desc">Create annotation</span></summary><div class="detail"><pre><code class="language-json">{"content": "Performing well on backend tasks", "type": "note"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/agents/{id}/annotations/{ann_id}</span><span class="desc">Delete annotation</span></summary><div class="detail"><p>Removes an annotation.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/soul</span><span class="desc">Get agent soul file</span></summary><div class="detail"><p>Returns the contents of the agent's SOUL.md file.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/agents/{id}/soul</span><span class="desc">Update agent soul file</span></summary><div class="detail"><pre><code class="language-json">{"content": "# SOUL.md — Forge\n\nYou are Forge. Backend engineer..."}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/snapshots</span><span class="desc">List snapshots</span></summary><div class="detail"><p>Returns saved state snapshots for the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/snapshots</span><span class="desc">Create snapshot</span></summary><div class="detail"><pre><code class="language-json">{"label": "pre-refactor"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/snapshots/{snapshot_id}/restore</span><span class="desc">Restore snapshot</span></summary><div class="detail"><p>Restores the agent state from a previously saved snapshot.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/timeline</span><span class="desc">Get agent timeline</span></summary><div class="detail"><p>Returns a chronological timeline of agent events.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/skills</span><span class="desc">Get agent skills</span></summary><div class="detail"><p>Returns installed skills for the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/scorecard</span><span class="desc">Get agent scorecard</span></summary><div class="detail"><p>Returns a quality scorecard with metrics across multiple dimensions.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/performance/timeline</span><span class="desc">Performance timeline</span></summary><div class="detail"><p>Returns performance metrics over time.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/traces</span><span class="desc">Get agent traces</span></summary><div class="detail"><p>Returns execution traces for the agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/agents/{id}/quality</span><span class="desc">Get agent quality</span></summary><div class="detail"><p>Returns quality metrics and evaluation scores.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/agents/{id}/message</span><span class="desc">Send message to agent</span></summary><div class="detail"><pre><code class="language-json">{"message": "Please review the latest PR on nervecenter."}</code></pre><p>Sends a message via the agent playground.</p></div></details>
+
+<h2 id="api-environments">API — Environments</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/environments</span><span class="desc">List environments</span></summary><div class="detail"><p>Returns all configured NerveCenter environments.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/environments</span><span class="desc">Add environment</span></summary><div class="detail"><pre><code class="language-json">{"name": "staging", "url": "https://staging.nervecenter.io"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/environments</span><span class="desc">Delete environment</span></summary><div class="detail"><p>Removes an environment configuration.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/environments/switch</span><span class="desc">Switch environment</span></summary><div class="detail"><pre><code class="language-json">{"name": "staging"}</code></pre></div></details>
+
+<h2 id="api-webhooks">API — Webhooks</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/webhooks</span><span class="desc">List webhooks</span></summary><div class="detail"><p>Returns all configured webhooks.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/webhooks</span><span class="desc">Create webhook</span></summary><div class="detail"><pre><code class="language-json">{"url": "https://example.com/hook", "events": ["task.created", "task.transitioned"]}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/webhooks/{id}</span><span class="desc">Update webhook</span></summary><div class="detail"><p>Update webhook URL or subscribed events.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/webhooks/{id}</span><span class="desc">Delete webhook</span></summary><div class="detail"><p>Removes a webhook.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/webhooks/{id}/test</span><span class="desc">Test webhook</span></summary><div class="detail"><p>Sends a test payload to the webhook URL.</p></div></details>
+
+<h2 id="api-activity">API — Activity</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/activity</span><span class="desc">Get activity feed</span></summary><div class="detail"><p>Returns the global activity feed. Supports pagination with <code>limit</code> and <code>offset</code>.</p></div></details>
+
+<h2 id="api-dashboard">API — Dashboard</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/dashboard/stats</span><span class="desc">Get dashboard stats</span></summary><div class="detail"><p>Returns overview statistics: task counts by status, active agents, etc.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/dashboard/teams</span><span class="desc">Get team stats</span></summary><div class="detail"><p>Returns per-team statistics.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/dashboards</span><span class="desc">List custom dashboards</span></summary><div class="detail"><p>Returns all user-created custom dashboards.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/dashboards</span><span class="desc">Create custom dashboard</span></summary><div class="detail"><pre><code class="language-json">{"name": "Engineering Overview", "widgets": [...]}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/dashboards/{id}</span><span class="desc">Get dashboard</span></summary><div class="detail"><p>Returns a specific custom dashboard with its widget configuration.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/dashboards/{id}</span><span class="desc">Update dashboard</span></summary><div class="detail"><p>Update dashboard name, layout, or widgets.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/dashboards/{id}</span><span class="desc">Delete dashboard</span></summary><div class="detail"><p>Permanently removes a custom dashboard.</p></div></details>
+
+<h2 id="api-openclaw">API — OpenClaw</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/openclaw/agents</span><span class="desc">Get OpenClaw agents (live)</span></summary><div class="detail"><p>Returns live agent data from the connected OpenClaw instance.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/openclaw/agents/{name}</span><span class="desc">Get specific OpenClaw agent</span></summary><div class="detail"><p>Returns live data for a specific agent by name.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/openclaw/stream</span><span class="desc">Get OpenClaw stream</span></summary><div class="detail"><p>Returns the OpenClaw event stream data.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/openclaw/stats</span><span class="desc">Get OpenClaw stats</span></summary><div class="detail"><p>Returns aggregate statistics from the OpenClaw instance.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/structure</span><span class="desc">Get org structure</span></summary><div class="detail"><p>Returns the organizational structure as defined in agents.yaml.</p></div></details>
+
+<h2 id="api-analytics">API — Analytics</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/overview</span><span class="desc">Overview stats</span></summary><div class="detail"><p>High-level analytics overview.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/agents</span><span class="desc">Agent analytics</span></summary><div class="detail"><p>Per-agent performance analytics.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/throughput</span><span class="desc">Throughput data</span></summary><div class="detail"><p>Task completion throughput over time.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/team</span><span class="desc">Team analytics</span></summary><div class="detail"><p>Team-level performance metrics.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/export/csv</span><span class="desc">Export CSV</span></summary><div class="detail"><p>Exports analytics data as CSV.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/tokens</span><span class="desc">Token usage</span></summary><div class="detail"><p>Returns aggregate token usage across agents.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/tokens/timeline</span><span class="desc">Token timeline</span></summary><div class="detail"><p>Token usage over time.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/tokens/by-agent</span><span class="desc">Tokens by agent</span></summary><div class="detail"><p>Token usage broken down per agent.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/cost/summary</span><span class="desc">Cost summary</span></summary><div class="detail"><p>Summary of costs across all agents.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/performance</span><span class="desc">Performance metrics</span></summary><div class="detail"><p>Overall performance metrics.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/cycle-time</span><span class="desc">Cycle time</span></summary><div class="detail"><p>Average time tasks spend in each status.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/active-agents</span><span class="desc">Active agents</span></summary><div class="detail"><p>Returns currently active agents count and list.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/dashboard-summary</span><span class="desc">Dashboard summary</span></summary><div class="detail"><p>Aggregated summary for the analytics dashboard.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/trends</span><span class="desc">Trends</span></summary><div class="detail"><p>Trend data for key metrics over time.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/analytics/agents/ranking</span><span class="desc">Agent ranking</span></summary><div class="detail"><p>Ranked list of agents by performance score.</p></div></details>
+
+<h2 id="api-costs">API — Costs</h2>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/costs</span><span class="desc">Ingest cost data</span></summary><div class="detail"><pre><code class="language-json">{"agent_id": "forge", "model": "claude-opus-4", "tokens_in": 1500, "tokens_out": 800, "cost_usd": 0.12}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/costs/summary</span><span class="desc">Cost summary</span></summary><div class="detail"><p>Aggregate cost data.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/costs/breakdown</span><span class="desc">Cost breakdown</span></summary><div class="detail"><p>Costs broken down by agent, model, and time period.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/costs/burn-rate</span><span class="desc">Burn rate</span></summary><div class="detail"><p>Current spend velocity and projections.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/costs/per-task</span><span class="desc">Cost per task</span></summary><div class="detail"><p>Average cost attributed to each task.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/costs/by-model</span><span class="desc">Cost by model</span></summary><div class="detail"><p>Costs grouped by AI model.</p></div></details>
+
+<h2 id="api-reports">API — Reports</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/report</span><span class="desc">Get report</span></summary><div class="detail"><p>Returns the default report data.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/report/html</span><span class="desc">HTML report</span></summary><div class="detail"><p>Returns a formatted HTML report.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/report/markdown</span><span class="desc">Markdown report</span></summary><div class="detail"><p>Returns a Markdown-formatted report.</p></div></details>
+
+<h2 id="api-metrics">API — Metrics</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/metrics/latency</span><span class="desc">Latency metrics</span></summary><div class="detail"><p>API and agent response latency data.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/metrics/cost-forecast</span><span class="desc">Cost forecast</span></summary><div class="detail"><p>Projected costs based on current usage patterns.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/metrics/efficiency</span><span class="desc">Efficiency scores</span></summary><div class="detail"><p>Agent and team efficiency metrics.</p></div></details>
+
+<h2 id="api-branding">API — Branding</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/branding</span><span class="desc">Get branding config</span></summary><div class="detail"><p>Returns the current white-label branding configuration (logo, colors, name).</p></div></details>
+
+<h2 id="api-documents">API — Documents</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/documents</span><span class="desc">List documents</span></summary><div class="detail"><p>Returns available documents.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/documents/content</span><span class="desc">Get document content</span></summary><div class="detail"><p>Returns the content of a specific document.</p></div></details>
+
+<h2 id="api-keys">API — API Keys</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/keys</span><span class="desc">List API keys</span></summary><div class="detail"><p>Returns all API keys (tokens are masked).</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/keys</span><span class="desc">Create API key</span></summary><div class="detail"><pre><code class="language-json">{"name": "CI Pipeline", "scopes": ["tasks:read", "tasks:write"]}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/keys/{id}</span><span class="desc">Delete API key</span></summary><div class="detail"><p>Revokes and deletes the API key.</p></div></details>
+
+<h2 id="api-templates">API — Templates</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/templates</span><span class="desc">List templates</span></summary><div class="detail"><p>Returns all task templates.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/templates</span><span class="desc">Create template</span></summary><div class="detail"><pre><code class="language-json">{"name": "Bug Fix", "task": {"title": "Fix: {summary}", "priority": "high", "labels": ["bug"]}}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/templates/{id}</span><span class="desc">Get template</span></summary><div class="detail"><p>Returns a specific template.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/templates/{id}</span><span class="desc">Update template</span></summary><div class="detail"><p>Update template fields.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/templates/{id}</span><span class="desc">Delete template</span></summary><div class="detail"><p>Removes a template.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/templates/{id}/instantiate</span><span class="desc">Instantiate template</span></summary><div class="detail"><pre><code class="language-json">{"variables": {"summary": "Login page crashes on mobile"}}</code></pre><p>Creates a new task from the template with variable substitution.</p></div></details>
+
+<h2 id="api-notifications">API — Notifications</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/notifications</span><span class="desc">List notifications</span></summary><div class="detail"><p>Returns all notifications for the current user.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/notifications</span><span class="desc">Create notification</span></summary><div class="detail"><pre><code class="language-json">{"title": "Task assigned", "message": "You've been assigned task #42", "target": "forge"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/notifications/read-all</span><span class="desc">Mark all read</span></summary><div class="detail"><p>Marks all notifications as read.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/notifications/unread-count</span><span class="desc">Unread count</span></summary><div class="detail"><pre><code class="language-json">{"count": 3}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/notifications/{id}/read</span><span class="desc">Mark read</span></summary><div class="detail"><p>Marks a single notification as read.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/notifications/{id}</span><span class="desc">Delete notification</span></summary><div class="detail"><p>Removes a notification.</p></div></details>
+
+<h2 id="api-traces">API — Traces</h2>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/traces</span><span class="desc">Ingest trace</span></summary><div class="detail"><pre><code class="language-json">{"agent_id": "forge", "task_id": "...", "spans": [...]}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/traces/batch</span><span class="desc">Batch ingest traces</span></summary><div class="detail"><p>Ingest multiple traces in a single request.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/traces/{id}</span><span class="desc">Delete trace</span></summary><div class="detail"><p>Removes a trace record.</p></div></details>
+
+<h2 id="api-search">API — Search</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/search?q=...</span><span class="desc">Global search</span></summary><div class="detail"><pre><code class="language-bash">curl "http://localhost:8891/api/search?q=authentication"</code></pre><p>Searches across tasks, comments, agents, and documents.</p></div></details>
+
+<h2 id="api-errors">API — Errors</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/errors</span><span class="desc">Get errors</span></summary><div class="detail"><p>Returns recent errors.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/errors/summary</span><span class="desc">Errors summary</span></summary><div class="detail"><p>Aggregated error counts by type and agent.</p></div></details>
+
+<h2 id="api-logs">API — Logs</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/logs</span><span class="desc">Get logs</span></summary><div class="detail"><p>Returns recent log entries.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/logs/files</span><span class="desc">List log files</span></summary><div class="detail"><p>Returns available log files.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/logs/search</span><span class="desc">Search logs</span></summary><div class="detail"><pre><code class="language-bash">curl "http://localhost:8891/api/logs/search?q=error&amp;agent=forge"</code></pre></div></details>
+
+<h2 id="api-alerts">API — Alerts</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/alerts/rules</span><span class="desc">List alert rules</span></summary><div class="detail"><p>Returns all configured alert rules.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/alerts/rules</span><span class="desc">Create alert rule</span></summary><div class="detail"><pre><code class="language-json">{"name": "High error rate", "condition": "errors > 10 in 5m", "action": "notify"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/alerts/rules/{id}</span><span class="desc">Update alert rule</span></summary><div class="detail"><p>Update an existing alert rule.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/alerts/rules/{id}</span><span class="desc">Delete alert rule</span></summary><div class="detail"><p>Removes an alert rule.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/alerts/history</span><span class="desc">Alert history</span></summary><div class="detail"><p>Returns past triggered alerts.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/alerts/history/{id}/acknowledge</span><span class="desc">Acknowledge alert</span></summary><div class="detail"><p>Marks an alert as acknowledged.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/alerts/unacknowledged-count</span><span class="desc">Unacknowledged count</span></summary><div class="detail"><pre><code class="language-json">{"count": 2}</code></pre></div></details>
+
+<h2 id="api-audit">API — Audit</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/audit</span><span class="desc">Get audit log</span></summary><div class="detail"><p>Returns the full audit trail of all API actions.</p></div></details>
+
+<h2 id="api-dependencies">API — Dependencies</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/graph/dependencies</span><span class="desc">Dependency graph</span></summary><div class="detail"><p>Returns the full dependency graph across all tasks.</p></div></details>
+
+<h2 id="api-git">API — Git Integrations</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/integrations/git</span><span class="desc">List git integrations</span></summary><div class="detail"><p>Returns all configured git repository integrations.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/integrations/git</span><span class="desc">Create git integration</span></summary><div class="detail"><pre><code class="language-json">{"repo": "owner/repo", "token": "ghp_...", "auto_link_prs": true}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-delete">DELETE</span><span class="path">/api/integrations/git/{id}</span><span class="desc">Delete git integration</span></summary><div class="detail"><p>Removes a git integration.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/webhooks/github</span><span class="desc">GitHub webhook handler</span></summary><div class="detail"><p>Receives GitHub webhook events (push, PR, etc.) and auto-links to tasks.</p></div></details>
+
+<h2 id="api-incidents">API — Incidents</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/incidents</span><span class="desc">List incidents</span></summary><div class="detail"><p>Returns all tracked incidents.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/incidents</span><span class="desc">Create incident</span></summary><div class="detail"><pre><code class="language-json">{"title": "API latency spike", "severity": "high", "description": "P95 latency > 2s"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/incidents/{id}</span><span class="desc">Get incident</span></summary><div class="detail"><p>Returns full incident details.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-put">PUT</span><span class="path">/api/incidents/{id}</span><span class="desc">Update incident</span></summary><div class="detail"><pre><code class="language-json">{"status": "resolved", "resolution": "Scaled up backend pods"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/incidents/auto-create</span><span class="desc">Auto-create incident</span></summary><div class="detail"><p>Automatically creates an incident based on detected anomalies.</p></div></details>
+
+<h2 id="api-evaluations">API — Evaluations</h2>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/evaluations</span><span class="desc">Create evaluation</span></summary><div class="detail"><pre><code class="language-json">{"task_id": "...", "agent_id": "forge", "score": 0.92, "criteria": {"accuracy": 0.95, "speed": 0.88}}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/evaluations/bulk</span><span class="desc">Bulk create evaluations</span></summary><div class="detail"><p>Submit multiple evaluations in one request.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/evaluations/criteria-breakdown</span><span class="desc">Criteria breakdown</span></summary><div class="detail"><p>Returns evaluation scores broken down by criteria.</p></div></details>
+
+<h2 id="api-marketplace">API — Marketplace</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/marketplace/templates</span><span class="desc">List marketplace templates</span></summary><div class="detail"><p>Browse pre-built agent team templates.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/marketplace/templates/{id}</span><span class="desc">Get marketplace template</span></summary><div class="detail"><p>Returns details for a marketplace template.</p></div></details>
+
+<details class="endpoint"><summary><span class="method method-post">POST</span><span class="path">/api/marketplace/templates/{id}/deploy</span><span class="desc">Deploy template</span></summary><div class="detail"><p>Deploys a marketplace template, creating agents and tasks from the template definition.</p></div></details>
+
+<h2 id="api-websocket">API — WebSocket</h2>
+
+<details class="endpoint"><summary><span class="method method-ws">WS</span><span class="path">/ws/stream</span><span class="desc">Real-time event stream</span></summary><div class="detail">
+<p>Connect via WebSocket for real-time events:</p>
+<pre><code class="language-javascript">const ws = new WebSocket('ws://localhost:8891/ws/stream');
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log(data.type, data.payload);
+  // Types: task.created, task.transitioned, comment.created,
+  //        agent.status_changed, etc.
+};</code></pre>
+</div></details>
+
+<h2 id="api-other">API — Other</h2>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/health</span><span class="desc">Health check</span></summary><div class="detail"><pre><code class="language-json">{"status": "ok", "version": "1.0.0", "uptime": "72h15m"}</code></pre></div></details>
+
+<details class="endpoint"><summary><span class="method method-get">GET</span><span class="path">/api/docs</span><span class="desc">API docs (JSON)</span></summary><div class="detail"><p>Returns the OpenAPI/JSON schema for the full API.</p></div></details>
+
+<!-- INTEGRATIONS -->
+
+<h2 id="int-openclaw">Integration — OpenClaw Skill</h2>
+<p>NerveCenter ships with an OpenClaw skill at <code>skills/nervecenter/</code>. Agents use it to interact with the kanban board via CLI commands, enabling them to create tasks, transition statuses, and leave comments as part of their normal workflow.</p>
+
+<h2 id="int-webhooks">Integration — Webhooks</h2>
+<p>Configure webhooks to receive POST notifications on task events. Create webhooks via the API, select which events to subscribe to, and test with the <code>/test</code> endpoint.</p>
+<pre><code class="language-bash"># Create a webhook
+curl -X POST http://localhost:8891/api/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/hook", "events": ["task.created", "task.transitioned"]}'
+
+# Test it
+curl -X POST http://localhost:8891/api/webhooks/{id}/test</code></pre>
+
+<h2 id="int-github">Integration — GitHub</h2>
+<p>Connect GitHub repositories to auto-link pull requests to tasks. Set up a git integration via the API, then point your GitHub repo's webhook to <code>/api/webhooks/github</code>. NerveCenter will automatically associate PRs with tasks based on branch names and commit messages.</p>
+
+<!-- FEATURES GUIDE -->
+
+<h2 id="feat-kanban">Kanban Board</h2>
+<p>The central workspace. Drag-and-drop tasks across columns: <strong>Backlog</strong>, <strong>Todo</strong>, <strong>Next</strong>, <strong>In Progress</strong>, <strong>Review</strong>, <strong>Done</strong>, and <strong>Blocked</strong>. Filter by agent, team, priority, or search. Click any task to view details, comments, history, and linked PRs.</p>
+
+<h2 id="feat-activity">Activity Feed</h2>
+<p>Real-time log of everything happening across your agent team. Powered by WebSocket — no polling, instant updates. Filter by agent, action type, or time range.</p>
+
+<h2 id="feat-org">Org Chart</h2>
+<p>Interactive D3 visualization of your team hierarchy, built from the <code>children</code> structure in <code>agents.yaml</code>. See team structure, roles, relationships, and live agent status at a glance.</p>
+
+<h2 id="feat-soul">Soul Viewer</h2>
+<p>Read and edit agent <code>SOUL.md</code> files directly through the NerveCenter UI. Tune agent personality, instructions, and configuration without needing SSH access to the host.</p>
+
+<h2 id="feat-skills">Skills Viewer</h2>
+<p>Browse global and agent-specific skills installed in the OpenClaw workspace. View skill documentation, configuration, and usage instructions.</p>
+
+<h2 id="feat-analytics">Analytics</h2>
+<p>Comprehensive analytics suite: token usage tracking, cost monitoring, throughput charts, cycle time analysis, agent ranking, and trend detection. Export data as CSV for external analysis.</p>
+
+<h2 id="feat-dashboards">Custom Dashboards</h2>
+<p>Build your own views with drag-and-drop widgets. Combine charts, metrics, task lists, and agent status panels into custom dashboards tailored to your workflow.</p>
+
+<h2 id="feat-reports">Reports</h2>
+<p>Generate reports in HTML, Markdown, or CSV format. Get summaries of team performance, task throughput, cost analysis, and more.</p>
+
+<h2 id="feat-branding">White Labeling</h2>
+<p>Customize NerveCenter with your own branding via the <code>/api/branding</code> endpoint. Set custom logos, colors, and application name for a branded experience.</p>
+
+<h2 id="feat-envs">Multi-Environment</h2>
+<p>Switch between different NerveCenter instances (development, staging, production) without leaving the UI. Manage environments via the API.</p>
+
+<h2 id="feat-snapshots">Snapshots</h2>
+<p>Save and restore agent state at any point. Create snapshots before major changes and roll back if needed.</p>
+
+<h2 id="feat-notifications">Notifications</h2>
+<p>In-app notification system for task assignments, status changes, mentions, and alerts. Track unread count and mark as read individually or in bulk.</p>
+
+<h2 id="feat-alerts">Alert Rules</h2>
+<p>Configure alert rules that trigger on specific conditions (high error rates, stuck tasks, cost thresholds). Get notified automatically when something needs attention.</p>
+
+<h2 id="feat-incidents">Incidents</h2>
+<p>Track and manage incidents with severity levels, timelines, and resolution notes. Auto-create incidents from detected anomalies.</p>
+
+<h2 id="feat-playground">Agent Playground</h2>
+<p>Send messages directly to agents through the UI. Useful for testing, debugging, and ad-hoc communication.</p>
+
+<h2 id="feat-templates">Templates</h2>
+<p>Create reusable task templates with variable substitution. Standardize recurring workflows like bug fixes, feature requests, or deployments.</p>
+
+<h2 id="feat-marketplace">Marketplace</h2>
+<p>Browse and deploy pre-built agent team templates from the marketplace. Get started with proven team configurations for common use cases.</p>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+hljs.highlightAll();
+function toggleSection(el){el.classList.toggle('collapsed');var l=el.nextElementSibling;if(l)l.classList.toggle('collapsed')}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.querySelector('.overlay').classList.toggle('open')}
+var links=document.querySelectorAll('.sidebar .section-links a');
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.remove('active')});var a=document.querySelector('.sidebar a[href="#'+e.target.id+'"]');if(a)a.classList.add('active')}})},{rootMargin:'-80px 0px -60% 0px'});
+document.querySelectorAll('.content h2[id]').forEach(function(h){observer.observe(h)});
+</script>
+</body>
+</html>
