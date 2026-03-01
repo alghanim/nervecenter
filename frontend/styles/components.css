@@ -1832,3 +1832,5 @@
   border-radius: 6px;
   text-align: left;
 }
+
+.markdown-body tr:nth-child(even) td { background: var(--bg-inset); }

@@ -72,6 +72,7 @@ func main() {
 	webhookHandler := &handlers.WebhookHandler{}
 	controlHandler := &handlers.AgentControlHandler{}
 	authHandler := &handlers.AuthHandler{}
+	keyHandler := &handlers.APIKeyHandler{}
 	dashboardsHandler := &handlers.DashboardsHandler{}
 	commitsHandler := &handlers.CommitsHandler{}
 	annotationHandler := &handlers.AnnotationHandler{}
@@ -233,6 +234,11 @@ func main() {
 	api.HandleFunc("/agents/{id}/kill", controlHandler.Kill).Methods("POST")
 	api.HandleFunc("/agents/{id}/pause", controlHandler.Pause).Methods("POST")
 	api.HandleFunc("/agents/{id}/resume", controlHandler.Resume).Methods("POST")
+
+	// API Keys
+	api.HandleFunc("/keys", keyHandler.ListKeys).Methods("GET")
+	api.HandleFunc("/keys", keyHandler.CreateKey).Methods("POST")
+	api.HandleFunc("/keys/{id}", keyHandler.DeleteKey).Methods("DELETE")
 
 	// API Docs
 	api.HandleFunc("/docs", handlers.GetAPIDocs).Methods("GET")
