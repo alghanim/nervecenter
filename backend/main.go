@@ -201,12 +201,16 @@ func main() {
 	api.HandleFunc("/analytics/tokens", analyticsHandler.GetTokens).Methods("GET")
 	api.HandleFunc("/analytics/tokens/timeline", analyticsHandler.GetTokensTimeline).Methods("GET")
 	api.HandleFunc("/analytics/cost/summary", analyticsHandler.GetCostSummary).Methods("GET")
+	api.HandleFunc("/analytics/tokens/by-agent", analyticsHandler.GetTokensByAgent).Methods("GET")
 	api.HandleFunc("/analytics/performance", performanceHandler.GetPerformance).Methods("GET")
 
 	// Cost tracking
 	api.HandleFunc("/costs", costsHandler.IngestCost).Methods("POST")
 	api.HandleFunc("/costs/summary", costsHandler.GetCostSummary).Methods("GET")
 	api.HandleFunc("/costs/breakdown", costsHandler.GetCostBreakdown).Methods("GET")
+	api.HandleFunc("/costs/burn-rate", costsHandler.GetBurnRate).Methods("GET")
+	api.HandleFunc("/costs/per-task", costsHandler.GetCostPerTask).Methods("GET")
+	api.HandleFunc("/costs/by-model", costsHandler.GetCostByModel).Methods("GET")
 
 	// Agent scorecards
 	api.HandleFunc("/agents/{id}/scorecard", scorecardHandler.GetScorecard).Methods("GET")

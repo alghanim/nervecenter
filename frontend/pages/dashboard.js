@@ -8,8 +8,48 @@ Pages.dashboard = {
 
   async render(container) {
     container.innerHTML = `
+      <div class="stats-grid" id="metricCards">
+        <div class="stat-card animate-fade-in">
+          <div class="stat-label">TASKS / DAY</div>
+          <div class="stat-number">47</div>
+          <div class="stat-trend stat-trend--up">↑ 12%</div>
+        </div>
+        <div class="stat-card animate-fade-in">
+          <div class="stat-label">ACTIVE AGENTS</div>
+          <div class="stat-number" id="metricActiveAgents">—</div>
+        </div>
+        <div class="stat-card animate-fade-in">
+          <div class="stat-label">ERROR RATE</div>
+          <div class="stat-number">0.3%</div>
+          <div class="stat-trend stat-trend--up" style="color:var(--success)">↓ improved</div>
+        </div>
+      </div>
+
       <div class="stats-grid" id="statsGrid">
         ${[...Array(5)].map((_, i) => `<div class="stat-card animate-fade-in animate-fade-in-delay-${i+1}"><div class="skeleton skeleton-text skeleton-text--short" style="margin-bottom:12px"></div><div class="skeleton skeleton-text" style="width:50%;height:28px"></div></div>`).join('')}
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card animate-fade-in">
+          <div class="section-header"><div class="section-title">Tasks This Week</div></div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:8px">
+            ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i) => {
+              const h = [45,72,58,90,65,40,30][i];
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;height:${h}%;background:var(--accent);border-radius:4px 4px 0 0;min-height:4px"></div><span style="font-size:10px;color:var(--text-tertiary)">${d}</span></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="card animate-fade-in">
+          <div class="section-header"><div class="section-title">Task Status</div></div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:12px">
+            <div style="width:80px;height:80px;border-radius:50%;background:conic-gradient(var(--accent) 0% 40%,var(--warning) 40% 65%,var(--success) 65% 85%,var(--bg-inset) 85% 100%);position:relative;flex-shrink:0"><div style="position:absolute;inset:16px;background:var(--bg-surface);border-radius:50%"></div></div>
+            <div style="font-size:12px;line-height:2;color:var(--text-secondary)">
+              <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:4px;vertical-align:middle"></span>Done 40%</div>
+              <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--warning);margin-right:4px;vertical-align:middle"></span>In Progress 25%</div>
+              <div><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--success);margin-right:4px;vertical-align:middle"></span>Review 20%</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="dashboard-grid">
@@ -83,6 +123,9 @@ Pages.dashboard = {
           <div class="stat-label" style="color:var(--text-tertiary)">All Clear</div>
           <div class="stat-number" style="color:var(--success)">✓</div>
         </div>`;
+
+    const metricEl = document.getElementById('metricActiveAgents');
+    if (metricEl) metricEl.textContent = activeCount;
 
     grid.innerHTML = items.map(({ num, label }, i) => `
       <div class="stat-card animate-fade-in animate-fade-in-delay-${i+1}">

@@ -37,17 +37,53 @@ func (h *ScorecardHandler) GetScorecard(w http.ResponseWriter, r *http.Request) 
 	var totalCost float64
 	db.DB.QueryRow(`SELECT COALESCE(SUM(cost_usd), 0) FROM agent_costs WHERE agent_id = $1`, agentID).Scan(&totalCost)
 
+	// Failure rate
+	var failureRate float64
+	if completed+failed > 0 {
+		failureRate = float64(failed) / float64(completed+failed) * 100
+	}
+
+	// Cost per task
+	var costPerTask float64
+	if completed > 0 {
+		costPerTask = totalCost / float64(completed)
+	}
+
+	// Quality trend (last 30 days daily avg scores)
+	type QualityTrendPoint struct {
+		Date     string  `json:"date"`
+		AvgScore float64 `json:"avg_score"`
+		Count    int     `json:"count"`
+	}
+	qualityTrend := []QualityTrendPoint{}
+	trendRows, trendErr := db.DB.Query(
+		`SELECT DATE(created_at) as day, AVG(score) as avg_score, COUNT(*) as count
+		 FROM evaluations WHERE agent_id = $1 AND created_at > NOW() - INTERVAL '30 days'
+		 GROUP BY DATE(created_at) ORDER BY day`, agentID)
+	if trendErr == nil {
+		defer trendRows.Close()
+		for trendRows.Next() {
+			var tp QualityTrendPoint
+			if err := trendRows.Scan(&tp.Date, &tp.AvgScore, &tp.Count); err == nil {
+				qualityTrend = append(qualityTrend, tp)
+			}
+		}
+	}
+
 	respondJSON(w, 200, map[string]interface{}{
-		"agent_id":              agentID,
-		"tasks_completed":       completed,
-		"tasks_failed":          failed,
-		"tasks_in_progress":     inProgress,
-		"tasks_total":           total,
-		"completion_rate":       completionRate,
+		"agent_id":               agentID,
+		"tasks_completed":        completed,
+		"tasks_failed":           failed,
+		"tasks_in_progress":      inProgress,
+		"tasks_total":            total,
+		"completion_rate":        completionRate,
+		"failure_rate":           failureRate,
 		"avg_time_to_done_hours": fmt.Sprintf("%.1f", avgHours),
-		"avg_quality_score":     avgQuality,
-		"evaluation_count":      evalCount,
-		"total_cost_usd":        totalCost,
+		"avg_quality_score":      avgQuality,
+		"evaluation_count":       evalCount,
+		"total_cost_usd":         totalCost,
+		"cost_per_task":          costPerTask,
+		"quality_trend":          qualityTrend,
 	})
 }
 

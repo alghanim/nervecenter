@@ -20,6 +20,16 @@ var modelPricing = map[string]struct{ In, Out float64 }{
 	"anthropic/claude-opus-4-6":   {15.0, 75.0},
 	"google/gemini-2.5-pro":       {1.25, 10.0},
 	"google/gemini-2.5-flash":     {0.075, 0.30},
+	"anthropic/claude-haiku-3.5":    {0.80, 4.0},
+	"anthropic/claude-sonnet-3.5":    {3.0, 15.0},
+	"openai/gpt-4o":                  {2.50, 10.0},
+	"openai/gpt-4o-mini":             {0.15, 0.60},
+	"openai/o1":                      {15.0, 60.0},
+	"openai/o1-mini":                 {3.0, 12.0},
+	"openai/o3-mini":                 {1.10, 4.40},
+	"google/gemini-2.0-flash":        {0.075, 0.30},
+	"deepseek/deepseek-chat":         {0.14, 0.28},
+	"deepseek/deepseek-reasoner":     {0.55, 2.19},
 }
 
 // tokenMessage represents a single assistant message with usage data from JSONL
@@ -337,4 +347,61 @@ func (h *AnalyticsHandler) GetCostSummary(w http.ResponseWriter, r *http.Request
 		"most_expensive_agent": mostExpensiveAgent,
 		"most_expensive_cost":  mostExpensiveCost,
 	})
+}
+
+// GetTokensByAgent handles GET /api/analytics/tokens/by-agent — per-agent token totals with cost
+func (h *AnalyticsHandler) GetTokensByAgent(w http.ResponseWriter, r *http.Request) {
+	daysStr := r.URL.Query().Get("days")
+	days := 30
+	if daysStr != "" {
+		if v, err := strconv.Atoi(daysStr); err == nil && v > 0 && v <= 365 {
+			days = v
+		}
+	}
+
+	allMsgs := parseAllTokenData()
+	cutoff := time.Now().AddDate(0, 0, -days)
+
+	type agentTokens struct {
+		AgentID   string  `json:"agent_id"`
+		Name      string  `json:"name"`
+		TokensIn  int64   `json:"tokens_in"`
+		TokensOut int64   `json:"tokens_out"`
+		Total     int64   `json:"total_tokens"`
+		CostUSD   float64 `json:"cost_usd"`
+		Messages  int     `json:"message_count"`
+	}
+
+	agentMap := make(map[string]*agentTokens)
+	for _, msg := range allMsgs {
+		if msg.Timestamp.Before(cutoff) {
+			continue
+		}
+		at, ok := agentMap[msg.AgentID]
+		if !ok {
+			at = &agentTokens{AgentID: msg.AgentID, Name: msg.AgentID}
+			agentMap[msg.AgentID] = at
+		}
+		at.TokensIn += msg.Input + msg.CacheRead + msg.CacheWrite
+		at.TokensOut += msg.Output
+		at.Total += msg.TotalTokens
+		at.CostUSD += msg.CostTotal
+		at.Messages++
+	}
+
+	for _, ca := range config.GetAgents() {
+		if at, ok := agentMap[ca.ID]; ok {
+			at.Name = ca.Name
+		}
+	}
+
+	results := make([]agentTokens, 0, len(agentMap))
+	for _, at := range agentMap {
+		results = append(results, *at)
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].CostUSD > results[j].CostUSD
+	})
+
+	respondJSON(w, http.StatusOK, results)
 }
