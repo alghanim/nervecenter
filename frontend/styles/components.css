@@ -1834,3 +1834,6 @@
 }
 
 .markdown-body tr:nth-child(even) td { background: var(--bg-inset); }
+
+/* Zebra striping for tables */
+.markdown-body tr:nth-child(even) td { background: var(--bg-inset); }

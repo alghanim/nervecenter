@@ -127,3 +127,45 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.2);
 }
+
+/* ═══════════════════════════
+   DARK THEME
+═══════════════════════════ */
+[data-theme="dark"] {
+  --bg-base:          #0a0a0f;
+  --bg-surface:       #111118;
+  --bg-surface-hover: #1a1a24;
+  --bg-elevated:      #16161f;
+  --bg-inset:         #0d0d14;
+
+  --bg-primary:   #111118;
+  --bg-secondary: #0a0a0f;
+  --bg-tertiary:  #0d0d14;
+
+  --border-default: #1e1e2a;
+  --border-hover:   #2a2a3a;
+  --border-active:  #3a3a4a;
+  --border-subtle:  #1e1e2a;
+  --border-focus:   #3a3a4a;
+  --border-primary: #1e1e2a;
+  --border:         #1e1e2a;
+
+  --text-primary:   #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-tertiary:  #52525b;
+  --text-muted:     #52525b;
+  --text-inverse:   #18181b;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.6);
+
+  --scrollbar-thumb: rgba(255,255,255,0.12);
+  --scrollbar-track: transparent;
+
+  --hover: rgba(255,255,255,0.04);
+  --surface: #111118;
+  --surface-hover: #1a1a24;
+  --surface-alt: #0d0d14;
+}
