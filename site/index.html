@@ -3,372 +3,254 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NerveCenter — The Operations Center for AI Agent Teams</title>
+<title>NerveCenter — Operations Center for AI Agent Teams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: 'Inter', -apple-system, sans-serif; color: #0f172a; background: #ffffff; line-height: 1.6; overflow-x: hidden; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
-code, .code { font-family: 'JetBrains Mono', monospace; }
-.fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
-.fade-up.visible { opacity: 1; transform: translateY(0); }
-.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
-.navbar .container { display: flex; align-items: center; height: 64px; justify-content: space-between; }
-.nav-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.25rem; color: #0f172a; text-decoration: none; letter-spacing: -0.02em; }
-.nav-logo { width: 32px; height: 32px; background: #22d3ee; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-.nav-logo svg { width: 18px; height: 18px; }
-.nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
-.nav-links a { color: #475569; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
-.nav-links a:hover { color: #0f172a; }
-.btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.25s; cursor: pointer; border: none; }
-.btn-primary { background: #22d3ee; color: #fff; }
-.btn-primary:hover { background: #06b6d4; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,211,238,0.3); }
-.btn-outline { border: 1.5px solid #e2e8f0; color: #0f172a; background: transparent; }
-.btn-outline:hover { border-color: #22d3ee; color: #22d3ee; }
-.btn-lg { padding: 0.85rem 2rem; font-size: 1.05rem; border-radius: 10px; }
-.mobile-toggle { display: none; background: none; border: none; cursor: pointer; }
-.hero { padding: 8rem 0 4rem; text-align: center; background: linear-gradient(135deg, #f0fdff 0%, #ffffff 40%, #f8fafc 70%, #ecfeff 100%); position: relative; overflow: hidden; }
-.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, #cbd5e1 1px, transparent 1px); background-size: 24px 24px; opacity: 0.3; }
-.hero .container { position: relative; z-index: 1; }
-.hero h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.035em; margin-bottom: 1.25rem; }
-.hero h1 span { background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.hero p { font-size: 1.2rem; color: #475569; max-width: 640px; margin: 0 auto 2.5rem; }
-.hero-buttons { display: flex; gap: 1rem; justify-content: center; margin-bottom: 3.5rem; }
-.hero-mockup { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 25px 80px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.05); max-width: 960px; margin: 0 auto; overflow: hidden; }
-.mockup-toolbar { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
-.mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
-.mockup-dot.r { background: #f87171; } .mockup-dot.y { background: #fbbf24; } .mockup-dot.g { background: #34d399; }
-.mockup-body { display: flex; min-height: 280px; }
-.mockup-sidebar { width: 48px; background: #0f172a; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 14px; flex-shrink: 0; }
-.mockup-sidebar .icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.08); }
-.mockup-sidebar .icon.active { background: #22d3ee; }
-.mockup-main { flex: 1; padding: 14px; display: flex; gap: 10px; overflow-x: auto; background: #f8fafc; }
-.mockup-col { flex: 1; min-width: 130px; }
-.mockup-col-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 6px; }
-.mockup-col-title .cnt { background: #e2e8f0; padding: 1px 6px; border-radius: 8px; font-size: 0.55rem; font-weight: 600; }
-.mockup-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.68rem; }
-.mockup-card .title { font-weight: 600; color: #0f172a; margin-bottom: 4px; line-height: 1.3; }
-.mockup-card .meta { display: flex; align-items: center; justify-content: space-between; }
-.mockup-card .agent { color: #64748b; font-size: 0.6rem; }
-.mockup-card .tag { font-size: 0.55rem; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
-.tag-high { background: #fef2f2; color: #ef4444; }
-.tag-med { background: #fffbeb; color: #f59e0b; }
-.tag-low { background: #ecfdf5; color: #22c55e; }
-.tag-done { background: #f0fdfa; color: #14b8a6; }
-.priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.priority-dot.high { background: #f87171; } .priority-dot.med { background: #fbbf24; } .priority-dot.low { background: #34d399; }
-.social-proof { padding: 4rem 0; background: #0f172a; color: #fff; }
-.social-proof .container { display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap; text-align: center; }
-.proof-item .proof-num { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, #22d3ee, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.proof-item .proof-label { color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem; }
-.section { padding: 5rem 0; }
-.section.alt { background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); }
-.section.alt2 { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
-.section-title { font-size: 2.25rem; font-weight: 800; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.03em; }
-.section-sub { text-align: center; color: #475569; max-width: 580px; margin: 0 auto 3rem; font-size: 1.05rem; }
-.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
-.feature-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; transition: all 0.3s ease; }
-.feature-card:hover { border-color: #22d3ee; box-shadow: 0 8px 30px rgba(34,211,238,0.12); transform: translateY(-4px); }
-.feature-icon { width: 40px; height: 40px; background: #ecfeff; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; font-size: 1.25rem; }
-.feature-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; letter-spacing: -0.01em; }
-.feature-card p { color: #64748b; font-size: 0.82rem; line-height: 1.5; }
-.analytics-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; }
-.analytics-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.analytics-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem; }
-.bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; }
-.bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.bar { width: 100%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #22d3ee, #06b6d4); }
-.bar-label { font-size: 0.6rem; color: #94a3b8; }
-.line-chart { height: 120px; position: relative; }
-.line-chart svg { width: 100%; height: 100%; }
-.metric-big { font-size: 2.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
-.metric-up { color: #22c55e; font-weight: 600; font-size: 0.85rem; }
-.metric-label { color: #475569; font-size: 0.85rem; margin-top: 0.25rem; }
-.donut-wrap { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; }
-.donut { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#22d3ee 0% 40%, #fbbf24 40% 65%, #34d399 65% 85%, #f1f5f9 85% 100%); position: relative; flex-shrink: 0; }
-.donut::after { content: ''; position: absolute; inset: 16px; background: #fff; border-radius: 50%; }
-.donut-legend { font-size: 0.72rem; line-height: 1.8; color: #475569; }
-.donut-legend span { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
-.integration-logos { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
-.int-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.25s; }
-.int-badge:hover { border-color: #22d3ee; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34,211,238,0.1); }
-.int-badge svg { width: 24px; height: 24px; }
-.testimonial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-.testimonial-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; transition: all 0.25s; }
-.testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
-.testimonial-card .quote { color: #475569; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.25rem; font-style: italic; }
-.testimonial-author { display: flex; align-items: center; gap: 0.75rem; }
-.testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #06b6d4); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
-.testimonial-name { font-weight: 700; font-size: 0.9rem; }
-.testimonial-role { font-size: 0.8rem; color: #94a3b8; }
-.install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 900px; margin: 0 auto; }
-.code-block { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 1.25rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #e2e8f0; overflow-x: auto; margin-bottom: 1rem; white-space: pre; }
-.code-block .kw { color: #22d3ee; }
-.code-block .str { color: #fbbf24; }
-.code-block .cm { color: #64748b; }
-.steps { display: flex; gap: 2rem; max-width: 900px; margin: 0 auto; }
-.step { flex: 1; text-align: center; }
-.step-num { width: 48px; height: 48px; background: #ecfeff; border: 2px solid #22d3ee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #22d3ee; margin: 0 auto 1rem; }
-.step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
-.step .code-block { font-size: 0.8rem; text-align: left; }
-.cta-section { padding: 5rem 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); text-align: center; color: #fff; position: relative; overflow: hidden; }
-.cta-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(34,211,238,0.08) 1px, transparent 1px); background-size: 24px 24px; }
-.cta-section .container { position: relative; z-index: 1; }
-.cta-section h2 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem; }
-.cta-section p { color: #94a3b8; font-size: 1.1rem; max-width: 500px; margin: 0 auto 2rem; }
-.footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 3.5rem 0 2rem; }
-.footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2.5rem; }
-.footer-col h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.75rem; }
-.footer-col a { display: block; color: #475569; text-decoration: none; font-size: 0.9rem; margin-bottom: 0.4rem; transition: color 0.2s; }
-.footer-col a:hover { color: #22d3ee; }
-.footer-bottom { text-align: center; color: #94a3b8; font-size: 0.8rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
-@media (max-width: 1024px) {
-  .feature-grid { grid-template-columns: repeat(3, 1fr); }
-  .analytics-grid { grid-template-columns: 1fr 1fr; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cyan:#06b6d4;--cyan-light:#22d3ee;--dark:#0f172a;--secondary:#475569;--border:#e2e8f0;--bg:#ffffff;--card-shadow:0 4px 16px rgba(0,0,0,0.06)}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--dark);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+code,.code{font-family:'JetBrains Mono',monospace}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.navbar .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.2rem}
+.nav-logo-icon{width:36px;height:36px;background:var(--cyan);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.nav-links{display:flex;gap:32px;font-size:.95rem;font-weight:500;color:var(--secondary)}
+.nav-links a:hover{color:var(--cyan)}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-gh{color:var(--secondary);display:flex}
+.nav-gh:hover{color:var(--dark)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;font-weight:600;font-size:.95rem;border:none;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--cyan);color:#fff}.btn-primary:hover{background:#0891b2}
+.btn-outline{border:1.5px solid var(--border);color:var(--dark);background:transparent}.btn-outline:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-lg{padding:14px 32px;font-size:1.05rem;border-radius:10px}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger svg{width:28px;height:28px;color:var(--dark)}
+.hero{background:linear-gradient(180deg,#f0fdfa 0%,#fff 100%);position:relative;padding:80px 0 40px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,#cbd5e1 1px,transparent 1px);background-size:28px 28px;opacity:.25;pointer-events:none}
+.hero h1{font-size:3.2rem;font-weight:800;line-height:1.15;max-width:780px;margin:0 auto 20px;position:relative}
+.hero h1 span{background:linear-gradient(135deg,var(--cyan),var(--cyan-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.15rem;color:var(--secondary);max-width:620px;margin:0 auto 32px;position:relative}
+.hero-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;margin-bottom:28px}
+.hero-code{display:inline-flex;align-items:center;gap:10px;background:var(--dark);color:#e2e8f0;padding:12px 28px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:.95rem;position:relative}
+.hero-code .dollar{color:var(--cyan)}
+.mockup-section{padding:0 0 60px;position:relative}
+.mockup-wrap{max-width:1050px;margin:-10px auto 0;border-radius:16px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.18);border:1px solid var(--border)}
+.browser-chrome{background:#1e293b;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.browser-dots{display:flex;gap:7px}.browser-dots span{width:12px;height:12px;border-radius:50%}
+.browser-dots span:nth-child(1){background:#ef4444}.browser-dots span:nth-child(2){background:#eab308}.browser-dots span:nth-child(3){background:#22c55e}
+.browser-bar{flex:1;background:#334155;border-radius:6px;padding:6px 14px;color:#94a3b8;font-size:.8rem;font-family:'JetBrains Mono',monospace}
+.dashboard{display:flex;min-height:420px;background:#f8fafc}
+.dash-sidebar{width:56px;background:#0f172a;display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:18px}
+.dash-sidebar .sb-icon{width:32px;height:32px;border-radius:8px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:14px;color:#64748b}
+.dash-sidebar .sb-icon.active{background:var(--cyan);color:#fff}
+.dash-main{flex:1;padding:20px 24px;overflow-x:auto}
+.dash-header{font-weight:700;font-size:1.05rem;margin-bottom:16px;color:var(--dark)}
+.kanban{display:flex;gap:16px;min-width:700px}
+.kanban-col{flex:1;min-width:160px}
+.kanban-col-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--secondary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.kanban-col-title .count{background:var(--border);border-radius:999px;padding:1px 8px;font-size:.72rem;font-weight:600}
+.task-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.task-card .title{font-size:.82rem;font-weight:600;margin-bottom:8px;line-height:1.3}
+.task-card .meta{display:flex;align-items:center;justify-content:space-between}
+.task-tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:.65rem;padding:2px 7px;border-radius:4px;font-weight:600}
+.tag-backend{background:#dbeafe;color:#1e40af}.tag-frontend{background:#fce7f3;color:#9d174d}.tag-urgent{background:#fee2e2;color:#dc2626}.tag-infra{background:#d1fae5;color:#065f46}.tag-docs{background:#fef9c3;color:#854d0e}.tag-api{background:#e0e7ff;color:#3730a3}
+.avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:#fff}
+.avatar-th{background:#8b5cf6}.avatar-fo{background:#ef4444}.avatar-pi{background:#06b6d4}.avatar-se{background:#f59e0b}.avatar-gl{background:#22c55e}
+.priority-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.p-high{background:#ef4444}.p-med{background:#eab308}.p-low{background:#22c55e}
+.stats-bar{text-align:center;padding:48px 0;font-size:1.1rem;color:var(--secondary);font-weight:500}
+.stats-bar span{color:var(--dark);font-weight:700}
+.stats-bar .dot{margin:0 16px;color:var(--cyan)}
+.features{padding:60px 0}
+.features h2{text-align:center;font-size:2rem;font-weight:800;margin-bottom:12px}
+.features .sub{text-align:center;color:var(--secondary);margin-bottom:48px;font-size:1.05rem}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:48px}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px;box-shadow:var(--card-shadow)}
+.card .icon{font-size:2rem;margin-bottom:14px}
+.card h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.card p{color:var(--secondary);font-size:.95rem;line-height:1.5}
+.integrations{padding:60px 0;background:#f8fafc}
+.integrations h2{text-align:center;font-size:2rem;font-weight:800;margin-bottom:8px}
+.integrations .sub{text-align:center;color:var(--secondary);margin-bottom:40px;font-size:1.05rem}
+.int-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.int-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:32px;text-align:center;box-shadow:var(--card-shadow)}
+.int-card .int-icon{font-size:2.5rem;margin-bottom:12px}
+.int-card h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.int-card p{color:var(--secondary);font-size:.9rem}
+.install{padding:60px 0;text-align:center}
+.install h2{font-size:2rem;font-weight:800;margin-bottom:20px}
+.install-code{display:inline-block;background:var(--dark);color:#e2e8f0;padding:16px 36px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:1.05rem;margin-bottom:14px}
+.install-code .dollar{color:var(--cyan)}
+.install .sub{color:var(--secondary);font-size:.95rem}
+.steps{padding:60px 0;background:#f8fafc}
+.steps h2{text-align:center;font-size:2rem;font-weight:800;margin-bottom:40px}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.step-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px;box-shadow:var(--card-shadow)}
+.step-num{width:36px;height:36px;background:var(--cyan);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;margin-bottom:14px}
+.step-card h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+.step-card code{display:block;background:#f1f5f9;padding:8px 12px;border-radius:6px;font-size:.82rem;margin:8px 0;color:var(--dark);word-break:break-all}
+.step-card p{color:var(--secondary);font-size:.9rem}
+.cta{padding:80px 0;text-align:center}
+.cta h2{font-size:2.4rem;font-weight:800;max-width:600px;margin:0 auto 28px;line-height:1.2}
+.cta-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.footer{background:var(--dark);color:#cbd5e1;padding:48px 0 0}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-bottom:40px}
+.footer h4{color:#fff;font-size:.9rem;font-weight:700;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+.footer a{display:block;color:#94a3b8;font-size:.9rem;margin-bottom:8px;transition:color .15s}
+.footer a:hover{color:var(--cyan-light)}
+.footer-bottom{border-top:1px solid #1e293b;padding:20px 0;display:flex;align-items:center;justify-content:space-between;font-size:.85rem;color:#64748b}
+.footer-bottom-logo{display:flex;align-items:center;gap:8px;color:#94a3b8;font-weight:600}
+.footer-bottom-logo .fbl-icon{width:28px;height:28px;background:var(--cyan);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+@media(max-width:768px){
+  .nav-links{display:none}.hamburger{display:block}
+  .hero h1{font-size:2rem}
+  .hero-sub{font-size:1rem}
+  .card-grid,.int-grid,.steps-grid{grid-template-columns:1fr}
+  .dashboard{min-height:auto}
+  .kanban{flex-direction:column;min-width:auto}
+  .mockup-wrap{margin:0 8px;border-radius:10px}
+  .cta h2{font-size:1.8rem}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .footer-bottom{flex-direction:column;gap:8px;text-align:center}
+  .stats-bar{font-size:.95rem}
+  .stats-bar .dot{margin:0 8px}
 }
-@media (max-width: 768px) {
-  .nav-links { display: none; }
-  .mobile-toggle { display: block; }
-  .hero h1 { font-size: 2.25rem; }
-  .hero-buttons { flex-direction: column; align-items: center; }
-  .mockup-body { flex-direction: column; }
-  .mockup-sidebar { flex-direction: row; width: 100%; padding: 8px 12px; }
-  .mockup-main { flex-direction: column; }
-  .feature-grid { grid-template-columns: repeat(2, 1fr); }
-  .analytics-grid { grid-template-columns: 1fr; }
-  .install-grid { grid-template-columns: 1fr; }
-  .steps { flex-direction: column; }
-  .footer-grid { grid-template-columns: 1fr; }
-  .social-proof .container { flex-direction: column; gap: 2rem; }
-  .testimonial-grid { grid-template-columns: 1fr; }
-  .integration-logos { flex-direction: column; align-items: center; }
-  .cta-section h2 { font-size: 1.75rem; }
-}
-@media (max-width: 480px) {
-  .feature-grid { grid-template-columns: 1fr; }
+@media(max-width:480px){
+  .hero h1{font-size:1.6rem}
+  .dash-sidebar{display:none}
 }
 </style>
 </head>
 <body>
 <nav class="navbar"><div class="container">
-  <a href="#" class="nav-brand"><div class="nav-logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>NerveCenter</a>
-  <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#analytics">Analytics</a></li>
-    <li><a href="#integrations">Integrations</a></li>
-    <li><a href="#install">Docs</a></li>
-    <li><a href="https://github.com" target="_blank">GitHub</a></li>
-    <li><a href="#getting-started" class="btn btn-primary">Get Started</a></li>
-  </ul>
-  <button class="mobile-toggle" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+  <a href="#" class="nav-logo"><div class="nav-logo-icon">⚡</div>NerveCenter</a>
+  <div class="nav-links"><a href="#features">Features</a><a href="#docs">Docs</a><a href="#demo">Demo</a></div>
+  <div class="nav-right">
+    <a href="https://github.com/anthropics/nervecenter" class="nav-gh" aria-label="GitHub"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.37.5 0 5.78 0 12.292c0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.333-1.723-1.333-1.723-1.089-.73.083-.716.083-.716 1.205.083 1.838 1.215 1.838 1.215 1.07 1.802 2.807 1.281 3.492.98.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.228-3.164-.123-.298-.532-1.497.117-3.12 0 0 1.001-.314 3.28 1.209A11.5 11.5 0 0112 6.844c1.02.005 2.047.136 3.006.398 2.277-1.523 3.276-1.209 3.276-1.209.65 1.623.241 2.822.118 3.12.765.825 1.226 1.877 1.226 3.164 0 4.53-2.805 5.527-5.475 5.817.43.366.823 1.088.823 2.192 0 1.583-.015 2.862-.015 3.25 0 .316.216.683.825.567C20.565 21.917 24 17.5 24 12.292 24 5.78 18.627.5 12 .5z"/></svg></a>
+    <a href="#get-started" class="btn btn-primary">Get Started</a>
+    <button class="hamburger" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+  </div>
 </div></nav>
 
 <section class="hero"><div class="container">
-  <h1>The Operations Center<br>for <span>AI Agent Teams</span></h1>
-  <p>Coordinate, monitor, and manage your AI agents from a single dashboard. Task management, real-time activity feeds, org charts, and analytics — all open source.</p>
+  <h1>The Operations Center for <span>AI Agent Teams</span></h1>
+  <p class="hero-sub">Open-source task management, agent orchestration, and real-time monitoring. Built for teams that deploy AI agents at scale.</p>
   <div class="hero-buttons">
-    <a href="#getting-started" class="btn btn-primary btn-lg">Get Started Free</a>
-    <a href="https://github.com" target="_blank" class="btn btn-outline btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0f172a"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>View on GitHub</a>
+    <a href="#get-started" class="btn btn-primary btn-lg">Get Started</a>
+    <a href="https://github.com/anthropics/nervecenter" class="btn btn-outline btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.37.5 0 5.78 0 12.292c0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.333-1.723-1.333-1.723-1.089-.73.083-.716.083-.716 1.205.083 1.838 1.215 1.838 1.215 1.07 1.802 2.807 1.281 3.492.98.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.228-3.164-.123-.298-.532-1.497.117-3.12 0 0 1.001-.314 3.28 1.209A11.5 11.5 0 0112 6.844c1.02.005 2.047.136 3.006.398 2.277-1.523 3.276-1.209 3.276-1.209.65 1.623.241 2.822.118 3.12.765.825 1.226 1.877 1.226 3.164 0 4.53-2.805 5.527-5.475 5.817.43.366.823 1.088.823 2.192 0 1.583-.015 2.862-.015 3.25 0 .316.216.683.825.567C20.565 21.917 24 17.5 24 12.292 24 5.78 18.627.5 12 .5z"/></svg>View on GitHub</a>
   </div>
-  <div class="hero-mockup">
-    <div class="mockup-toolbar"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><span style="margin-left:auto;font-size:0.7rem;color:#94a3b8;font-weight:500">NerveCenter — Kanban</span></div>
-    <div class="mockup-body">
-      <div class="mockup-sidebar"><div class="icon active"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
-      <div class="mockup-main">
-        <div class="mockup-col">
-          <div class="mockup-col-title">Todo <span class="cnt">3</span></div>
-          <div class="mockup-card"><div class="title">Refactor auth module</div><div class="meta"><span class="agent">⚒️ Forge</span><span class="tag tag-high">High</span></div></div>
-          <div class="mockup-card"><div class="title">Update API docs</div><div class="meta"><span class="agent">🕵️ Scout</span><span class="tag tag-low">Low</span></div></div>
-          <div class="mockup-card"><div class="title">Add rate limiting</div><div class="meta"><span class="agent">⚒️ Anvil</span><span class="tag tag-med">Med</span></div></div>
-        </div>
-        <div class="mockup-col">
-          <div class="mockup-col-title">In Progress <span class="cnt">3</span></div>
-          <div class="mockup-card"><div class="title">Dashboard redesign</div><div class="meta"><span class="agent">🖥️ Pixel</span><span class="tag tag-high">High</span></div></div>
-          <div class="mockup-card"><div class="title">WebSocket events</div><div class="meta"><span class="agent">🪟 Glass</span><span class="tag tag-med">Med</span></div></div>
-          <div class="mockup-card"><div class="title">Data pipeline v2</div><div class="meta"><span class="agent">🔮 Sage</span><span class="tag tag-high">High</span></div></div>
-        </div>
-        <div class="mockup-col">
-          <div class="mockup-col-title">Review <span class="cnt">2</span></div>
-          <div class="mockup-card"><div class="title">Search indexing</div><div class="meta"><span class="agent">🕵️ Scout</span><span class="tag tag-med">Med</span></div></div>
-          <div class="mockup-card"><div class="title">Agent soul viewer</div><div class="meta"><span class="agent">🖥️ Pixel</span><span class="tag tag-low">Low</span></div></div>
-        </div>
-        <div class="mockup-col">
-          <div class="mockup-col-title">Done <span class="cnt">2</span></div>
-          <div class="mockup-card"><div class="title">JWT auth system</div><div class="meta"><span class="agent">🔧 Forge</span><span class="tag tag-done">Done</span></div></div>
-          <div class="mockup-card"><div class="title">CI/CD pipeline</div><div class="meta"><span class="agent">🪟 Glass</span><span class="tag tag-done">Done</span></div></div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="hero-code"><span class="dollar">$</span> docker compose up -d</div>
 </div></section>
 
-<section class="social-proof"><div class="container">
-  <div class="proof-item fade-up"><div class="proof-num">500+</div><div class="proof-label">Agents managed</div></div>
-  <div class="proof-item fade-up"><div class="proof-num">10M+</div><div class="proof-label">Tasks processed</div></div>
-  <div class="proof-item fade-up"><div class="proof-num">99.9%</div><div class="proof-label">Uptime</div></div>
-  <div class="proof-item fade-up"><div class="proof-num">70+</div><div class="proof-label">API Endpoints</div></div>
-</div></section>
-
-<section class="section alt" id="features"><div class="container">
-  <h2 class="section-title fade-up">Built for Agent Operations</h2>
-  <p class="section-sub fade-up">Everything you need to run a team of AI agents — from task boards to real-time analytics.</p>
-  <div class="feature-grid">
-    <div class="feature-card fade-up"><div class="feature-icon">📋</div><h3>Kanban Board</h3><p>Drag-and-drop task management with priority levels and status transitions.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🏛️</div><h3>Org Chart</h3><p>Visualize your agent hierarchy with interactive tree layouts.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">👁️</div><h3>Soul Viewer</h3><p>Inspect agent personas, prompts, and behavioral definitions.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🔗</div><h3>Webhooks</h3><p>Real-time event hooks for external integrations and automation.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">📝</div><h3>Structured Logs</h3><p>Filterable, searchable logs with structured metadata and trace IDs.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">📊</div><h3>Analytics &amp; Reports</h3><p>Charts, metrics, and exportable reports on agent performance.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🤖</div><h3>Agent Profiles</h3><p>Detailed profile pages with skills, activity history, and status.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🚨</div><h3>Error Tracking</h3><p>Catch, categorize, and resolve agent errors with full stack traces.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">💰</div><h3>Cost Tracking</h3><p>Monitor token usage, API costs, and resource consumption per agent.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🕸️</div><h3>Graph View</h3><p>Interactive graph visualization of agent relationships and dependencies.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">📄</div><h3>Documents</h3><p>Shared knowledge base with versioning and collaborative editing.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">💬</div><h3>Messaging</h3><p>Inter-agent communication logs and threaded comment system.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🏗️</div><h3>Dashboard Builder</h3><p>Custom dashboards with drag-and-drop widgets and layouts.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🛒</div><h3>Marketplace</h3><p>Browse and install community skills, integrations, and templates.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🔍</div><h3>Search</h3><p>Full-text search across tasks, agents, logs, and documents.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🔔</div><h3>Alerts</h3><p>Configurable alerts for errors, thresholds, and agent status changes.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">📖</div><h3>API Docs</h3><p>Interactive API documentation with examples and playground.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">🔀</div><h3>Git Integrations</h3><p>Connect repos, track commits, and link PRs to tasks automatically.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">⚙️</div><h3>Settings</h3><p>Granular configuration for teams, permissions, and environments.</p></div>
-    <div class="feature-card fade-up"><div class="feature-icon">⚡</div><h3>Real-time Activity</h3><p>Live WebSocket feed of all agent actions and system events.</p></div>
+<section class="mockup-section"><div class="container">
+<div class="mockup-wrap">
+  <div class="browser-chrome">
+    <div class="browser-dots"><span></span><span></span><span></span></div>
+    <div class="browser-bar">localhost:8891</div>
   </div>
-</div></section>
-
-<section class="section alt2" id="analytics"><div class="container">
-  <h2 class="section-title fade-up">Insights at a Glance</h2>
-  <p class="section-sub fade-up">Understand your agent team's performance with built-in analytics.</p>
-  <div class="analytics-grid fade-up">
-    <div class="analytics-card">
-      <h4>Agent Activity — Last 7 Days</h4>
-      <div class="bar-chart">
-        <div class="bar-wrap"><div class="bar" style="height:45%"></div><div class="bar-label">Mon</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:72%"></div><div class="bar-label">Tue</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:58%"></div><div class="bar-label">Wed</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:90%"></div><div class="bar-label">Thu</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:65%"></div><div class="bar-label">Fri</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:40%"></div><div class="bar-label">Sat</div></div>
-        <div class="bar-wrap"><div class="bar" style="height:30%"></div><div class="bar-label">Sun</div></div>
-      </div>
+  <div class="dashboard">
+    <div class="dash-sidebar">
+      <div class="sb-icon active">⚡</div><div class="sb-icon">📋</div><div class="sb-icon">👥</div><div class="sb-icon">📊</div><div class="sb-icon">⚙️</div>
     </div>
-    <div class="analytics-card">
-      <h4>Cost Trend</h4>
-      <div class="line-chart">
-        <svg viewBox="0 0 200 100" preserveAspectRatio="none">
-          <defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(34,211,238,0.2)"/><stop offset="100%" stop-color="rgba(34,211,238,0)"/></linearGradient></defs>
-          <polygon points="0,80 30,65 60,70 90,45 120,50 150,30 180,25 200,20 200,100 0,100" fill="url(#lineGrad)"/>
-          <polyline points="0,80 30,65 60,70 90,45 120,50 150,30 180,25 200,20" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div style="margin-top:0.75rem"><span style="font-size:1.5rem;font-weight:800">$1.2k</span> <span class="metric-up">↓18%</span></div>
-      <div class="metric-label">Monthly API costs</div>
-    </div>
-    <div class="analytics-card">
-      <h4>Task Velocity</h4>
-      <div class="metric-big">47</div>
-      <div class="metric-label">tasks/day <span class="metric-up">↑12%</span></div>
-      <div class="donut-wrap">
-        <div class="donut"></div>
-        <div class="donut-legend">
-          <span style="background:#22d3ee"></span> Done (40%)<br>
-          <span style="background:#fbbf24"></span> In Progress (25%)<br>
-          <span style="background:#34d399"></span> Review (20%)<br>
-          <span style="background:#f1f5f9;border:1px solid #e2e8f0"></span> Todo (15%)
+    <div class="dash-main">
+      <div class="dash-header">Sprint Board — Agent Operations</div>
+      <div class="kanban">
+        <div class="kanban-col">
+          <div class="kanban-col-title">To Do <span class="count">3</span></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-high"></span>Implement OAuth flow</div><div class="meta"><div class="task-tags"><span class="tag tag-backend">backend</span><span class="tag tag-urgent">urgent</span></div><div class="avatar avatar-fo">FO</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-med"></span>Add rate limiting</div><div class="meta"><div class="task-tags"><span class="tag tag-api">api</span></div><div class="avatar avatar-th">TH</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-low"></span>Write onboarding guide</div><div class="meta"><div class="task-tags"><span class="tag tag-docs">docs</span></div><div class="avatar avatar-se">SE</div></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">In Progress <span class="count">2</span></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-high"></span>Fix WebSocket reconnect</div><div class="meta"><div class="task-tags"><span class="tag tag-backend">backend</span></div><div class="avatar avatar-fo">FO</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-med"></span>Build agent dashboard</div><div class="meta"><div class="task-tags"><span class="tag tag-frontend">frontend</span></div><div class="avatar avatar-pi">PI</div></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Review <span class="count">1</span></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-med"></span>Update API docs</div><div class="meta"><div class="task-tags"><span class="tag tag-docs">docs</span><span class="tag tag-api">api</span></div><div class="avatar avatar-se">SE</div></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-title">Done <span class="count">4</span></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-low"></span>Deploy monitoring v2</div><div class="meta"><div class="task-tags"><span class="tag tag-infra">infra</span></div><div class="avatar avatar-gl">GL</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-low"></span>Setup CI pipeline</div><div class="meta"><div class="task-tags"><span class="tag tag-infra">infra</span></div><div class="avatar avatar-th">TH</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-low"></span>Agent config schema</div><div class="meta"><div class="task-tags"><span class="tag tag-backend">backend</span></div><div class="avatar avatar-fo">FO</div></div></div>
+          <div class="task-card"><div class="title"><span class="priority-dot p-low"></span>Landing page redesign</div><div class="meta"><div class="task-tags"><span class="tag tag-frontend">frontend</span></div><div class="avatar avatar-pi">PI</div></div></div>
         </div>
       </div>
     </div>
   </div>
+</div>
 </div></section>
 
-<section class="section" id="integrations"><div class="container">
-  <h2 class="section-title fade-up">Works With Your Stack</h2>
-  <p class="section-sub fade-up">Plug into the tools you already use. No vendor lock-in.</p>
-  <div class="integration-logos fade-up">
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#22d3ee"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Inter,sans-serif">OC</text></svg> OpenClaw</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#2496ed"><path d="M13.98 11.08h2.12v1.94h-2.12zm-2.54 0h2.12v1.94h-2.12zm-2.54 0h2.12v1.94H8.9zm-2.54 0h2.12v1.94H6.36zm2.54-2.37h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12zm2.54 0h2.12v1.94h-2.12zM8.9 6.34h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12z"/><path d="M22.8 11.47c-.52-.4-1.7-.55-2.61-.35-.12-.9-.62-1.68-1.21-2.32l-.42-.4-.4.42c-.8.85-1.01 2.26-.16 3.2-.37.2-1.1.48-2.05.46H1.16l-.05.52c-.12 1.78.2 4.1 1.47 5.73 1.22 1.56 3.06 2.35 5.48 2.35 5.22 0 9.08-2.4 10.88-6.76 1.43.07 2.86-.04 3.9-1.24.1-.13.29-.42.42-.78l.14-.42-.6-.41z"/></svg> Docker</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#336791"><ellipse cx="12" cy="12" rx="8" ry="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="7" font-weight="bold" font-family="Inter,sans-serif">PG</text></svg> PostgreSQL</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#339933"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="Inter,sans-serif">JS</text></svg> Node.js</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> WebSocket</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#181717"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg> GitHub</div>
+<section class="stats-bar">
+  <span>70+</span> API Endpoints <span class="dot">·</span> <span>20+</span> Features <span class="dot">·</span> <span>Real-time</span> WebSocket <span class="dot">·</span> <span>Open</span> Source
+</section>
+
+<section class="features" id="features"><div class="container">
+  <h2>Everything You Need</h2>
+  <p class="sub">A complete toolkit for managing AI agent operations.</p>
+  <div class="card-grid">
+    <div class="card"><div class="icon">📋</div><h3>Kanban Board</h3><p>Visual task management with drag-and-drop. Assign tasks to agents, track progress across teams in real-time.</p></div>
+    <div class="card"><div class="icon">👁️</div><h3>Soul Viewer</h3><p>Inspect agent personas, system prompts, and identity configurations. Understand how each agent thinks and behaves.</p></div>
+    <div class="card"><div class="icon">🏗️</div><h3>Org Chart</h3><p>Interactive D3-powered visualization of your agent hierarchy. See reporting lines, team structure, and role assignments.</p></div>
+  </div>
+  <div class="card-grid">
+    <div class="card"><div class="icon">📡</div><h3>Activity Feed</h3><p>Real-time WebSocket event stream. Monitor agent actions, task updates, and system events as they happen.</p></div>
+    <div class="card"><div class="icon">📊</div><h3>Analytics</h3><p>Agent performance metrics, task completion rates, and team productivity reports with exportable data.</p></div>
+    <div class="card"><div class="icon">🔗</div><h3>Webhooks</h3><p>Connect NerveCenter to external systems. Trigger workflows on task changes, agent events, or custom conditions.</p></div>
   </div>
 </div></section>
 
-<section class="section alt"><div class="container">
-  <h2 class="section-title fade-up">Loved by Agent Teams</h2>
-  <p class="section-sub fade-up">See what teams building with AI agents have to say.</p>
-  <div class="testimonial-grid">
-    <div class="testimonial-card fade-up">
-      <div class="quote">"NerveCenter transformed how we manage our 20+ agent team. The kanban board alone saved us hours of coordination overhead every week."</div>
-      <div class="testimonial-author"><div class="testimonial-avatar">AK</div><div><div class="testimonial-name">Alex K.</div><div class="testimonial-role">AI Platform Lead</div></div></div>
-    </div>
-    <div class="testimonial-card fade-up">
-      <div class="quote">"The soul viewer and org chart features are game-changers. Finally, we can see our entire agent hierarchy at a glance and debug behavioral issues fast."</div>
-      <div class="testimonial-author"><div class="testimonial-avatar">SR</div><div><div class="testimonial-name">Sarah R.</div><div class="testimonial-role">Engineering Manager</div></div></div>
-    </div>
-    <div class="testimonial-card fade-up">
-      <div class="quote">"Self-hosted, open source, and actually well-designed. We had it running in production within 10 minutes via Docker. Cost tracking is a lifesaver."</div>
-      <div class="testimonial-author"><div class="testimonial-avatar">MJ</div><div><div class="testimonial-name">Marcus J.</div><div class="testimonial-role">DevOps Engineer</div></div></div>
-    </div>
+<section class="integrations"><div class="container">
+  <h2>Works With Your Stack</h2>
+  <p class="sub">NerveCenter integrates seamlessly with the tools you already use.</p>
+  <div class="int-grid">
+    <div class="int-card"><div class="int-icon">🐙</div><h3>OpenClaw</h3><p>AI agent orchestration platform</p></div>
+    <div class="int-card"><div class="int-icon">🐳</div><h3>Docker</h3><p>One-command deployment with Docker Compose</p></div>
+    <div class="int-card"><div class="int-icon">🐘</div><h3>PostgreSQL</h3><p>Production-ready data persistence</p></div>
   </div>
 </div></section>
 
-<section class="section" id="install"><div class="container">
-  <h2 class="section-title fade-up">Install in Seconds</h2>
-  <p class="section-sub fade-up">Available as an OpenClaw skill on ClawHub</p>
-  <div class="install-grid fade-up">
-    <div>
-      <h3 style="font-size:1rem;margin-bottom:0.75rem">ClawHub</h3>
-      <div class="code-block"><span class="kw">$</span> clawhub install nervecenter</div>
-    </div>
-    <div>
-      <h3 style="font-size:1rem;margin-bottom:0.75rem">Docker Compose</h3>
-      <div class="code-block"><span class="cm"># docker-compose.yml</span>
-<span class="kw">version:</span> <span class="str">"3.8"</span>
-<span class="kw">services:</span>
-  <span class="kw">nervecenter:</span>
-    <span class="kw">image:</span> nervecenter/server:latest
-    <span class="kw">ports:</span>
-      - <span class="str">"8891:8891"</span>
-    <span class="kw">environment:</span>
-      - <span class="kw">DATABASE_URL=</span><span class="str">postgres://...</span></div>
-    </div>
+<section class="install"><div class="container">
+  <h2>Install as an OpenClaw Skill</h2>
+  <div class="install-code"><span class="dollar">$</span> clawhub install nervecenter</div>
+  <p class="sub">Add NerveCenter to your OpenClaw setup with a single command.</p>
+</div></section>
+
+<section class="steps" id="get-started"><div class="container">
+  <h2>Get Running in 3 Steps</h2>
+  <div class="steps-grid">
+    <div class="step-card"><div class="step-num">1</div><h3>Clone</h3><code>git clone https://github.com/anthropics/nervecenter.git</code></div>
+    <div class="step-card"><div class="step-num">2</div><h3>Configure</h3><code>cp .env.example .env</code><p>Set your database URL and preferences.</p></div>
+    <div class="step-card"><div class="step-num">3</div><h3>Launch</h3><code>docker compose up -d</code><p>Access the dashboard at localhost:8891</p></div>
   </div>
 </div></section>
 
-<section class="section alt" id="getting-started"><div class="container">
-  <h2 class="section-title fade-up">Up and Running in 3 Steps</h2>
-  <p class="section-sub fade-up">From zero to dashboard in under a minute.</p>
-  <div class="steps fade-up">
-    <div class="step"><div class="step-num">1</div><h3>Install via ClawHub</h3><div class="code-block">clawhub install nervecenter</div></div>
-    <div class="step"><div class="step-num">2</div><h3>Or use Docker Compose</h3><div class="code-block">docker compose up -d</div></div>
-    <div class="step"><div class="step-num">3</div><h3>Open your dashboard</h3><div class="code-block">http://localhost:8891</div></div>
+<section class="cta"><div class="container">
+  <h2>Your agents need a command center. Build it now.</h2>
+  <div class="cta-buttons">
+    <a href="#get-started" class="btn btn-primary btn-lg">Get Started</a>
+    <a href="https://github.com/anthropics/nervecenter" class="btn btn-outline btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>Star on GitHub</a>
   </div>
-</div></section>
-
-<section class="cta-section"><div class="container">
-  <h2 class="fade-up">Ready to command your agents?</h2>
-  <p class="fade-up">Deploy NerveCenter in minutes. Open source, self-hosted, built for scale.</p>
-  <div class="fade-up"><a href="#getting-started" class="btn btn-primary btn-lg">Get Started Free</a></div>
 </div></section>
 
 <footer class="footer"><div class="container">
   <div class="footer-grid">
-    <div class="footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#analytics">Analytics</a><a href="#install">Docs</a><a href="#">API Reference</a></div>
-    <div class="footer-col"><h4>Resources</h4><a href="https://github.com" target="_blank">GitHub</a><a href="#">ClawHub</a><a href="#">Docker Hub</a></div>
-    <div class="footer-col"><h4>Community</h4><a href="#">Discord</a><a href="#">Twitter</a><a href="#">Contributing</a></div>
+    <div><h4>Product</h4><a href="#features">Features</a><a href="#">Docs</a><a href="#">Demo</a><a href="#">Changelog</a></div>
+    <div><h4>Community</h4><a href="https://github.com/anthropics/nervecenter">GitHub</a><a href="#">Discord</a><a href="#">Contributing</a></div>
+    <div><h4>Legal</h4><a href="#">MIT License</a><a href="#">Privacy</a></div>
   </div>
-  <div class="footer-bottom">© 2026 NerveCenter · Open Source MIT License</div>
+  <div class="footer-bottom">
+    <div class="footer-bottom-logo"><div class="fbl-icon">⚡</div> NerveCenter</div>
+    <div>© 2026 NerveCenter. Open source under MIT License.</div>
+  </div>
 </div></footer>
-
-<script>
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('visible');
-  });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-</script>
 </body>
 </html>
