@@ -11,6 +11,8 @@ Pages.graph = (function () {
   let _edges = [];
   let _tooltip = null;
   let _refreshTimer = null;
+  let _criticalPath = new Set();
+  let _showCriticalPath = false;
 
   // ── Team → color mapping ────────────────────────────────────────────────
   const TEAM_COLORS = {
@@ -66,6 +68,7 @@ Pages.graph = (function () {
           <button id="graph-zoom-out" class="btn btn-ghost btn-sm" title="Zoom out">－</button>
           <button id="graph-reset"    class="btn btn-ghost btn-sm" title="Reset layout">↺ Reset</button>
           <button id="graph-reheat"   class="btn btn-ghost btn-sm" title="Re-run simulation">⚡ Shake</button>
+          <button id="graph-critical-path" class="btn btn-ghost btn-sm" title="Toggle critical path" onclick="Pages.graph._toggleCriticalPath()">🔴 Critical Path</button>
           <div style="flex:1;"></div>
 
           <!-- Edge legend -->
@@ -141,7 +144,8 @@ Pages.graph = (function () {
     try {
       document.getElementById('graph-status').textContent = 'Loading…';
       const data = await API.getGraphDependencies();
-      initGraph(data.nodes || [], data.edges || []);
+              _criticalPath = new Set(data.critical_path || []);
+        initGraph(data.nodes || [], data.edges || []);
     } catch (e) {
       document.getElementById('graph-status').textContent = '⚠ ' + e.message;
     }
@@ -187,6 +191,12 @@ Pages.graph = (function () {
 
     addMarker('arrow-parent',   'rgba(156,163,175,0.8)');
     addMarker('arrow-taskflow', 'rgba(99,102,241,0.8)');
+
+    // Critical path glow filter
+    var critFilter = defs.append('filter').attr('id', 'critical-glow');
+    critFilter.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', '4').attr('result', 'blur');
+    critFilter.append('feMerge').html('<feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/>');
+    critFilter.select('feGaussianBlur').attr('flood-color', '#ef4444');
 
     // Zoom behaviour
     _zoom = d3.zoom()
@@ -533,5 +543,29 @@ Pages.graph = (function () {
     _tooltip = null;
   }
 
-  return { render, destroy };
+  // ── Critical Path ───────────────────────────────────────────────────────
+  function _toggleCriticalPath() {
+    _showCriticalPath = !_showCriticalPath;
+    var btn = document.getElementById("graph-critical-path");
+    if (btn) btn.style.background = _showCriticalPath ? "rgba(239,68,68,0.2)" : "";
+    _applyCriticalPath();
+  }
+
+  function _applyCriticalPath() {
+    if (!_g) return;
+    _g.selectAll("g.graph-node").each(function(d) {
+      var isCrit = _showCriticalPath && _criticalPath.has(d.id);
+      d3.select(this).select(".node-bg")
+        .attr("filter", isCrit ? "url(#critical-glow)" : null)
+        .attr("stroke", isCrit ? "#ef4444" : (teamColor(d.team) + "cc"))
+        .attr("stroke-width", isCrit ? 3 : 2);
+    });
+    _g.selectAll(".links line").each(function(d) {
+      var isCrit = _showCriticalPath && _criticalPath.has(d.source.id) && _criticalPath.has(d.target.id);
+      d3.select(this)
+        .attr("stroke", isCrit ? "#ef4444" : (d.type === "task-flow" ? "rgba(99,102,241,0.5)" : "rgba(156,163,175,0.45)"))
+        .attr("stroke-width", isCrit ? 3 : 1.5);
+    });
+  }
+  return { render, destroy, _toggleCriticalPath: _toggleCriticalPath };
 })();
