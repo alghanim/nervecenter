@@ -261,10 +261,12 @@ func main() {
 	api.HandleFunc("/agents/{id}/pause", controlHandler.Pause).Methods("POST")
 	api.HandleFunc("/agents/{id}/resume", controlHandler.Resume).Methods("POST")
 
-	// API Keys
-	api.HandleFunc("/keys", keyHandler.ListKeys).Methods("GET")
-	api.HandleFunc("/keys", keyHandler.CreateKey).Methods("POST")
-	api.HandleFunc("/keys/{id}", keyHandler.DeleteKey).Methods("DELETE")
+	// API Keys (admin only)
+	keys := api.PathPrefix("/keys").Subrouter()
+	keys.Use(handlers.RequireRole("admin"))
+	keys.HandleFunc("", keyHandler.ListKeys).Methods("GET")
+	keys.HandleFunc("", keyHandler.CreateKey).Methods("POST")
+	keys.HandleFunc("/{id}", keyHandler.DeleteKey).Methods("DELETE")
 
 	// Templates
 	api.HandleFunc("/templates", templateHandler.ListTemplates).Methods("GET")
