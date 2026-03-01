@@ -297,6 +297,8 @@ func main() {
 	// Phase 2: Agent Comparison
 
 	// Phase 2: Evaluations
+	api.HandleFunc("/evaluations/bulk", handlers.BulkCreateEvaluations).Methods("POST")
+	api.HandleFunc("/evaluations/criteria-breakdown", handlers.GetCriteriaBreakdown).Methods("GET")
 	api.HandleFunc("/evaluations", handlers.CreateEvaluation).Methods("POST")
 	api.HandleFunc("/tasks/{id}/evaluations", handlers.GetTaskEvaluations).Methods("GET")
 	api.HandleFunc("/agents/{id}/quality", handlers.GetAgentQuality).Methods("GET")

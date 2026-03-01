@@ -15,7 +15,9 @@ type AgentComparisonMetrics struct {
 	CompletionRate float64 `json:"completion_rate"`
 	AvgSpeed       float64 `json:"avg_speed_hours"`
 	TotalCost      float64 `json:"total_cost"`
+	CostPerTask    float64 `json:"cost_per_task"`
 	AvgQuality     float64 `json:"avg_quality"`
+	Model          string  `json:"model"`
 }
 
 func CompareAgents(w http.ResponseWriter, r *http.Request) {
@@ -45,9 +47,9 @@ func CompareAgents(w http.ResponseWriter, r *http.Request) {
 		}
 		m := AgentComparisonMetrics{AgentID: aid}
 
-		// Display name
-		db.DB.QueryRow(`SELECT COALESCE(display_name, id) FROM agents WHERE id = $1`, aid).Scan(&m.DisplayName)
-		if m.DisplayName == "" {
+		// Display name — gracefully handle missing agents
+		err := db.DB.QueryRow(`SELECT COALESCE(display_name, id) FROM agents WHERE id = $1`, aid).Scan(&m.DisplayName)
+		if err != nil || m.DisplayName == "" {
 			m.DisplayName = aid
 		}
 
@@ -63,8 +65,16 @@ func CompareAgents(w http.ResponseWriter, r *http.Request) {
 		// Avg completion speed (hours)
 		db.DB.QueryRow(`SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (completed_at - created_at))/3600), 0) FROM tasks WHERE assignee = $1 AND status = 'done' AND completed_at > NOW() - $2::interval`, aid, interval).Scan(&m.AvgSpeed)
 
-		// Total cost
-		db.DB.QueryRow(`SELECT COALESCE(SUM(total_cost), 0) FROM agent_metrics WHERE agent_id = $1 AND date > NOW() - $2::interval`, aid, interval).Scan(&m.TotalCost)
+		// Total cost — fixed to use agent_costs table
+		db.DB.QueryRow(`SELECT COALESCE(SUM(cost_usd), 0) FROM agent_costs WHERE agent_id = $1 AND created_at > NOW() - $2::interval`, aid, interval).Scan(&m.TotalCost)
+
+		// Cost per task
+		if m.TasksCompleted > 0 {
+			m.CostPerTask = m.TotalCost / float64(m.TasksCompleted)
+		}
+
+		// Most-used model
+		db.DB.QueryRow(`SELECT COALESCE(model, '') FROM agent_costs WHERE agent_id = $1 AND created_at > NOW() - $2::interval GROUP BY model ORDER BY COUNT(*) DESC LIMIT 1`, aid, interval).Scan(&m.Model)
 
 		// Avg quality score
 		db.DB.QueryRow(`SELECT COALESCE(AVG(score), 0) FROM evaluations WHERE agent_id = $1 AND created_at > NOW() - $2::interval`, aid, interval).Scan(&m.AvgQuality)

@@ -414,6 +414,7 @@ Pages.kanban = {
       <div class="task-card ${priorityClass}" data-task-id="${Utils.esc(t.id)}" draggable="true">
         <div class="task-card__header-row">
           ${inProgress ? '<span class="task-card__progress-dot" title="In Progress"></span>' : ''}
+          ${emoji ? `<span style="font-size:14px;flex-shrink:0">${Utils.esc(emoji)}</span>` : ''}
           <div class="task-card__title">${Utils.esc(t.title || 'Untitled')}</div>
           ${stuckBadge}
         </div>
@@ -431,7 +432,14 @@ Pages.kanban = {
             </div>
           </span>
         </div>
-        ${tags.length ? `<div class="task-card__tags">${tags.map(tag => `<span class="task-card__tag">#${Utils.esc(tag)}</span>`).join('')}</div>` : ''}
+        ${t.due_date ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:6px">📅 ${Utils.esc(new Date(t.due_date).toLocaleDateString())}</div>` : ''}
+        ${tags.length ? `<div class="task-card__tags">${tags.map(tag => {
+          const teamColors = {Engineering:'#3B82F6',Design:'#EC4899',Operations:'#F59E0B',Command:'#8B5CF6',Marketing:'#10B981',Sales:'#f97316'};
+          const tc = teamColors[tag] || null;
+          return tc
+            ? `<span class="task-card__tag" style="background:${tc}20;color:${tc}">#${Utils.esc(tag)}</span>`
+            : `<span class="task-card__tag">#${Utils.esc(tag)}</span>`;
+        }).join('')}</div>` : ''}
       </div>`;
   },
 

@@ -348,6 +348,17 @@ func (h *TaskHandler) TransitionTask(w http.ResponseWriter, r *http.Request) {
 	})
 	h.Hub.Broadcast("task_transitioned", map[string]string{"task_id": id, "status": data.Status})
 
+	// Notify assignee on blocked/done transitions
+	if data.Status == "blocked" || data.Status == "done" {
+		var assignee string
+		if err := db.DB.QueryRow(`SELECT COALESCE(assignee, '') FROM tasks WHERE id = $1`, id).Scan(&assignee); err == nil && assignee != "" {
+			go CreateNotificationInternal(assignee, "task_"+data.Status, "Task "+data.Status, fmt.Sprintf("Task %s moved to %s", id, data.Status))
+		}
+	}
+
+	// Apply workflow rules from templates
+	go applyWorkflowRules(id, currentStatus, data.Status)
+
 	// Trigger webhooks for terminal task statuses
 	if data.Status == "done" {
 		go TriggerWebhooks("task_done", map[string]interface{}{

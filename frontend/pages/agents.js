@@ -108,6 +108,7 @@ Pages.agents = {
               ${Utils.statusPill(a.status)}
             </div>
             <div class="agent-card__role">${Utils.esc(a.role || '')}</div>
+            ${(a.skills || a.capabilities || []).length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${(a.skills || a.capabilities || []).map(s => `<span style="font-size:10px;padding:2px 6px;border-radius:var(--radius-pill);background:var(--accent-muted);color:var(--accent)">${Utils.esc(typeof s === 'string' ? s : s.name || '')}</span>`).join('')}</div>` : ''}
             <div class="agent-card__footer">
               <span class="agent-card__model">${Utils.esc(model)}</span>
               ${team ? `<span class="badge" style="${teamStyle}">${Utils.esc(team)}</span>` : ''}

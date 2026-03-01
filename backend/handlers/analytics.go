@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alghanim/agentboard/backend/db"
+	"github.com/lib/pq"
 )
 
 type AnalyticsHandler struct{}
@@ -345,6 +346,161 @@ func (h *AnalyticsHandler) GetTrends(w http.ResponseWriter, r *http.Request) {
 		"metric": metric,
 		"range":  r.URL.Query().Get("range"),
 		"data":   points,
+	})
+}
+
+
+// GetCycleTime handles GET /api/analytics/cycle-time?range=30d
+func (h *AnalyticsHandler) GetCycleTime(w http.ResponseWriter, r *http.Request) {
+	interval := costRangeToInterval(r.URL.Query().Get("range"))
+
+	var avgHours, medianHours, p90Hours float64
+	db.DB.QueryRow(`
+		SELECT COALESCE(AVG(hours),0), COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours),0),
+			COALESCE(PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY hours),0)
+		FROM (SELECT EXTRACT(EPOCH FROM (completed_at - created_at))/3600 AS hours
+			FROM tasks WHERE status='done' AND completed_at IS NOT NULL
+			AND completed_at > NOW() - $1::interval) sub
+	`, interval).Scan(&avgHours, &medianHours, &p90Hours)
+
+	rows, err := db.DB.Query(`
+		SELECT COALESCE(priority,'unset'), AVG(EXTRACT(EPOCH FROM (completed_at - created_at))/3600), COUNT(*)
+		FROM tasks WHERE status='done' AND completed_at IS NOT NULL AND completed_at > NOW() - $1::interval
+		GROUP BY priority ORDER BY priority
+	`, interval)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	defer rows.Close()
+	var byPriority []map[string]interface{}
+	for rows.Next() {
+		var p string
+		var avg float64
+		var cnt int
+		rows.Scan(&p, &avg, &cnt)
+		byPriority = append(byPriority, map[string]interface{}{"priority": p, "avg_hours": avg, "count": cnt})
+	}
+	if byPriority == nil {
+		byPriority = []map[string]interface{}{}
+	}
+
+	trendRows, err := db.DB.Query(`
+		SELECT d::date, COALESCE(t.avg_h, 0)
+		FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+		LEFT JOIN (
+			SELECT completed_at::date AS day, AVG(EXTRACT(EPOCH FROM (completed_at - created_at))/3600) AS avg_h
+			FROM tasks WHERE status='done' AND completed_at IS NOT NULL AND completed_at > NOW() - $1::interval
+			GROUP BY day
+		) t ON t.day = d::date ORDER BY d::date
+	`, interval)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	defer trendRows.Close()
+	var trend []map[string]interface{}
+	for trendRows.Next() {
+		var dt time.Time
+		var avg float64
+		trendRows.Scan(&dt, &avg)
+		trend = append(trend, map[string]interface{}{"date": dt.Format("2006-01-02"), "avg_hours": avg})
+	}
+	if trend == nil {
+		trend = []map[string]interface{}{}
+	}
+
+	respondJSON(w, 200, map[string]interface{}{
+		"avg_hours":    avgHours,
+		"median_hours": medianHours,
+		"p90_hours":    p90Hours,
+		"by_priority":  byPriority,
+		"trend":        trend,
+	})
+}
+
+// GetActiveAgents handles GET /api/analytics/active-agents?range=30d
+func (h *AnalyticsHandler) GetActiveAgents(w http.ResponseWriter, r *http.Request) {
+	interval := costRangeToInterval(r.URL.Query().Get("range"))
+
+	rows, err := db.DB.Query(`
+		SELECT d::date, COALESCE(a.cnt, 0), COALESCE(a.agents, ARRAY[]::text[])
+		FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+		LEFT JOIN (
+			SELECT created_at::date AS day, COUNT(DISTINCT agent_id) AS cnt,
+				ARRAY_AGG(DISTINCT agent_id) AS agents
+			FROM activity_log WHERE created_at > NOW() - $1::interval
+			GROUP BY day
+		) a ON a.day = d::date ORDER BY d::date
+	`, interval)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var dt time.Time
+		var cnt int
+		var agents []string
+		if err := rows.Scan(&dt, &cnt, pq.Array(&agents)); err != nil {
+			respondError(w, 500, err.Error())
+			return
+		}
+		if agents == nil {
+			agents = []string{}
+		}
+		results = append(results, map[string]interface{}{
+			"date":         dt.Format("2006-01-02"),
+			"active_count": cnt,
+			"agents":       agents,
+		})
+	}
+	if results == nil {
+		results = []map[string]interface{}{}
+	}
+	respondJSON(w, 200, results)
+}
+
+// GetDashboardSummary handles GET /api/analytics/dashboard-summary
+func (h *AnalyticsHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
+	var totalTasks, completedThisWeek, activeAgentsToday int
+	var avgCycleHours, weeklyCost float64
+
+	db.DB.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&totalTasks)
+	db.DB.QueryRow(`SELECT COUNT(*) FROM tasks WHERE status='done' AND completed_at >= date_trunc('week', NOW())`).Scan(&completedThisWeek)
+	db.DB.QueryRow(`SELECT COUNT(DISTINCT agent_id) FROM activity_log WHERE created_at >= CURRENT_DATE`).Scan(&activeAgentsToday)
+	db.DB.QueryRow(`SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (completed_at - created_at))/3600),0) FROM tasks WHERE status='done' AND completed_at IS NOT NULL`).Scan(&avgCycleHours)
+
+	var weeklyVelocity float64
+	db.DB.QueryRow(`SELECT COALESCE(COUNT(*)::float / GREATEST(EXTRACT(EPOCH FROM (NOW() - MIN(completed_at)))/604800, 1), 0)
+		FROM tasks WHERE status='done' AND completed_at >= NOW() - interval '28 days'`).Scan(&weeklyVelocity)
+
+	db.DB.QueryRow(`SELECT COALESCE(SUM(cost_usd),0) FROM agent_costs WHERE created_at >= date_trunc('month', NOW())`).Scan(&weeklyCost)
+
+	statusRows, err := db.DB.Query(`SELECT status, COUNT(*) FROM tasks GROUP BY status`)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	defer statusRows.Close()
+	statusDist := map[string]int{}
+	for statusRows.Next() {
+		var s string
+		var c int
+		statusRows.Scan(&s, &c)
+		statusDist[s] = c
+	}
+
+	respondJSON(w, 200, map[string]interface{}{
+		"total_tasks":              totalTasks,
+		"completed_this_week":      completedThisWeek,
+		"active_agents_today":      activeAgentsToday,
+		"avg_cycle_time_hours":     avgCycleHours,
+		"weekly_velocity":          weeklyVelocity,
+		"total_cost_this_month":    weeklyCost,
+		"task_status_distribution": statusDist,
 	})
 }
 

@@ -189,7 +189,7 @@ Pages.activity = {
     const cleanContent = this._stripMarkdown(item.content);
     const agentColor = this._getAgentColor(item.agentName);
     return `
-      <div class="activity-item" style="border-left-color:${agentColor}">
+      <div class="activity-item animate-fade-in" style="border-left-color:${agentColor}">
         <div class="activity-item__avatar" style="border-color:${agentColor}">${Utils.esc(item.emoji)}</div>
         <div class="activity-item__body">
           <div class="activity-item__header">
