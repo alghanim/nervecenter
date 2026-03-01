@@ -323,6 +323,7 @@ func main() {
 	api.HandleFunc("/incidents", handlers.CreateIncident).Methods("POST")
 	api.HandleFunc("/incidents/{id}", handlers.GetIncident).Methods("GET")
 	api.HandleFunc("/incidents/{id}", handlers.UpdateIncident).Methods("PUT")
+	api.HandleFunc("/incidents/auto-create", handlers.AutoCreateIncident).Methods("POST")
 
 	// Phase 2: Agent Comparison
 

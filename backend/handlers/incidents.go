@@ -148,3 +148,80 @@ func UpdateIncident(w http.ResponseWriter, r *http.Request) {
 	}
 	respondJSON(w, 200, map[string]string{"status": "updated"})
 }
+
+
+
+// AutoCreateIncident handles POST /api/incidents/auto-create
+func AutoCreateIncident(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		TaskID       string `json:"task_id"`
+		AgentID      string `json:"agent_id"`
+		ErrorSummary string `json:"error_summary"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, 400, "invalid JSON")
+		return
+	}
+	if req.AgentID == "" {
+		respondError(w, 400, "agent_id required")
+		return
+	}
+	if req.ErrorSummary == "" {
+		req.ErrorSummary = "Auto-detected errors"
+	}
+
+	id, err := autoCreateOrAppendIncident(req.TaskID, req.AgentID, req.ErrorSummary)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	respondJSON(w, 201, map[string]string{"id": id})
+}
+
+// autoCreateOrAppendIncident checks for existing open incident for the agent.
+func autoCreateOrAppendIncident(taskID, agentID, errorSummary string) (string, error) {
+	agentJSON := `["` + agentID + `"]`
+
+	var existingID string
+	var timeline json.RawMessage
+	err := db.DB.QueryRow(
+		`SELECT id, timeline FROM incidents WHERE status IN ('open','investigating') AND agent_ids @> $1::jsonb ORDER BY created_at DESC LIMIT 1`,
+		agentJSON,
+	).Scan(&existingID, &timeline)
+
+	if err == nil && existingID != "" {
+		var entries []map[string]interface{}
+		json.Unmarshal(timeline, &entries)
+		entries = append(entries, map[string]interface{}{
+			"time":    time.Now().Format(time.RFC3339),
+			"event":   "error_detected",
+			"details": errorSummary,
+			"task_id": taskID,
+		})
+		newTimeline, _ := json.Marshal(entries)
+		db.DB.Exec(`UPDATE incidents SET timeline = $1 WHERE id = $2`, newTimeline, existingID)
+		return existingID, nil
+	}
+
+	taskIDs := json.RawMessage(`[]`)
+	if taskID != "" {
+		t, _ := json.Marshal([]string{taskID})
+		taskIDs = t
+	}
+	agentIDs, _ := json.Marshal([]string{agentID})
+	initialTimeline, _ := json.Marshal([]map[string]interface{}{
+		{"time": time.Now().Format(time.RFC3339), "event": "incident_created", "details": errorSummary},
+	})
+
+	title := fmt.Sprintf("Auto: %s errors - %s", agentID, errorSummary)
+	if len(title) > 255 {
+		title = title[:255]
+	}
+
+	var id string
+	err = db.DB.QueryRow(
+		`INSERT INTO incidents (title, severity, task_ids, agent_ids, timeline) VALUES ($1, 'high', $2, $3, $4) RETURNING id`,
+		title, taskIDs, agentIDs, initialTimeline,
+	).Scan(&id)
+	return id, err
+}

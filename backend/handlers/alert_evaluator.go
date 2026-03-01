@@ -161,6 +161,13 @@ func evaluateErrorRate(hub *websocket.Hub, ruleID, ruleName string, agentID sql.
 		msg := fmt.Sprintf("Agent '%s' has %d errors in the last hour (threshold: %d)",
 			agID, errCount, threshold)
 		insertAlertAndNotify(hub, ruleID, ruleName, agID, msg, webhookID)
+		// Auto-create incident for error_rate alerts
+		go func(agent string, message string) {
+			_, err := autoCreateOrAppendIncident("", agent, message)
+			if err != nil {
+				log.Printf("[alerts] Failed to auto-create incident: %v", err)
+			}
+		}(agID, msg)
 	}
 }
 
@@ -240,6 +247,9 @@ func insertAlertAndNotify(hub *websocket.Hub, ruleID, ruleName, agentID, message
 	}
 
 	log.Printf("[alerts] 🔔 Alert triggered: %s — %s", ruleName, message)
+
+	// Create in-app notification for the alert
+	go CreateNotificationInternal(agentID, "alert", "Alert: "+ruleName, message)
 
 	// Broadcast via WebSocket
 	if hub != nil {

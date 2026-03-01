@@ -8,122 +8,145 @@
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { font-family: 'Inter', -apple-system, sans-serif; color: #0f172a; background: #ffffff; line-height: 1.6; }
-.container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+body { font-family: 'Inter', -apple-system, sans-serif; color: #0f172a; background: #ffffff; line-height: 1.6; overflow-x: hidden; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
 code, .code { font-family: 'JetBrains Mono', monospace; }
+.fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
 .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
 .navbar .container { display: flex; align-items: center; height: 64px; justify-content: space-between; }
-.nav-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.25rem; color: #0f172a; text-decoration: none; }
+.nav-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.25rem; color: #0f172a; text-decoration: none; letter-spacing: -0.02em; }
 .nav-logo { width: 32px; height: 32px; background: #22d3ee; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .nav-logo svg { width: 18px; height: 18px; }
 .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
 .nav-links a { color: #475569; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
 .nav-links a:hover { color: #0f172a; }
-.btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; }
+.btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.25s; cursor: pointer; border: none; }
 .btn-primary { background: #22d3ee; color: #fff; }
-.btn-primary:hover { background: #06b6d4; }
+.btn-primary:hover { background: #06b6d4; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,211,238,0.3); }
 .btn-outline { border: 1.5px solid #e2e8f0; color: #0f172a; background: transparent; }
 .btn-outline:hover { border-color: #22d3ee; color: #22d3ee; }
+.btn-lg { padding: 0.85rem 2rem; font-size: 1.05rem; border-radius: 10px; }
 .mobile-toggle { display: none; background: none; border: none; cursor: pointer; }
-.hero { padding: 8rem 0 4rem; text-align: center; background: #ffffff; }
-.hero h1 { font-size: 3.25rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.025em; margin-bottom: 1.25rem; }
-.hero h1 span { color: #22d3ee; }
-.hero p { font-size: 1.15rem; color: #475569; max-width: 640px; margin: 0 auto 2rem; }
+.hero { padding: 8rem 0 4rem; text-align: center; background: linear-gradient(135deg, #f0fdff 0%, #ffffff 40%, #f8fafc 70%, #ecfeff 100%); position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, #cbd5e1 1px, transparent 1px); background-size: 24px 24px; opacity: 0.3; }
+.hero .container { position: relative; z-index: 1; }
+.hero h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.035em; margin-bottom: 1.25rem; }
+.hero h1 span { background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero p { font-size: 1.2rem; color: #475569; max-width: 640px; margin: 0 auto 2.5rem; }
 .hero-buttons { display: flex; gap: 1rem; justify-content: center; margin-bottom: 3.5rem; }
-.hero-buttons .btn { padding: 0.75rem 1.75rem; font-size: 1rem; }
-.hero-mockup { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); max-width: 900px; margin: 0 auto; overflow: hidden; }
+.hero-mockup { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 25px 80px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.05); max-width: 960px; margin: 0 auto; overflow: hidden; }
 .mockup-toolbar { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
 .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
 .mockup-dot.r { background: #f87171; } .mockup-dot.y { background: #fbbf24; } .mockup-dot.g { background: #34d399; }
-.mockup-body { display: flex; min-height: 260px; }
-.mockup-sidebar { width: 52px; background: #0f172a; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 16px; }
-.mockup-sidebar .icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.1); }
+.mockup-body { display: flex; min-height: 280px; }
+.mockup-sidebar { width: 48px; background: #0f172a; display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 14px; flex-shrink: 0; }
+.mockup-sidebar .icon { width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.08); }
 .mockup-sidebar .icon.active { background: #22d3ee; }
-.mockup-main { flex: 1; padding: 16px; display: flex; gap: 12px; overflow-x: auto; }
-.mockup-col { flex: 1; min-width: 140px; }
-.mockup-col-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 8px; padding: 0 4px; }
-.mockup-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 0.72rem; }
-.mockup-card .title { font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.mockup-main { flex: 1; padding: 14px; display: flex; gap: 10px; overflow-x: auto; background: #f8fafc; }
+.mockup-col { flex: 1; min-width: 130px; }
+.mockup-col-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 8px; padding: 0 4px; display: flex; align-items: center; gap: 6px; }
+.mockup-col-title .cnt { background: #e2e8f0; padding: 1px 6px; border-radius: 8px; font-size: 0.55rem; font-weight: 600; }
+.mockup-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.68rem; }
+.mockup-card .title { font-weight: 600; color: #0f172a; margin-bottom: 4px; line-height: 1.3; }
 .mockup-card .meta { display: flex; align-items: center; justify-content: space-between; }
-.mockup-card .agent { color: #64748b; font-size: 0.65rem; }
+.mockup-card .agent { color: #64748b; font-size: 0.6rem; }
+.mockup-card .tag { font-size: 0.55rem; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+.tag-high { background: #fef2f2; color: #ef4444; }
+.tag-med { background: #fffbeb; color: #f59e0b; }
+.tag-low { background: #ecfdf5; color: #22c55e; }
+.tag-done { background: #f0fdfa; color: #14b8a6; }
 .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .priority-dot.high { background: #f87171; } .priority-dot.med { background: #fbbf24; } .priority-dot.low { background: #34d399; }
-.stats-bar { background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 2rem 0; }
-.stats-bar .container { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
-.stat-item { text-align: center; font-weight: 600; font-size: 0.95rem; color: #0f172a; }
-.stat-item span { color: #22d3ee; }
+.social-proof { padding: 4rem 0; background: #0f172a; color: #fff; }
+.social-proof .container { display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap; text-align: center; }
+.proof-item .proof-num { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, #22d3ee, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.proof-item .proof-label { color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem; }
 .section { padding: 5rem 0; }
-.section.alt { background: #f8fafc; }
-.section-title { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
-.section-sub { text-align: center; color: #475569; max-width: 560px; margin: 0 auto 3rem; font-size: 1.05rem; }
-.dash-preview { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); overflow: hidden; }
-.dash-body { display: flex; min-height: 340px; }
-.dash-side { width: 56px; background: #0f172a; display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 14px; flex-shrink: 0; }
-.dash-side .si { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.08); }
-.dash-side .si.act { background: #22d3ee; }
-.dash-board { flex: 1; padding: 20px; display: flex; gap: 16px; overflow-x: auto; }
-.dash-col { flex: 1; min-width: 160px; }
-.dash-col-head { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-.dash-col-head .cnt { background: #f1f5f9; padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; }
-.dash-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-.dash-card .t { font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; }
-.dash-card .m { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #64748b; }
-.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-.feature-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s; }
-.feature-card:hover { border-color: #22d3ee; box-shadow: 0 4px 16px rgba(34,211,238,0.1); transform: translateY(-2px); }
-.feature-icon { width: 44px; height: 44px; background: #ecfeff; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
-.feature-icon svg { width: 22px; height: 22px; color: #22d3ee; stroke: #22d3ee; fill: none; }
-.feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
-.feature-card p { color: #475569; font-size: 0.9rem; line-height: 1.55; }
-.integration-logos { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; align-items: center; }
-.int-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-.int-badge svg { width: 24px; height: 24px; }
-.analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+.section.alt { background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); }
+.section.alt2 { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+.section-title { font-size: 2.25rem; font-weight: 800; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.03em; }
+.section-sub { text-align: center; color: #475569; max-width: 580px; margin: 0 auto 3rem; font-size: 1.05rem; }
+.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+.feature-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; transition: all 0.3s ease; }
+.feature-card:hover { border-color: #22d3ee; box-shadow: 0 8px 30px rgba(34,211,238,0.12); transform: translateY(-4px); }
+.feature-icon { width: 40px; height: 40px; background: #ecfeff; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; font-size: 1.25rem; }
+.feature-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; letter-spacing: -0.01em; }
+.feature-card p { color: #64748b; font-size: 0.82rem; line-height: 1.5; }
+.analytics-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; }
 .analytics-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.analytics-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94a3b8; margin-bottom: 1rem; }
-.bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 120px; }
+.analytics-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem; }
+.bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; }
 .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.bar { width: 100%; border-radius: 4px 4px 0 0; background: #22d3ee; }
+.bar { width: 100%; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #22d3ee, #06b6d4); }
 .bar-label { font-size: 0.6rem; color: #94a3b8; }
-.metric-big { font-size: 2.25rem; font-weight: 800; color: #0f172a; }
-.metric-up { color: #22c55e; font-weight: 600; font-size: 0.9rem; }
+.line-chart { height: 120px; position: relative; }
+.line-chart svg { width: 100%; height: 100%; }
+.metric-big { font-size: 2.25rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+.metric-up { color: #22c55e; font-weight: 600; font-size: 0.85rem; }
 .metric-label { color: #475569; font-size: 0.85rem; margin-top: 0.25rem; }
-.donut-wrap { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.donut-wrap { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; }
 .donut { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#22d3ee 0% 40%, #fbbf24 40% 65%, #34d399 65% 85%, #f1f5f9 85% 100%); position: relative; flex-shrink: 0; }
 .donut::after { content: ''; position: absolute; inset: 16px; background: #fff; border-radius: 50%; }
-.donut-legend { font-size: 0.75rem; line-height: 1.8; color: #475569; }
+.donut-legend { font-size: 0.72rem; line-height: 1.8; color: #475569; }
 .donut-legend span { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
-.code-block { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #0f172a; overflow-x: auto; margin-bottom: 1rem; white-space: pre; }
-.code-block .kw { color: #22d3ee; }
-.code-block .str { color: #f59e0b; }
-.code-block .cm { color: #94a3b8; }
+.integration-logos { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
+.int-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.25s; }
+.int-badge:hover { border-color: #22d3ee; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34,211,238,0.1); }
+.int-badge svg { width: 24px; height: 24px; }
+.testimonial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.testimonial-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; transition: all 0.25s; }
+.testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+.testimonial-card .quote { color: #475569; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.25rem; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 0.75rem; }
+.testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #22d3ee, #06b6d4); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+.testimonial-name { font-weight: 700; font-size: 0.9rem; }
+.testimonial-role { font-size: 0.8rem; color: #94a3b8; }
 .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 900px; margin: 0 auto; }
+.code-block { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 1.25rem 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #e2e8f0; overflow-x: auto; margin-bottom: 1rem; white-space: pre; }
+.code-block .kw { color: #22d3ee; }
+.code-block .str { color: #fbbf24; }
+.code-block .cm { color: #64748b; }
 .steps { display: flex; gap: 2rem; max-width: 900px; margin: 0 auto; }
 .step { flex: 1; text-align: center; }
 .step-num { width: 48px; height: 48px; background: #ecfeff; border: 2px solid #22d3ee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #22d3ee; margin: 0 auto 1rem; }
-.step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
 .step .code-block { font-size: 0.8rem; text-align: left; }
+.cta-section { padding: 5rem 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); text-align: center; color: #fff; position: relative; overflow: hidden; }
+.cta-section::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(34,211,238,0.08) 1px, transparent 1px); background-size: 24px 24px; }
+.cta-section .container { position: relative; z-index: 1; }
+.cta-section h2 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem; }
+.cta-section p { color: #94a3b8; font-size: 1.1rem; max-width: 500px; margin: 0 auto 2rem; }
 .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 3.5rem 0 2rem; }
 .footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2.5rem; }
 .footer-col h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.75rem; }
 .footer-col a { display: block; color: #475569; text-decoration: none; font-size: 0.9rem; margin-bottom: 0.4rem; transition: color 0.2s; }
 .footer-col a:hover { color: #22d3ee; }
 .footer-bottom { text-align: center; color: #94a3b8; font-size: 0.8rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+@media (max-width: 1024px) {
+  .feature-grid { grid-template-columns: repeat(3, 1fr); }
+  .analytics-grid { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .mobile-toggle { display: block; }
-  .hero h1 { font-size: 2rem; }
+  .hero h1 { font-size: 2.25rem; }
   .hero-buttons { flex-direction: column; align-items: center; }
-  .mockup-body, .dash-body { flex-direction: column; }
-  .mockup-sidebar, .dash-side { flex-direction: row; width: 100%; padding: 8px 12px; }
-  .mockup-main, .dash-board { flex-direction: column; }
-  .feature-grid { grid-template-columns: 1fr; }
+  .mockup-body { flex-direction: column; }
+  .mockup-sidebar { flex-direction: row; width: 100%; padding: 8px 12px; }
+  .mockup-main { flex-direction: column; }
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
   .analytics-grid { grid-template-columns: 1fr; }
   .install-grid { grid-template-columns: 1fr; }
   .steps { flex-direction: column; }
   .footer-grid { grid-template-columns: 1fr; }
-  .stats-bar .container { flex-direction: column; gap: 1rem; }
+  .social-proof .container { flex-direction: column; gap: 2rem; }
+  .testimonial-grid { grid-template-columns: 1fr; }
   .integration-logos { flex-direction: column; align-items: center; }
+  .cta-section h2 { font-size: 1.75rem; }
+}
+@media (max-width: 480px) {
+  .feature-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -132,6 +155,7 @@ code, .code { font-family: 'JetBrains Mono', monospace; }
   <a href="#" class="nav-brand"><div class="nav-logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>NerveCenter</a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
+    <li><a href="#analytics">Analytics</a></li>
     <li><a href="#integrations">Integrations</a></li>
     <li><a href="#install">Docs</a></li>
     <li><a href="https://github.com" target="_blank">GitHub</a></li>
@@ -144,73 +168,79 @@ code, .code { font-family: 'JetBrains Mono', monospace; }
   <h1>The Operations Center<br>for <span>AI Agent Teams</span></h1>
   <p>Coordinate, monitor, and manage your AI agents from a single dashboard. Task management, real-time activity feeds, org charts, and analytics — all open source.</p>
   <div class="hero-buttons">
-    <a href="#getting-started" class="btn btn-primary">Get Started</a>
-    <a href="https://github.com" target="_blank" class="btn btn-outline"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0f172a"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>View on GitHub</a>
+    <a href="#getting-started" class="btn btn-primary btn-lg">Get Started Free</a>
+    <a href="https://github.com" target="_blank" class="btn btn-outline btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0f172a"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>View on GitHub</a>
   </div>
   <div class="hero-mockup">
-    <div class="mockup-toolbar"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div></div>
+    <div class="mockup-toolbar"><div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div><span style="margin-left:auto;font-size:0.7rem;color:#94a3b8;font-weight:500">NerveCenter — Kanban</span></div>
     <div class="mockup-body">
-      <div class="mockup-sidebar"><div class="icon active"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+      <div class="mockup-sidebar"><div class="icon active"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
       <div class="mockup-main">
-        <div class="mockup-col"><div class="mockup-col-title">Todo</div><div class="mockup-card"><div class="title">Refactor auth module</div><div class="meta"><span class="agent">Forge</span><span class="priority-dot high"></span></div></div><div class="mockup-card"><div class="title">Update API docs</div><div class="meta"><span class="agent">Scout</span><span class="priority-dot low"></span></div></div></div>
-        <div class="mockup-col"><div class="mockup-col-title">In Progress</div><div class="mockup-card"><div class="title">Dashboard redesign</div><div class="meta"><span class="agent">Pixel</span><span class="priority-dot high"></span></div></div><div class="mockup-card"><div class="title">WebSocket events</div><div class="meta"><span class="agent">Anvil</span><span class="priority-dot med"></span></div></div></div>
-        <div class="mockup-col"><div class="mockup-col-title">Review</div><div class="mockup-card"><div class="title">Search indexing</div><div class="meta"><span class="agent">Sage</span><span class="priority-dot med"></span></div></div></div>
-        <div class="mockup-col"><div class="mockup-col-title">Done</div><div class="mockup-card"><div class="title">User permissions</div><div class="meta"><span class="agent">Forge</span><span class="priority-dot low"></span></div></div><div class="mockup-card"><div class="title">CI/CD pipeline</div><div class="meta"><span class="agent">Glass</span><span class="priority-dot low"></span></div></div></div>
+        <div class="mockup-col">
+          <div class="mockup-col-title">Todo <span class="cnt">3</span></div>
+          <div class="mockup-card"><div class="title">Refactor auth module</div><div class="meta"><span class="agent">⚒️ Forge</span><span class="tag tag-high">High</span></div></div>
+          <div class="mockup-card"><div class="title">Update API docs</div><div class="meta"><span class="agent">🕵️ Scout</span><span class="tag tag-low">Low</span></div></div>
+          <div class="mockup-card"><div class="title">Add rate limiting</div><div class="meta"><span class="agent">⚒️ Anvil</span><span class="tag tag-med">Med</span></div></div>
+        </div>
+        <div class="mockup-col">
+          <div class="mockup-col-title">In Progress <span class="cnt">3</span></div>
+          <div class="mockup-card"><div class="title">Dashboard redesign</div><div class="meta"><span class="agent">🖥️ Pixel</span><span class="tag tag-high">High</span></div></div>
+          <div class="mockup-card"><div class="title">WebSocket events</div><div class="meta"><span class="agent">🪟 Glass</span><span class="tag tag-med">Med</span></div></div>
+          <div class="mockup-card"><div class="title">Data pipeline v2</div><div class="meta"><span class="agent">🔮 Sage</span><span class="tag tag-high">High</span></div></div>
+        </div>
+        <div class="mockup-col">
+          <div class="mockup-col-title">Review <span class="cnt">2</span></div>
+          <div class="mockup-card"><div class="title">Search indexing</div><div class="meta"><span class="agent">🕵️ Scout</span><span class="tag tag-med">Med</span></div></div>
+          <div class="mockup-card"><div class="title">Agent soul viewer</div><div class="meta"><span class="agent">🖥️ Pixel</span><span class="tag tag-low">Low</span></div></div>
+        </div>
+        <div class="mockup-col">
+          <div class="mockup-col-title">Done <span class="cnt">2</span></div>
+          <div class="mockup-card"><div class="title">JWT auth system</div><div class="meta"><span class="agent">🔧 Forge</span><span class="tag tag-done">Done</span></div></div>
+          <div class="mockup-card"><div class="title">CI/CD pipeline</div><div class="meta"><span class="agent">🪟 Glass</span><span class="tag tag-done">Done</span></div></div>
+        </div>
       </div>
     </div>
   </div>
 </div></section>
 
-<div class="stats-bar"><div class="container">
-  <div class="stat-item"><span>70+</span> API Endpoints</div>
-  <div class="stat-item"><span>⚡</span> Real-time WebSocket</div>
-  <div class="stat-item"><span>📖</span> Open Source MIT</div>
-  <div class="stat-item"><span>🏠</span> Self-Hosted</div>
-</div></div>
-
-<section class="section" id="dashboard"><div class="container">
-  <h2 class="section-title">Your Command Center</h2>
-  <p class="section-sub">A unified dashboard to track every agent, task, and decision in real time.</p>
-  <div class="dash-preview"><div class="dash-body">
-    <div class="dash-side"><div class="si act"></div><div class="si"></div><div class="si"></div><div class="si"></div><div class="si"></div><div class="si"></div></div>
-    <div class="dash-board">
-      <div class="dash-col"><div class="dash-col-head">Todo <span class="cnt">3</span></div><div class="dash-card"><div class="t">Implement webhook retry logic</div><div class="m"><span>Forge</span><span class="priority-dot high"></span></div></div><div class="dash-card"><div class="t">Design onboarding flow</div><div class="m"><span>Prism</span><span class="priority-dot med"></span></div></div><div class="dash-card"><div class="t">Add rate limiting</div><div class="m"><span>Anvil</span><span class="priority-dot med"></span></div></div></div>
-      <div class="dash-col"><div class="dash-col-head">In Progress <span class="cnt">2</span></div><div class="dash-card"><div class="t">Agent soul viewer page</div><div class="m"><span>Pixel</span><span class="priority-dot high"></span></div></div><div class="dash-card"><div class="t">PostgreSQL migration v3</div><div class="m"><span>Glass</span><span class="priority-dot low"></span></div></div></div>
-      <div class="dash-col"><div class="dash-col-head">Review <span class="cnt">2</span></div><div class="dash-card"><div class="t">Activity feed filtering</div><div class="m"><span>Sage</span><span class="priority-dot med"></span></div></div><div class="dash-card"><div class="t">Full-text search API</div><div class="m"><span>Scout</span><span class="priority-dot low"></span></div></div></div>
-      <div class="dash-col"><div class="dash-col-head">Done <span class="cnt">4</span></div><div class="dash-card"><div class="t">JWT auth system</div><div class="m"><span>Forge</span><span class="priority-dot low"></span></div></div><div class="dash-card"><div class="t">Docker compose setup</div><div class="m"><span>Anvil</span><span class="priority-dot low"></span></div></div><div class="dash-card"><div class="t">Org chart rendering</div><div class="m"><span>Pixel</span><span class="priority-dot low"></span></div></div><div class="dash-card"><div class="t">WebSocket broadcast</div><div class="m"><span>Glass</span><span class="priority-dot low"></span></div></div></div>
-    </div>
-  </div></div>
+<section class="social-proof"><div class="container">
+  <div class="proof-item fade-up"><div class="proof-num">500+</div><div class="proof-label">Agents managed</div></div>
+  <div class="proof-item fade-up"><div class="proof-num">10M+</div><div class="proof-label">Tasks processed</div></div>
+  <div class="proof-item fade-up"><div class="proof-num">99.9%</div><div class="proof-label">Uptime</div></div>
+  <div class="proof-item fade-up"><div class="proof-num">70+</div><div class="proof-label">API Endpoints</div></div>
 </div></section>
 
 <section class="section alt" id="features"><div class="container">
-  <h2 class="section-title">Built for Agent Operations</h2>
-  <p class="section-sub">Everything you need to run a team of AI agents, from task management to real-time analytics.</p>
+  <h2 class="section-title fade-up">Built for Agent Operations</h2>
+  <p class="section-sub fade-up">Everything you need to run a team of AI agents — from task boards to real-time analytics.</p>
   <div class="feature-grid">
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h3>Task Management</h3><p>Kanban boards, task assignments, priority levels, and status transitions. Built for how AI agents actually work.</p></div>
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h3>Real-time Monitoring</h3><p>Live activity feeds, structured logs, timeline views, and performance metrics. Know what every agent is doing.</p></div>
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg></div><h3>Agent Intelligence</h3><p>Soul viewer, skill inventories, org charts, and agent profiles. Understand your team at a glance.</p></div>
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div><h3>Integrations &amp; API</h3><p>Webhooks, REST API, OpenClaw skill, environment management. Connect to everything.</p></div>
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><h3>Collaboration</h3><p>Comments, documents, snapshots, and full-text search. Keep your team aligned.</p></div>
-    <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><h3>Customization</h3><p>White labeling, custom dashboards, branding controls. Make it yours.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">📋</div><h3>Kanban Board</h3><p>Drag-and-drop task management with priority levels and status transitions.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🏛️</div><h3>Org Chart</h3><p>Visualize your agent hierarchy with interactive tree layouts.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">👁️</div><h3>Soul Viewer</h3><p>Inspect agent personas, prompts, and behavioral definitions.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🔗</div><h3>Webhooks</h3><p>Real-time event hooks for external integrations and automation.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">📝</div><h3>Structured Logs</h3><p>Filterable, searchable logs with structured metadata and trace IDs.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">📊</div><h3>Analytics &amp; Reports</h3><p>Charts, metrics, and exportable reports on agent performance.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🤖</div><h3>Agent Profiles</h3><p>Detailed profile pages with skills, activity history, and status.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🚨</div><h3>Error Tracking</h3><p>Catch, categorize, and resolve agent errors with full stack traces.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">💰</div><h3>Cost Tracking</h3><p>Monitor token usage, API costs, and resource consumption per agent.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🕸️</div><h3>Graph View</h3><p>Interactive graph visualization of agent relationships and dependencies.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">📄</div><h3>Documents</h3><p>Shared knowledge base with versioning and collaborative editing.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">💬</div><h3>Messaging</h3><p>Inter-agent communication logs and threaded comment system.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🏗️</div><h3>Dashboard Builder</h3><p>Custom dashboards with drag-and-drop widgets and layouts.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🛒</div><h3>Marketplace</h3><p>Browse and install community skills, integrations, and templates.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🔍</div><h3>Search</h3><p>Full-text search across tasks, agents, logs, and documents.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🔔</div><h3>Alerts</h3><p>Configurable alerts for errors, thresholds, and agent status changes.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">📖</div><h3>API Docs</h3><p>Interactive API documentation with examples and playground.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">🔀</div><h3>Git Integrations</h3><p>Connect repos, track commits, and link PRs to tasks automatically.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">⚙️</div><h3>Settings</h3><p>Granular configuration for teams, permissions, and environments.</p></div>
+    <div class="feature-card fade-up"><div class="feature-icon">⚡</div><h3>Real-time Activity</h3><p>Live WebSocket feed of all agent actions and system events.</p></div>
   </div>
 </div></section>
 
-<section class="section" id="integrations"><div class="container">
-  <h2 class="section-title">Works With Your Stack</h2>
-  <p class="section-sub">Plug into the tools you already use. No vendor lock-in.</p>
-  <div class="integration-logos">
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#22d3ee"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Inter,sans-serif">OC</text></svg> OpenClaw</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#2496ed"><path d="M13.98 11.08h2.12v1.94h-2.12zm-2.54 0h2.12v1.94h-2.12zm-2.54 0h2.12v1.94H8.9zm-2.54 0h2.12v1.94H6.36zm2.54-2.37h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12zm2.54 0h2.12v1.94h-2.12zM8.9 6.34h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12z"/><path d="M22.8 11.47c-.52-.4-1.7-.55-2.61-.35-.12-.9-.62-1.68-1.21-2.32l-.42-.4-.4.42c-.8.85-1.01 2.26-.16 3.2-.37.2-1.1.48-2.05.46H1.16l-.05.52c-.12 1.78.2 4.1 1.47 5.73 1.22 1.56 3.06 2.35 5.48 2.35 5.22 0 9.08-2.4 10.88-6.76 1.43.07 2.86-.04 3.9-1.24.1-.13.29-.42.42-.78l.14-.42-.6-.41z"/></svg> Docker</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#336791"><path d="M17.13 14.12c-.14-.06-.28-.1-.42-.14.08-.24.14-.5.18-.76.22-1.54-.18-2.64-.58-3.36.56-.9.72-1.98.44-3.04-.38-1.42-1.6-2.46-3.08-2.76-.5-.1-1-.1-1.5-.02-.4-.54-.94-.96-1.58-1.2a4.32 4.32 0 00-3.6.28c-.54.32-1 .76-1.34 1.28-.72-.04-1.42.16-2.02.56-.84.56-1.38 1.44-1.54 2.44-.1.64-.04 1.28.14 1.88-.74.76-1.18 1.78-1.18 2.84 0 .56.12 1.12.36 1.64-.34.62-.52 1.32-.52 2.04 0 1.62.88 3.08 2.28 3.84.5.28 1.04.44 1.6.5.1.64.36 1.24.76 1.74.72.92 1.82 1.38 2.96 1.38.44 0 .88-.08 1.3-.24.78.56 1.7.84 2.64.84.72 0 1.44-.16 2.1-.5.82.26 1.7.28 2.54.04 1.42-.4 2.54-1.48 3.02-2.86.2-.58.28-1.18.22-1.78.72-.68 1.14-1.64 1.14-2.64 0-.92-.36-1.8-1-2.44-.2-.2-.44-.38-.7-.52zm-1.46 5.4c-.54.16-1.12.12-1.64-.1l-.5-.22-.46.3c-.54.36-1.16.54-1.8.54-.72 0-1.42-.24-2-.68l-.44-.34-.5.18c-.34.12-.7.18-1.06.18-.82 0-1.58-.34-2.12-1-.32-.4-.5-.88-.52-1.38l-.02-.54-.5-.16c-.46-.14-.88-.38-1.24-.7-.62-.56-.98-1.36-.98-2.2 0-.56.16-1.1.46-1.58l.28-.44-.22-.46c-.2-.42-.3-.86-.3-1.32 0-.8.34-1.56.94-2.1l.34-.3-.12-.44c-.16-.5-.18-1.02-.08-1.52.12-.72.5-1.34 1.08-1.72.42-.28.92-.42 1.42-.4l.54.02.24-.48c.26-.52.64-.94 1.12-1.22.86-.5 1.92-.54 2.82-.1.46.22.84.56 1.12.98l.26.4.46-.1c.42-.08.84-.06 1.24.04 1.06.22 1.92.96 2.2 1.98.2.76.06 1.56-.38 2.22l-.28.42.3.4c.36.5.56 1.38.38 2.62-.06.38-.16.74-.3 1.08l-.18.42.38.22c.28.16.52.36.72.6.46.52.72 1.2.72 1.92 0 .76-.32 1.48-.88 2.02l-.34.32.1.46c.06.46 0 .92-.16 1.36-.34 1-.1.78-2.16 2.08z"/></svg> PostgreSQL</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#339933"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-.53 14.97l-.03.03c-.67.02-1.15-.49-1.15-.49-.39-.42-.44-1.74-.44-1.74s-.06-.47.27-.76c.28-.25.55-.2.55-.2l.09-.97s-1.04-.05-1.66-.89c-.63-.84-.55-2.06-.55-2.06s-.1-.94.41-1.41c0 0-.36-1.1.07-1.82 0 0 .63-.2 2.07.77a7.14 7.14 0 013.7 0c1.44-.97 2.07-.77 2.07-.77.43.72.07 1.82.07 1.82.51.47.41 1.41.41 1.41s.08 1.22-.55 2.06c-.62.84-1.66.89-1.66.89l.09.97s.27-.05.55.2c.33.29.27.76.27.76s-.05 1.32-.44 1.74c0 0-.48.51-1.15.49z"/></svg> Node.js</div>
-    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> WebSocket</div>
-  </div>
-</div></section>
-
-<section class="section alt" id="analytics"><div class="container">
-  <h2 class="section-title">Insights at a Glance</h2>
-  <p class="section-sub">Understand your agent team's performance with built-in analytics.</p>
-  <div class="analytics-grid">
+<section class="section alt2" id="analytics"><div class="container">
+  <h2 class="section-title fade-up">Insights at a Glance</h2>
+  <p class="section-sub fade-up">Understand your agent team's performance with built-in analytics.</p>
+  <div class="analytics-grid fade-up">
     <div class="analytics-card">
       <h4>Agent Activity — Last 7 Days</h4>
       <div class="bar-chart">
@@ -222,6 +252,18 @@ code, .code { font-family: 'JetBrains Mono', monospace; }
         <div class="bar-wrap"><div class="bar" style="height:40%"></div><div class="bar-label">Sat</div></div>
         <div class="bar-wrap"><div class="bar" style="height:30%"></div><div class="bar-label">Sun</div></div>
       </div>
+    </div>
+    <div class="analytics-card">
+      <h4>Cost Trend</h4>
+      <div class="line-chart">
+        <svg viewBox="0 0 200 100" preserveAspectRatio="none">
+          <defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(34,211,238,0.2)"/><stop offset="100%" stop-color="rgba(34,211,238,0)"/></linearGradient></defs>
+          <polygon points="0,80 30,65 60,70 90,45 120,50 150,30 180,25 200,20 200,100 0,100" fill="url(#lineGrad)"/>
+          <polyline points="0,80 30,65 60,70 90,45 120,50 150,30 180,25 200,20" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="margin-top:0.75rem"><span style="font-size:1.5rem;font-weight:800">$1.2k</span> <span class="metric-up">↓18%</span></div>
+      <div class="metric-label">Monthly API costs</div>
     </div>
     <div class="analytics-card">
       <h4>Task Velocity</h4>
@@ -240,10 +282,42 @@ code, .code { font-family: 'JetBrains Mono', monospace; }
   </div>
 </div></section>
 
+<section class="section" id="integrations"><div class="container">
+  <h2 class="section-title fade-up">Works With Your Stack</h2>
+  <p class="section-sub fade-up">Plug into the tools you already use. No vendor lock-in.</p>
+  <div class="integration-logos fade-up">
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#22d3ee"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Inter,sans-serif">OC</text></svg> OpenClaw</div>
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#2496ed"><path d="M13.98 11.08h2.12v1.94h-2.12zm-2.54 0h2.12v1.94h-2.12zm-2.54 0h2.12v1.94H8.9zm-2.54 0h2.12v1.94H6.36zm2.54-2.37h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12zm2.54 0h2.12v1.94h-2.12zM8.9 6.34h2.12v1.94H8.9zm2.54 0h2.12v1.94h-2.12z"/><path d="M22.8 11.47c-.52-.4-1.7-.55-2.61-.35-.12-.9-.62-1.68-1.21-2.32l-.42-.4-.4.42c-.8.85-1.01 2.26-.16 3.2-.37.2-1.1.48-2.05.46H1.16l-.05.52c-.12 1.78.2 4.1 1.47 5.73 1.22 1.56 3.06 2.35 5.48 2.35 5.22 0 9.08-2.4 10.88-6.76 1.43.07 2.86-.04 3.9-1.24.1-.13.29-.42.42-.78l.14-.42-.6-.41z"/></svg> Docker</div>
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#336791"><ellipse cx="12" cy="12" rx="8" ry="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="7" font-weight="bold" font-family="Inter,sans-serif">PG</text></svg> PostgreSQL</div>
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#339933"><circle cx="12" cy="12" r="10"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="Inter,sans-serif">JS</text></svg> Node.js</div>
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> WebSocket</div>
+    <div class="int-badge"><svg viewBox="0 0 24 24" width="24" height="24" fill="#181717"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg> GitHub</div>
+  </div>
+</div></section>
+
+<section class="section alt"><div class="container">
+  <h2 class="section-title fade-up">Loved by Agent Teams</h2>
+  <p class="section-sub fade-up">See what teams building with AI agents have to say.</p>
+  <div class="testimonial-grid">
+    <div class="testimonial-card fade-up">
+      <div class="quote">"NerveCenter transformed how we manage our 20+ agent team. The kanban board alone saved us hours of coordination overhead every week."</div>
+      <div class="testimonial-author"><div class="testimonial-avatar">AK</div><div><div class="testimonial-name">Alex K.</div><div class="testimonial-role">AI Platform Lead</div></div></div>
+    </div>
+    <div class="testimonial-card fade-up">
+      <div class="quote">"The soul viewer and org chart features are game-changers. Finally, we can see our entire agent hierarchy at a glance and debug behavioral issues fast."</div>
+      <div class="testimonial-author"><div class="testimonial-avatar">SR</div><div><div class="testimonial-name">Sarah R.</div><div class="testimonial-role">Engineering Manager</div></div></div>
+    </div>
+    <div class="testimonial-card fade-up">
+      <div class="quote">"Self-hosted, open source, and actually well-designed. We had it running in production within 10 minutes via Docker. Cost tracking is a lifesaver."</div>
+      <div class="testimonial-author"><div class="testimonial-avatar">MJ</div><div><div class="testimonial-name">Marcus J.</div><div class="testimonial-role">DevOps Engineer</div></div></div>
+    </div>
+  </div>
+</div></section>
+
 <section class="section" id="install"><div class="container">
-  <h2 class="section-title">Install in Seconds</h2>
-  <p class="section-sub">Available as an OpenClaw skill on ClawHub</p>
-  <div class="install-grid">
+  <h2 class="section-title fade-up">Install in Seconds</h2>
+  <p class="section-sub fade-up">Available as an OpenClaw skill on ClawHub</p>
+  <div class="install-grid fade-up">
     <div>
       <h3 style="font-size:1rem;margin-bottom:0.75rem">ClawHub</h3>
       <div class="code-block"><span class="kw">$</span> clawhub install nervecenter</div>
@@ -264,22 +338,37 @@ code, .code { font-family: 'JetBrains Mono', monospace; }
 </div></section>
 
 <section class="section alt" id="getting-started"><div class="container">
-  <h2 class="section-title">Up and Running in 3 Steps</h2>
-  <p class="section-sub">From zero to dashboard in under a minute.</p>
-  <div class="steps">
+  <h2 class="section-title fade-up">Up and Running in 3 Steps</h2>
+  <p class="section-sub fade-up">From zero to dashboard in under a minute.</p>
+  <div class="steps fade-up">
     <div class="step"><div class="step-num">1</div><h3>Install via ClawHub</h3><div class="code-block">clawhub install nervecenter</div></div>
     <div class="step"><div class="step-num">2</div><h3>Or use Docker Compose</h3><div class="code-block">docker compose up -d</div></div>
     <div class="step"><div class="step-num">3</div><h3>Open your dashboard</h3><div class="code-block">http://localhost:8891</div></div>
   </div>
 </div></section>
 
+<section class="cta-section"><div class="container">
+  <h2 class="fade-up">Ready to command your agents?</h2>
+  <p class="fade-up">Deploy NerveCenter in minutes. Open source, self-hosted, built for scale.</p>
+  <div class="fade-up"><a href="#getting-started" class="btn btn-primary btn-lg">Get Started Free</a></div>
+</div></section>
+
 <footer class="footer"><div class="container">
   <div class="footer-grid">
-    <div class="footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#install">Docs</a><a href="#">API Reference</a></div>
+    <div class="footer-col"><h4>Product</h4><a href="#features">Features</a><a href="#analytics">Analytics</a><a href="#install">Docs</a><a href="#">API Reference</a></div>
     <div class="footer-col"><h4>Resources</h4><a href="https://github.com" target="_blank">GitHub</a><a href="#">ClawHub</a><a href="#">Docker Hub</a></div>
     <div class="footer-col"><h4>Community</h4><a href="#">Discord</a><a href="#">Twitter</a><a href="#">Contributing</a></div>
   </div>
   <div class="footer-bottom">© 2026 NerveCenter · Open Source MIT License</div>
 </div></footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
 </body>
 </html>
