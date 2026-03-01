@@ -723,7 +723,7 @@ Pages.agents = {
                 <span id="autoRestartSlider" style="
                   position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;
                   border-radius:20px;transition:0.2s;
-                  background:${health.auto_restart ? 'var(--accent,#B5CC18)' : 'var(--border-default,#3a3a4a)'};
+                  background:${health.auto_restart ? 'var(--accent,#B5CC18)' : 'var(--border-default,#e2e8f0)'};
                 ">
                   <span style="
                     position:absolute;content:'';height:14px;width:14px;
@@ -752,7 +752,7 @@ Pages.agents = {
       toggle.addEventListener('change', function() {
         const slider = document.getElementById('autoRestartSlider');
         if (slider) {
-          slider.style.background = this.checked ? 'var(--accent,#B5CC18)' : 'var(--border-default,#3a3a4a)';
+          slider.style.background = this.checked ? 'var(--accent,#B5CC18)' : 'var(--border-default,#e2e8f0)';
           const knob = slider.querySelector('span');
           if (knob) knob.style.left = this.checked ? '19px' : '3px';
         }

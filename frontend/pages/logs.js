@@ -210,9 +210,9 @@ Pages.logs = {
     const isExpanded = this._expandedRows.has(idx);
 
     return `<div class="log-row" id="logrow-${idx}"
-        style="padding:6px 16px;border-bottom:1px solid var(--border-subtle,rgba(255,255,255,0.05));
+        style="padding:6px 16px;border-bottom:1px solid var(--border-subtle,#e2e8f0);
           cursor:pointer;transition:background .1s"
-        onmouseenter="this.style.background='var(--bg-hover,rgba(255,255,255,0.03))'"
+        onmouseenter="this.style.background='var(--bg-hover,rgba(0,0,0,0.02))'"
         onmouseleave="this.style.background=''"
         onclick="Pages.logs._toggleRow(${idx})">
       <div style="display:flex;gap:10px;align-items:baseline">

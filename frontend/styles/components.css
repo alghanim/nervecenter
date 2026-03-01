@@ -166,14 +166,10 @@
               transform var(--dur-normal) var(--ease-default);
 }
 .card:hover {
-  border-color: rgba(34, 211, 238, 0.3);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.1), 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .card:hover {
-  border-color: rgba(8, 145, 178, 0.25);
+  border-color: rgba(6, 182, 212, 0.25);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
+
 
 /* ═══════════════════════════
    BADGES / PILLS
@@ -342,7 +338,7 @@
   top: 0;
   background: var(--bg-surface);
   border-left: 1px solid var(--border-default);
-  box-shadow: -8px 0 32px rgba(0,0,0,0.3);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.08);
   z-index: 100;
   padding: 24px;
   overflow-y: auto;
@@ -556,8 +552,8 @@
 }
 
 .stat-card:hover {
-  border-color: rgba(34, 211, 238, 0.3);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(6, 182, 212, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   transform: translateY(-2px);
 }
 
@@ -565,10 +561,6 @@
   opacity: 1;
 }
 
-[data-theme="light"] .stat-card:hover {
-  border-color: rgba(8, 145, 178, 0.25);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
 
 .stat-label {
   font: 500 var(--text-xs)/1 var(--font-body);
@@ -588,12 +580,6 @@
   line-height: 1;
 }
 
-[data-theme="light"] .stat-number {
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 .stat-trend {
   font: 400 var(--text-xs)/1 var(--font-body);
@@ -770,9 +756,9 @@
 }
 
 .agent-card:hover {
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(6, 182, 212, 0.3);
   background: var(--bg-surface-hover);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12), 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   transform: translateY(-3px);
 }
 
@@ -780,10 +766,6 @@
   opacity: 1;
 }
 
-[data-theme="light"] .agent-card:hover {
-  border-color: rgba(8, 145, 178, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
 .agent-card--selected {
   border-color: var(--accent, #6366f1);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 25%, transparent);
@@ -998,15 +980,11 @@
   position: relative;
 }
 .task-card:hover {
-  border-color: rgba(34, 211, 238, 0.3);
+  border-color: rgba(6, 182, 212, 0.25);
   transform: translateY(-2px);
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.08), 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .task-card:hover {
-  border-color: rgba(8, 145, 178, 0.25);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
+
 .task-card.dragging {
   opacity: 0.5;
   box-shadow: var(--shadow-lg);
@@ -1128,7 +1106,7 @@
 }
 .org-node:hover {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.15), 0 0 8px rgba(34, 211, 238, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transform: scale(1.03);
 }
 
@@ -1293,7 +1271,7 @@
 .task-drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(15, 23, 42, 0.3);
   z-index: 99;
   display: none;
   cursor: default;
@@ -1445,7 +1423,7 @@
   display: flex;
   flex-direction: column;
 }
-.kpi-card:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+.kpi-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
 .kpi-number {
   font: 700 var(--text-2xl)/1 var(--font-display);
   color: var(--text-primary);
@@ -1489,15 +1467,6 @@
 .chart-area--donut { min-height: 220px; }
 
 /* Light theme org chart */
-[data-theme="light"] .org-chart-container { background: var(--bg-inset); }
-
-/* ═══════════════════════════
-   FOCUS STATES (accessibility)
-═══════════════════════════ */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 
 /* ═══════════════════════════
    DOCUMENTS PAGE
@@ -1739,7 +1708,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 .doc-image.doc-image-expanded {
   max-width: none;
@@ -1766,7 +1735,7 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -1783,7 +1752,7 @@
   padding: 40px 36px 36px;
   width: 100%;
   max-width: 360px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12);
   text-align: center;
   animation: slideUp 0.2s ease;
 }

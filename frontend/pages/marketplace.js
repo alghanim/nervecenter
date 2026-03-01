@@ -547,7 +547,7 @@ Pages.marketplace = {
         display: inline-flex;
         align-items: center;
         padding: 2px 8px;
-        background: var(--bg-elevated, rgba(255,255,255,0.06));
+        background: var(--bg-elevated, rgba(0,0,0,0.03));
         border-radius: 6px;
         font-size: 11px;
         color: var(--text-tertiary);
@@ -636,7 +636,7 @@ Pages.marketplace = {
         transition: all 0.15s;
       }
       .mp-panel-close:hover {
-        background: var(--bg-elevated, rgba(255,255,255,0.06));
+        background: var(--bg-elevated, rgba(0,0,0,0.03));
         color: var(--text-primary);
         border-color: var(--border-hover);
       }
@@ -665,7 +665,7 @@ Pages.marketplace = {
       .mp-panel-version {
         font-size: 12px;
         color: var(--text-tertiary);
-        background: var(--bg-elevated, rgba(255,255,255,0.06));
+        background: var(--bg-elevated, rgba(0,0,0,0.03));
         padding: 2px 8px;
         border-radius: 999px;
       }
@@ -726,7 +726,7 @@ Pages.marketplace = {
 
       /* ── Config Block ── */
       .mp-config-block {
-        background: var(--bg-base, #0d0d0d);
+        background: var(--bg-base, #f8fafc);
         border: 1px solid var(--border-default);
         border-radius: 8px;
         padding: 14px 16px;
@@ -755,7 +755,7 @@ Pages.marketplace = {
         font-size: 13px;
         color: var(--text-secondary);
         padding: 6px 10px;
-        background: var(--bg-elevated, rgba(255,255,255,0.04));
+        background: var(--bg-elevated, rgba(0,0,0,0.02));
         border-radius: 6px;
         border-left: 3px solid var(--accent);
         padding-left: 12px;

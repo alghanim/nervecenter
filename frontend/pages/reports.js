@@ -27,7 +27,7 @@ Pages.reports = {
             <div style="display:flex;gap:0;border:1px solid var(--border-default);border-radius:8px;overflow:hidden;">
               <button id="toggleWeekly" class="period-toggle-btn period-toggle-btn--active" onclick="Pages.reports._setPeriod('weekly')"
                 style="padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;
-                       background:var(--accent);color:#000;transition:all 150ms;">Weekly</button>
+                       background:var(--accent);color:#0f172a;transition:all 150ms;">Weekly</button>
               <button id="toggleDaily" class="period-toggle-btn" onclick="Pages.reports._setPeriod('daily')"
                 style="padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;
                        background:var(--bg-surface);color:var(--text-secondary);transition:all 150ms;">Daily</button>
@@ -1283,7 +1283,7 @@ Pages.reports = {
       const miniBar = (val, color) => {
         const pct = Math.min(100, Math.round((val / 25) * 100));
         return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-          <div style="flex:1;height:5px;background:var(--bg-inset,#0D0D14);border-radius:99px;overflow:hidden;">
+          <div style="flex:1;height:5px;background:var(--bg-inset,#f1f5f9);border-radius:99px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;transition:width 500ms ease;"></div>
           </div>
           <span style="font-size:10px;color:var(--text-tertiary);width:26px;text-align:right;font-family:monospace;">${val.toFixed(1)}</span>
@@ -1352,7 +1352,7 @@ Pages.reports = {
         overflow:hidden;
       ">
         <thead>
-          <tr style="background:var(--bg-inset,#0D0D14);border-bottom:1px solid var(--border-default);">
+          <tr style="background:var(--bg-inset,#f1f5f9);border-bottom:1px solid var(--border-default);">
             <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Rank</th>
             <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Agent</th>
             <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Score</th>
@@ -1456,7 +1456,7 @@ Pages.reports = {
         overflow:hidden;
       ">
         <thead>
-          <tr style="background:var(--bg-inset,#0D0D14);border-bottom:1px solid var(--border-default);">
+          <tr style="background:var(--bg-inset,#f1f5f9);border-bottom:1px solid var(--border-default);">
             <th style="padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Agent</th>
             <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">Avg Response</th>
             <th style="padding:10px 16px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);font-weight:600;">P50</th>

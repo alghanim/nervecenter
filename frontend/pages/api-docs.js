@@ -116,7 +116,7 @@ Pages.apiDocs = {
         gap: 10px;
         padding: 10px 20px;
         cursor: pointer;
-        border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.04));
+        border-bottom: 1px solid var(--border-subtle, #e2e8f0);
         transition: background 0.1s;
       }
       .api-endpoint-row:hover { background: var(--bg-hover); }
@@ -195,7 +195,7 @@ Pages.apiDocs = {
       }
       .api-params-table td {
         padding: 8px 12px;
-        border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.04));
+        border-bottom: 1px solid var(--border-subtle, #e2e8f0);
         vertical-align: top;
       }
       .api-params-table tr:last-child td { border-bottom: none; }

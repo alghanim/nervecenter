@@ -92,7 +92,7 @@ Pages.graph = (function () {
           <div id="graph-tooltip" style="
             display:none;
             position:absolute;
-            background:var(--bg-primary,#1a1a2e);
+            background:var(--bg-primary,#ffffff);
             border:1px solid var(--border);
             border-radius:8px;
             padding:10px 14px;
@@ -291,7 +291,7 @@ Pages.graph = (function () {
       .attr('dominant-baseline', 'hanging')
       .attr('dy', NODE_R + 4)
       .attr('font-size', '10px')
-      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('fill', '#0f172a')
       .attr('font-family', 'Inter, sans-serif')
       .text(d => d.label || d.name || d.id);
 

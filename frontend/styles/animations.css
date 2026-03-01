@@ -15,8 +15,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
-  50%      { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3); }
+  0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  50%      { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 }
 
 @keyframes status-glow {
@@ -46,8 +46,8 @@
 }
 
 @keyframes border-glow {
-  0%, 100% { border-color: rgba(34, 211, 238, 0.3); }
-  50%      { border-color: rgba(34, 211, 238, 0.6); }
+  0%, 100% { border-color: rgba(6, 182, 212, 0.2); }
+  50%      { border-color: rgba(6, 182, 212, 0.3); }
 }
 
 /* ═══════════════════════════
@@ -137,15 +137,11 @@
 
 .hover-glow:hover {
   border-color: rgba(34, 211, 238, 0.4);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12), 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
 }
 
 /* Light mode: drop shadow instead of glow */
-[data-theme="light"] .hover-glow:hover {
-  border-color: rgba(8, 145, 178, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
-}
 
 /* ═══════════════════════════
    ACTIVITY TERMINAL EFFECT
@@ -168,22 +164,13 @@
     0deg,
     transparent,
     transparent 2px,
-    rgba(255, 255, 255, 0.01) 2px,
-    rgba(255, 255, 255, 0.01) 4px
+    rgba(0, 0, 0, 0.015) 2px,
+    rgba(0, 0, 0, 0.015) 4px
   );
   pointer-events: none;
   z-index: 1;
 }
 
-[data-theme="light"] .terminal-bg::before {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.01) 2px,
-    rgba(0, 0, 0, 0.01) 4px
-  );
-}
 
 /* New activity item pulse */
 .activity-item--new {
@@ -195,15 +182,10 @@
 ═══════════════════════════ */
 
 .agent-card--online {
-  border-color: rgba(34, 211, 238, 0.3);
-  animation: border-glow 3s ease-in-out infinite;
+  border-color: rgba(6, 182, 212, 0.2);
+  
 }
 
-[data-theme="light"] .agent-card--online {
-  border-color: rgba(8, 145, 178, 0.25);
-  animation: none;
-  box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.1);
-}
 
 /* ═══════════════════════════
    PARTICLE CANVAS BACKGROUND
@@ -216,13 +198,10 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.08;
   z-index: 0;
 }
 
-[data-theme="light"] #particleCanvas {
-  opacity: 0.15;
-}
 
 /* ═══════════════════════════
    EMPTY STATES — PREMIUM

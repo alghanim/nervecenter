@@ -59,7 +59,7 @@ window.Search = (function () {
             border:1px solid var(--border-default);
             border-radius:4px;
             color:var(--text-tertiary);
-            background:var(--bg-tertiary,#0d0d1a);
+            background:var(--bg-tertiary,#f1f5f9);
             font-family:inherit;
           ">Esc</kbd>
         </div>
@@ -284,7 +284,7 @@ window.Search = (function () {
     const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return escaped.replace(
       new RegExp(`(${safe})`, 'gi'),
-      '<mark style="background:var(--accent,#B5CC18);color:#000;border-radius:2px;padding:0 1px;">$1</mark>'
+      '<mark style="background:var(--accent,#B5CC18);color:#0f172a;border-radius:2px;padding:0 1px;">$1</mark>'
     );
   }
 

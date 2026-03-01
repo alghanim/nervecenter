@@ -360,7 +360,7 @@ Pages.settings = {
           </div>
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${(wh.events || []).map(ev => `<span style="font-size:10px;background:var(--bg-elevated,#1e1e2e);border:1px solid var(--border-default);border-radius:4px;padding:2px 6px;color:var(--text-secondary)">${Utils.esc(ev)}</span>`).join('')}
+          ${(wh.events || []).map(ev => `<span style="font-size:10px;background:var(--bg-elevated,#f1f5f9);border:1px solid var(--border-default);border-radius:4px;padding:2px 6px;color:var(--text-secondary)">${Utils.esc(ev)}</span>`).join('')}
         </div>
       </div>`).join('');
   },

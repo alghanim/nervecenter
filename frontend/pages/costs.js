@@ -64,7 +64,7 @@ Pages.costs = {
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <!-- Agent filter -->
               <select id="costsAgentFilter" class="costs-select" style="
-                background:var(--bg-inset,#12121e);
+                background:var(--bg-inset,#f1f5f9);
                 color:var(--text-primary,#e5e7eb);
                 border:1px solid var(--border-default,#2a2a3a);
                 border-radius:8px;padding:5px 10px;
@@ -101,7 +101,7 @@ Pages.costs = {
       s.textContent = `
         @keyframes fadeInKPI { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
         .costs-page .range-btn {
-          background: var(--bg-inset, #12121e);
+          background: var(--bg-inset, #f1f5f9);
           color: var(--text-secondary, #9ca3af);
           border: 1px solid var(--border-default, #2a2a3a);
           border-radius: 6px;
@@ -134,16 +134,16 @@ Pages.costs = {
         .costs-table td {
           padding: 11px 14px;
           color: var(--text-primary, #e5e7eb);
-          border-bottom: 1px solid var(--border-default, #1e1e2e);
+          border-bottom: 1px solid var(--border-default, #e2e8f0);
         }
         .costs-table tr:last-child td { border-bottom: none; }
-        .costs-table tr:hover td { background: var(--bg-inset, #12121e); }
+        .costs-table tr:hover td { background: var(--bg-inset, #f1f5f9); }
         .costs-table td.cost { color: #10b981; font-family: monospace; font-weight: 600; }
         .costs-table td.num  { font-family: monospace; color: var(--text-secondary, #9ca3af); }
         .costs-rank {
           display:inline-flex;align-items:center;justify-content:center;
           width:22px;height:22px;border-radius:50%;
-          background:var(--bg-inset,#12121e);
+          background:var(--bg-inset,#f1f5f9);
           font-size:11px;color:var(--text-tertiary,#6b7280);
           margin-right:6px;font-weight:600;
         }
@@ -337,7 +337,7 @@ Pages.costs = {
       .call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(''))
       .call(ax => {
         ax.select('.domain').remove();
-        ax.selectAll('line').attr('stroke', '#1e1e2e').attr('stroke-dasharray', '3,3');
+        ax.selectAll('line').attr('stroke', '#e2e8f0').attr('stroke-dasharray', '3,3');
       });
 
     // Area
@@ -392,7 +392,7 @@ Pages.costs = {
     const tooltip = d3.select(el).append('div')
       .style('position', 'absolute')
       .style('pointer-events', 'none')
-      .style('background', '#1a1a2e')
+      .style('background', '#f1f5f9')
       .style('border', '1px solid #2a2a3a')
       .style('border-radius', '10px')
       .style('padding', '10px 14px')
@@ -535,22 +535,22 @@ Pages.costs = {
           <!-- KPI row -->
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin:16px 0">
 
-            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+            <div style="background:var(--bg-inset,#f1f5f9);border-radius:10px;padding:16px">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Daily Avg</div>
               <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.current_daily_avg)}</div>
             </div>
 
-            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+            <div style="background:var(--bg-inset,#f1f5f9);border-radius:10px;padding:16px">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Projected Weekly</div>
               <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.projected_weekly)}</div>
             </div>
 
-            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+            <div style="background:var(--bg-inset,#f1f5f9);border-radius:10px;padding:16px">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Projected Monthly</div>
               <div style="font-size:1.6rem;font-weight:700;color:#10b981">${fmtUSD(f.projected_monthly)}</div>
             </div>
 
-            <div style="background:var(--bg-inset,#12121e);border-radius:10px;padding:16px">
+            <div style="background:var(--bg-inset,#f1f5f9);border-radius:10px;padding:16px">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:6px">Trend (vs prior week)</div>
               <div style="font-size:1.4rem;font-weight:700;color:${trendColor};background:${trendBg};display:inline-block;padding:4px 10px;border-radius:8px">${trendLabel}</div>
               <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;text-transform:capitalize">${Utils.esc(f.trend)}</div>
