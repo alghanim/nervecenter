@@ -201,6 +201,88 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type ON audit_logs(entity_type);
 
+
+-- API Keys table
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    role VARCHAR(20) NOT NULL DEFAULT 'member',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    last_used TIMESTAMP,
+    expires_at TIMESTAMP,
+    CONSTRAINT valid_api_key_role CHECK (role IN ('admin', 'member', 'viewer'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+
+-- Agent Costs table (DB-based cost tracking)
+CREATE TABLE IF NOT EXISTS agent_costs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id VARCHAR(100) NOT NULL,
+    task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
+    tokens_in BIGINT DEFAULT 0,
+    tokens_out BIGINT DEFAULT 0,
+    cost_usd DECIMAL(12, 6) DEFAULT 0.0,
+    model VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_costs_agent ON agent_costs(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_costs_created ON agent_costs(created_at);
+CREATE INDEX IF NOT EXISTS idx_agent_costs_task ON agent_costs(task_id);
+
+-- Task Templates table
+CREATE TABLE IF NOT EXISTS task_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    default_assignee VARCHAR(100),
+    default_priority VARCHAR(20) DEFAULT 'medium',
+    checklist JSONB DEFAULT '[]',
+    workflow_rules JSONB DEFAULT '[]',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS update_task_templates_updated_at ON task_templates;
+
+-- Notifications table (in-app)
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id VARCHAR(100),
+    type VARCHAR(100) NOT NULL DEFAULT 'info',
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+
+-- Agent Traces table
+CREATE TABLE IF NOT EXISTS agent_traces (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+    agent_id VARCHAR(100),
+    trace_type VARCHAR(50) NOT NULL,
+    content JSONB DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    duration_ms INT DEFAULT 0,
+    CONSTRAINT valid_trace_type CHECK (trace_type IN ('tool_call', 'llm_invoke', 'sub_agent_spawn', 'file_change', 'error'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_traces_task ON agent_traces(task_id);
+CREATE INDEX IF NOT EXISTS idx_agent_traces_agent ON agent_traces(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_traces_created ON agent_traces(created_at);
+
+-- Expand alert_rules condition_type to include new conditions
+DO $$ BEGIN
+  ALTER TABLE alert_rules DROP CONSTRAINT IF EXISTS valid_condition_type;
+  ALTER TABLE alert_rules ADD CONSTRAINT valid_condition_type
+    CHECK (condition_type IN ('no_heartbeat', 'error_rate', 'task_stuck', 'cost_threshold_exceeded', 'sla_breach', 'agent_idle'));
+END $$;
 -- Trigger to auto-update updated_at on tasks
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -217,3 +299,68 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
 DROP TRIGGER IF EXISTS update_alert_rules_updated_at ON alert_rules;
 CREATE TRIGGER update_alert_rules_updated_at BEFORE UPDATE ON alert_rules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Git Integrations table (Phase 2)
+CREATE TABLE IF NOT EXISTS git_integrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    provider VARCHAR(50) NOT NULL DEFAULT 'github',
+    repo_url TEXT NOT NULL,
+    token_hash VARCHAR(255) DEFAULT '',
+    webhook_secret VARCHAR(255) DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- PR Links table (Phase 2)
+CREATE TABLE IF NOT EXISTS pr_links (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    integration_id UUID REFERENCES git_integrations(id) ON DELETE SET NULL,
+    pr_number INT NOT NULL,
+    pr_title TEXT DEFAULT '',
+    pr_url TEXT DEFAULT '',
+    pr_state VARCHAR(50) DEFAULT 'open',
+    branch_name VARCHAR(500) DEFAULT '',
+    author_login VARCHAR(255) DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(task_id, pr_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pr_links_task ON pr_links(task_id);
+
+-- Task dependencies (Phase 2)
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS depends_on UUID[] DEFAULT '{}';
+
+-- Evaluations table (Phase 2)
+CREATE TABLE IF NOT EXISTS evaluations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+    agent_id VARCHAR(100),
+    score DECIMAL(5,2) NOT NULL,
+    criteria JSONB DEFAULT '{}',
+    evaluator VARCHAR(255) NOT NULL DEFAULT 'manual',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_evaluations_task ON evaluations(task_id);
+CREATE INDEX IF NOT EXISTS idx_evaluations_agent ON evaluations(agent_id);
+
+-- Incidents table (Phase 2)
+CREATE TABLE IF NOT EXISTS incidents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(500) NOT NULL,
+    severity VARCHAR(50) NOT NULL DEFAULT 'medium',
+    status VARCHAR(50) NOT NULL DEFAULT 'open',
+    task_ids JSONB DEFAULT '[]',
+    agent_ids JSONB DEFAULT '[]',
+    root_cause TEXT DEFAULT '',
+    timeline JSONB DEFAULT '[]',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMP,
+    CONSTRAINT valid_incident_severity CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    CONSTRAINT valid_incident_status CHECK (status IN ('open', 'investigating', 'mitigating', 'resolved', 'closed'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
+CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);

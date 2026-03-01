@@ -76,6 +76,8 @@ func main() {
 	commitsHandler := &handlers.CommitsHandler{}
 	annotationHandler := &handlers.AnnotationHandler{}
 	environmentHandler := &handlers.EnvironmentHandler{}
+	costsHandler := &handlers.CostsHandler{}
+	scorecardHandler := &handlers.ScorecardHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
@@ -101,6 +103,7 @@ func main() {
 	api.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
 	api.HandleFunc("/tasks/mine", taskHandler.GetMyTasks).Methods("GET")
 	api.HandleFunc("/tasks/stuck", taskHandler.GetStuckTasks).Methods("GET")
+	api.HandleFunc("/tasks/graph", handlers.GetTaskDAG).Methods("GET")
 	api.HandleFunc("/tasks/{id}", taskHandler.GetTask).Methods("GET")
 	api.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
 	api.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
@@ -115,6 +118,7 @@ func main() {
 
 	// Agent DB routes
 	api.HandleFunc("/agents", agentHandler.GetAgents).Methods("GET")
+	api.HandleFunc("/agents/compare", handlers.CompareAgents).Methods("GET")
 	api.HandleFunc("/agents/{id}", agentHandler.GetAgent).Methods("GET")
 	api.HandleFunc("/agents/{id}/activity", agentHandler.GetAgentActivity).Methods("GET")
 	api.HandleFunc("/agents/{id}/metrics", agentHandler.GetAgentMetrics).Methods("GET")
@@ -198,6 +202,19 @@ func main() {
 	api.HandleFunc("/analytics/cost/summary", analyticsHandler.GetCostSummary).Methods("GET")
 	api.HandleFunc("/analytics/performance", performanceHandler.GetPerformance).Methods("GET")
 
+	// Cost tracking
+	api.HandleFunc("/costs", costsHandler.IngestCost).Methods("POST")
+	api.HandleFunc("/costs/summary", costsHandler.GetCostSummary).Methods("GET")
+	api.HandleFunc("/costs/breakdown", costsHandler.GetCostBreakdown).Methods("GET")
+
+	// Agent scorecards
+	api.HandleFunc("/agents/{id}/scorecard", scorecardHandler.GetScorecard).Methods("GET")
+	api.HandleFunc("/agents/{id}/performance/timeline", scorecardHandler.GetPerformanceTimeline).Methods("GET")
+
+	// Analytics trends & ranking
+	api.HandleFunc("/analytics/trends", analyticsHandler.GetTrends).Methods("GET")
+	api.HandleFunc("/analytics/agents/ranking", analyticsHandler.GetAgentRanking).Methods("GET")
+
 	// Reports
 	api.HandleFunc("/report", reportHandler.GetReport).Methods("GET")
 	api.HandleFunc("/report/html", reportHandler.GetReportHTML).Methods("GET")
@@ -249,6 +266,33 @@ func main() {
 
 	// Dependency Graph
 	api.HandleFunc("/graph/dependencies", handlers.GetDependencyGraph).Methods("GET")
+
+	// Phase 2: Git Integrations
+	api.HandleFunc("/integrations/git", handlers.GetGitIntegrations).Methods("GET")
+	api.HandleFunc("/integrations/git", handlers.CreateGitIntegration).Methods("POST")
+	api.HandleFunc("/integrations/git/{id}", handlers.DeleteGitIntegration).Methods("DELETE")
+	api.HandleFunc("/tasks/{id}/prs", handlers.GetTaskPRs).Methods("GET")
+	api.HandleFunc("/webhooks/github", handlers.GitHubWebhookHandler).Methods("POST")
+
+	// Phase 2: Task Dependencies (DAGs)
+	api.HandleFunc("/tasks/{id}/dependencies", handlers.GetTaskDependencies).Methods("GET")
+	api.HandleFunc("/tasks/{id}/dependencies", handlers.UpdateTaskDependencies).Methods("PUT")
+
+	// Phase 2: Incidents
+	api.HandleFunc("/incidents", handlers.GetIncidents).Methods("GET")
+	api.HandleFunc("/incidents", handlers.CreateIncident).Methods("POST")
+	api.HandleFunc("/incidents/{id}", handlers.GetIncident).Methods("GET")
+	api.HandleFunc("/incidents/{id}", handlers.UpdateIncident).Methods("PUT")
+
+	// Phase 2: Agent Comparison
+
+	// Phase 2: Evaluations
+	api.HandleFunc("/evaluations", handlers.CreateEvaluation).Methods("POST")
+	api.HandleFunc("/tasks/{id}/evaluations", handlers.GetTaskEvaluations).Methods("GET")
+	api.HandleFunc("/agents/{id}/quality", handlers.GetAgentQuality).Methods("GET")
+
+	// Phase 2: Playground
+	api.HandleFunc("/agents/{id}/message", handlers.SendAgentMessage).Methods("POST")
 
 	// Marketplace
 	marketplaceHandler := &handlers.MarketplaceHandler{}

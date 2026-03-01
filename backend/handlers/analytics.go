@@ -220,3 +220,217 @@ func (h *AnalyticsHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
 	}
 	writer.Flush()
 }
+
+// GetTrends handles GET /api/analytics/trends?metric=throughput|cost|quality|velocity&range=30d
+func (h *AnalyticsHandler) GetTrends(w http.ResponseWriter, r *http.Request) {
+	metric := r.URL.Query().Get("metric")
+	if metric == "" {
+		respondError(w, 400, "metric parameter required (throughput|cost|quality|velocity)")
+		return
+	}
+	interval := costRangeToInterval(r.URL.Query().Get("range"))
+
+	type DataPoint struct {
+		Date  string  `json:"date"`
+		Value float64 `json:"value"`
+	}
+
+	var points []DataPoint
+	var err error
+
+	switch metric {
+	case "throughput":
+		rows, e := db.DB.Query(`
+			SELECT d::date, COALESCE(t.cnt, 0)
+			FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+			LEFT JOIN (
+				SELECT completed_at::date AS day, COUNT(*)::float AS cnt
+				FROM tasks WHERE status = 'done' AND completed_at > NOW() - $1::interval
+				GROUP BY day
+			) t ON t.day = d::date ORDER BY d::date`, interval)
+		if e != nil {
+			err = e
+			break
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var dp DataPoint
+			var dt time.Time
+			rows.Scan(&dt, &dp.Value)
+			dp.Date = dt.Format("2006-01-02")
+			points = append(points, dp)
+		}
+
+	case "cost":
+		rows, e := db.DB.Query(`
+			SELECT d::date, COALESCE(c.total, 0)
+			FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+			LEFT JOIN (
+				SELECT created_at::date AS day, SUM(cost_usd) AS total
+				FROM agent_costs WHERE created_at > NOW() - $1::interval
+				GROUP BY day
+			) c ON c.day = d::date ORDER BY d::date`, interval)
+		if e != nil {
+			err = e
+			break
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var dp DataPoint
+			var dt time.Time
+			rows.Scan(&dt, &dp.Value)
+			dp.Date = dt.Format("2006-01-02")
+			points = append(points, dp)
+		}
+
+	case "quality":
+		rows, e := db.DB.Query(`
+			SELECT d::date, COALESCE(q.avg_score, 0)
+			FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+			LEFT JOIN (
+				SELECT created_at::date AS day, AVG(score) AS avg_score
+				FROM evaluations WHERE created_at > NOW() - $1::interval
+				GROUP BY day
+			) q ON q.day = d::date ORDER BY d::date`, interval)
+		if e != nil {
+			err = e
+			break
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var dp DataPoint
+			var dt time.Time
+			rows.Scan(&dt, &dp.Value)
+			dp.Date = dt.Format("2006-01-02")
+			points = append(points, dp)
+		}
+
+	case "velocity":
+		rows, e := db.DB.Query(`
+			SELECT d::date, COALESCE(v.velocity, 0)
+			FROM generate_series(NOW() - $1::interval, NOW(), '1 day') d
+			LEFT JOIN (
+				SELECT completed_at::date AS day,
+					COUNT(*)::float / GREATEST(COUNT(DISTINCT assignee), 1) AS velocity
+				FROM tasks WHERE status = 'done' AND completed_at > NOW() - $1::interval
+				GROUP BY day
+			) v ON v.day = d::date ORDER BY d::date`, interval)
+		if e != nil {
+			err = e
+			break
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var dp DataPoint
+			var dt time.Time
+			rows.Scan(&dt, &dp.Value)
+			dp.Date = dt.Format("2006-01-02")
+			points = append(points, dp)
+		}
+
+	default:
+		respondError(w, 400, "unsupported metric: "+metric)
+		return
+	}
+
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	if points == nil {
+		points = []DataPoint{}
+	}
+
+	respondJSON(w, 200, map[string]interface{}{
+		"metric": metric,
+		"range":  r.URL.Query().Get("range"),
+		"data":   points,
+	})
+}
+
+// GetAgentRanking handles GET /api/analytics/agents/ranking?sort_by=completed|speed|cost|quality&range=30d
+func (h *AnalyticsHandler) GetAgentRanking(w http.ResponseWriter, r *http.Request) {
+	sortBy := r.URL.Query().Get("sort_by")
+	if sortBy == "" {
+		sortBy = "completed"
+	}
+	interval := costRangeToInterval(r.URL.Query().Get("range"))
+
+	orderClause := "completed DESC"
+	switch sortBy {
+	case "speed":
+		orderClause = "avg_speed_hours ASC"
+	case "cost":
+		orderClause = "total_cost DESC"
+	case "quality":
+		orderClause = "avg_quality DESC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			a.id,
+			COALESCE(a.display_name, a.id),
+			COALESCE(done.cnt, 0) AS completed,
+			COALESCE(fail.cnt, 0) AS failed,
+			COALESCE(done.avg_hours, 0) AS avg_speed_hours,
+			COALESCE(cost.total, 0) AS total_cost,
+			COALESCE(qual.avg_score, 0) AS avg_quality
+		FROM agents a
+		LEFT JOIN (
+			SELECT assignee, COUNT(*) AS cnt,
+				AVG(EXTRACT(EPOCH FROM (completed_at - created_at))/3600) AS avg_hours
+			FROM tasks WHERE status = 'done' AND completed_at > NOW() - $1::interval
+			GROUP BY assignee
+		) done ON done.assignee = a.id
+		LEFT JOIN (
+			SELECT agent_id, COUNT(*) AS cnt
+			FROM activity_log WHERE action ILIKE '%%fail%%' AND created_at > NOW() - $1::interval
+			GROUP BY agent_id
+		) fail ON fail.agent_id = a.id
+		LEFT JOIN (
+			SELECT agent_id, SUM(cost_usd) AS total
+			FROM agent_costs WHERE created_at > NOW() - $1::interval
+			GROUP BY agent_id
+		) cost ON cost.agent_id = a.id
+		LEFT JOIN (
+			SELECT agent_id, AVG(score) AS avg_score
+			FROM evaluations WHERE created_at > NOW() - $1::interval
+			GROUP BY agent_id
+		) qual ON qual.agent_id = a.id
+		ORDER BY %s`, orderClause)
+
+	rows, err := db.DB.Query(query, interval)
+	if err != nil {
+		respondError(w, 500, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	type RankedAgent struct {
+		AgentID        string  `json:"agent_id"`
+		DisplayName    string  `json:"display_name"`
+		TasksCompleted int     `json:"tasks_completed"`
+		TasksFailed    int     `json:"tasks_failed"`
+		CompletionRate float64 `json:"completion_rate"`
+		AvgSpeedHours  float64 `json:"avg_speed_hours"`
+		TotalCost      float64 `json:"total_cost"`
+		AvgQuality     float64 `json:"avg_quality"`
+		Rank           int     `json:"rank"`
+	}
+
+	var results []RankedAgent
+	rank := 1
+	for rows.Next() {
+		var ra RankedAgent
+		rows.Scan(&ra.AgentID, &ra.DisplayName, &ra.TasksCompleted, &ra.TasksFailed,
+			&ra.AvgSpeedHours, &ra.TotalCost, &ra.AvgQuality)
+		ra.CompletionRate = calculateSuccessRate(ra.TasksCompleted, ra.TasksFailed)
+		ra.Rank = rank
+		rank++
+		results = append(results, ra)
+	}
+	if results == nil {
+		results = []RankedAgent{}
+	}
+	respondJSON(w, 200, results)
+}
