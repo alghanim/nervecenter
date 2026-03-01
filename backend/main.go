@@ -73,6 +73,8 @@ func main() {
 	controlHandler := &handlers.AgentControlHandler{}
 	authHandler := &handlers.AuthHandler{}
 	keyHandler := &handlers.APIKeyHandler{}
+	templateHandler := &handlers.TemplateHandler{}
+	notificationHandler := &handlers.NotificationHandler{}
 	dashboardsHandler := &handlers.DashboardsHandler{}
 	commitsHandler := &handlers.CommitsHandler{}
 	annotationHandler := &handlers.AnnotationHandler{}
@@ -216,6 +218,10 @@ func main() {
 	api.HandleFunc("/agents/{id}/scorecard", scorecardHandler.GetScorecard).Methods("GET")
 	api.HandleFunc("/agents/{id}/performance/timeline", scorecardHandler.GetPerformanceTimeline).Methods("GET")
 
+		api.HandleFunc("/analytics/cycle-time", analyticsHandler.GetCycleTime).Methods("GET")
+	api.HandleFunc("/analytics/active-agents", analyticsHandler.GetActiveAgents).Methods("GET")
+	api.HandleFunc("/analytics/dashboard-summary", analyticsHandler.GetDashboardSummary).Methods("GET")
+
 	// Analytics trends & ranking
 	api.HandleFunc("/analytics/trends", analyticsHandler.GetTrends).Methods("GET")
 	api.HandleFunc("/analytics/agents/ranking", analyticsHandler.GetAgentRanking).Methods("GET")
@@ -243,6 +249,22 @@ func main() {
 	api.HandleFunc("/keys", keyHandler.ListKeys).Methods("GET")
 	api.HandleFunc("/keys", keyHandler.CreateKey).Methods("POST")
 	api.HandleFunc("/keys/{id}", keyHandler.DeleteKey).Methods("DELETE")
+
+	// Templates
+	api.HandleFunc("/templates", templateHandler.ListTemplates).Methods("GET")
+	api.HandleFunc("/templates", templateHandler.CreateTemplate).Methods("POST")
+	api.HandleFunc("/templates/{id}", templateHandler.GetTemplate).Methods("GET")
+	api.HandleFunc("/templates/{id}", templateHandler.UpdateTemplate).Methods("PUT")
+	api.HandleFunc("/templates/{id}", templateHandler.DeleteTemplate).Methods("DELETE")
+	api.HandleFunc("/templates/{id}/instantiate", templateHandler.InstantiateTemplate).Methods("POST")
+
+	// Notifications
+	api.HandleFunc("/notifications", notificationHandler.ListNotifications).Methods("GET")
+	api.HandleFunc("/notifications", notificationHandler.CreateNotification).Methods("POST")
+	api.HandleFunc("/notifications/read-all", notificationHandler.MarkAllRead).Methods("POST")
+	api.HandleFunc("/notifications/unread-count", notificationHandler.UnreadCount).Methods("GET")
+	api.HandleFunc("/notifications/{id}/read", notificationHandler.MarkRead).Methods("PUT")
+	api.HandleFunc("/notifications/{id}", notificationHandler.DeleteNotification).Methods("DELETE")
 
 	// API Docs
 	api.HandleFunc("/docs", handlers.GetAPIDocs).Methods("GET")
