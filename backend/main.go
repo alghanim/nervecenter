@@ -75,6 +75,7 @@ func main() {
 	keyHandler := &handlers.APIKeyHandler{}
 	templateHandler := &handlers.TemplateHandler{}
 	notificationHandler := &handlers.NotificationHandler{}
+	traceHandler := &handlers.TraceHandler{}
 	dashboardsHandler := &handlers.DashboardsHandler{}
 	commitsHandler := &handlers.CommitsHandler{}
 	annotationHandler := &handlers.AnnotationHandler{}
@@ -265,6 +266,13 @@ func main() {
 	api.HandleFunc("/notifications/unread-count", notificationHandler.UnreadCount).Methods("GET")
 	api.HandleFunc("/notifications/{id}/read", notificationHandler.MarkRead).Methods("PUT")
 	api.HandleFunc("/notifications/{id}", notificationHandler.DeleteNotification).Methods("DELETE")
+
+	// Agent Traces
+	api.HandleFunc("/traces", traceHandler.IngestTrace).Methods("POST")
+	api.HandleFunc("/traces/batch", traceHandler.BatchIngestTraces).Methods("POST")
+	api.HandleFunc("/traces/{id}", traceHandler.DeleteTrace).Methods("DELETE")
+	api.HandleFunc("/tasks/{id}/traces", traceHandler.GetTaskTraces).Methods("GET")
+	api.HandleFunc("/agents/{id}/traces", traceHandler.GetAgentTraces).Methods("GET")
 
 	// API Docs
 	api.HandleFunc("/docs", handlers.GetAPIDocs).Methods("GET")
