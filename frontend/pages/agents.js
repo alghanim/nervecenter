@@ -176,6 +176,7 @@ Pages.agents = {
         <button class="tab" data-tab="notes" onclick=\"Pages.agents._switchTab('notes', '${agentId}')\">📝 Notes</button>
         <button class="tab" data-tab="health" onclick=\"Pages.agents._switchTab('health', '${agentId}')\">🏥 Health</button>
         <button class="tab" data-tab="snapshots" onclick=\"Pages.agents._switchTab('snapshots', '${agentId}')\">📸 Snapshots</button>
+        <button class="tab" data-tab="scorecard" onclick=\"Pages.agents._switchTab('scorecard', '${agentId}')\">📊 Scorecard</button>
       </div>
 
       <div id="agentTabContent"></div>`;
@@ -228,6 +229,10 @@ Pages.agents = {
 
     if (tab === 'snapshots') {
       await this._loadSnapshotsTab(el, agentId);
+      return;
+    }
+    if (tab === 'scorecard') {
+      await this._loadScorecard(el, agentId);
       return;
     }
 

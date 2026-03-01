@@ -67,6 +67,9 @@ Pages.alerts = {
                   <option value="no_heartbeat">No Heartbeat</option>
                   <option value="task_stuck">Task Stuck</option>
                   <option value="error_rate">High Error Rate</option>
+                  <option value="cost_threshold_exceeded">Cost Threshold Exceeded</option>
+                  <option value="sla_breach">SLA Breach</option>
+                  <option value="agent_idle">Agent Idle</option>
                 </select>
               </div>
 
@@ -314,11 +317,17 @@ Pages.alerts = {
       no_heartbeat: 'No Heartbeat',
       task_stuck: 'Task Stuck',
       error_rate: 'High Error Rate',
+      cost_threshold_exceeded: 'Cost Threshold',
+      sla_breach: 'SLA Breach',
+      agent_idle: 'Agent Idle',
     };
     const condUnits = {
       no_heartbeat: 'min',
       task_stuck: 'min',
       error_rate: 'errors/hr',
+      cost_threshold_exceeded: 'USD',
+      sla_breach: 'min',
+      agent_idle: 'min',
     };
     const statusColor = r.enabled ? 'var(--green,#22c55e)' : 'var(--text-tertiary)';
     const statusText = r.enabled ? '● Active' : '○ Disabled';
@@ -462,6 +471,21 @@ Pages.alerts = {
       case 'error_rate':
         label.textContent = 'Threshold (error count per hour)';
         input.value = input.value || '5';
+        input.min = '1';
+        break;
+      case 'cost_threshold_exceeded':
+        label.textContent = 'Threshold (USD amount)';
+        input.value = input.value || '100';
+        input.min = '1';
+        break;
+      case 'sla_breach':
+        label.textContent = 'Threshold (minutes past SLA)';
+        input.value = input.value || '30';
+        input.min = '1';
+        break;
+      case 'agent_idle':
+        label.textContent = 'Threshold (minutes idle)';
+        input.value = input.value || '60';
         input.min = '1';
         break;
     }
