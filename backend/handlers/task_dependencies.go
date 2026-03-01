@@ -9,6 +9,11 @@ import (
 	"github.com/lib/pq"
 )
 
+type taskRow struct {
+	id, title, status, assignee, priority string
+	deps                                  []string
+}
+
 // GetTaskDependencies returns the depends_on array for a task
 func GetTaskDependencies(w http.ResponseWriter, r *http.Request) {
 	taskID := mux.Vars(r)["id"]
@@ -69,10 +74,6 @@ func GetTaskDAG(w http.ResponseWriter, r *http.Request) {
 	doneSet := map[string]bool{}
 
 	// First pass: collect all tasks
-	type taskRow struct {
-		id, title, status, assignee, priority string
-		deps                                  []string
-	}
 	var tasks []taskRow
 	for rows.Next() {
 		var t taskRow
@@ -118,8 +119,95 @@ func GetTaskDAG(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = doneSet
+
+	// Compute critical path using topological sort + longest path
+	criticalPath := computeCriticalPath(tasks, statusMap)
+	criticalSet := map[string]bool{}
+	for _, id := range criticalPath {
+		criticalSet[id] = true
+	}
+
+	// Add on_critical_path to nodes
+	type NodeWithCP struct {
+		TaskDAGNode
+		OnCriticalPath bool `json:"on_critical_path"`
+	}
+	cpNodes := make([]NodeWithCP, len(nodes))
+	for i, n := range nodes {
+		cpNodes[i] = NodeWithCP{TaskDAGNode: n, OnCriticalPath: criticalSet[n.ID]}
+	}
+
 	respondJSON(w, 200, map[string]interface{}{
-		"nodes": nodes,
-		"edges": edges,
+		"nodes":         cpNodes,
+		"edges":         edges,
+		"critical_path": criticalPath,
 	})
+}
+
+// computeCriticalPath finds the longest path in the task DAG using topological sort.
+func computeCriticalPath(tasks []taskRow, statusMap map[string]string) []string {
+	// Build adjacency list and in-degree
+	adj := map[string][]string{}   // dep -> tasks that depend on it
+	inDeg := map[string]int{}
+	allIDs := map[string]bool{}
+
+	for _, t := range tasks {
+		allIDs[t.id] = true
+		if _, ok := inDeg[t.id]; !ok {
+			inDeg[t.id] = 0
+		}
+		for _, dep := range t.deps {
+			if statusMap[dep] != "" { // only count deps in our set
+				adj[dep] = append(adj[dep], t.id)
+				inDeg[t.id]++
+			}
+		}
+	}
+
+	// Topological sort (Kahn's)
+	queue := []string{}
+	for id := range allIDs {
+		if inDeg[id] == 0 {
+			queue = append(queue, id)
+		}
+	}
+
+	dist := map[string]int{}    // longest distance to node
+	parent := map[string]string{} // for path reconstruction
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		for _, next := range adj[curr] {
+			if dist[curr]+1 > dist[next] {
+				dist[next] = dist[curr] + 1
+				parent[next] = curr
+			}
+			inDeg[next]--
+			if inDeg[next] == 0 {
+				queue = append(queue, next)
+			}
+		}
+	}
+
+	// Find the node with max distance
+	maxDist := -1
+	endNode := ""
+	for id, d := range dist {
+		if d > maxDist {
+			maxDist = d
+			endNode = id
+		}
+	}
+
+	if endNode == "" {
+		return []string{}
+	}
+
+	// Reconstruct path
+	path := []string{}
+	for curr := endNode; curr != ""; curr = parent[curr] {
+		path = append([]string{curr}, path...)
+	}
+	return path
 }
