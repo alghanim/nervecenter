@@ -1151,6 +1151,131 @@ Pages.agents = {
     }
   },
 
+
+  async _loadScorecard(el, agentId) {
+    el.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading scorecard…</span></div>';
+
+    let scorecard = null;
+    let timeline = [];
+
+    try {
+      const [scRes, tlRes] = await Promise.allSettled([
+        fetch(`/api/agents/${encodeURIComponent(agentId)}/scorecard`).then(r => r.ok ? r.json() : null),
+        fetch(`/api/agents/${encodeURIComponent(agentId)}/performance/timeline`).then(r => r.ok ? r.json() : [])
+      ]);
+      scorecard = scRes.status === 'fulfilled' ? scRes.value : null;
+      timeline = (tlRes.status === 'fulfilled' && Array.isArray(tlRes.value)) ? tlRes.value : [];
+    } catch (e) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-title">Failed to load scorecard</div><div class="empty-state-desc">' + (e.message || '') + '</div></div>';
+      return;
+    }
+
+    if (!scorecard) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-title">No scorecard data</div><div class="empty-state-desc">No performance data available for this agent yet.</div></div>';
+      return;
+    }
+
+    const fmt = (v, suffix) => v != null && v !== '' ? (typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(2)) + (suffix || '') : v) : '—';
+    const pct = v => v != null ? (v * (v <= 1 ? 100 : 1)).toFixed(1) + '%' : '—';
+
+    const kpis = [
+      { label: 'Completion Rate', value: pct(scorecard.completion_rate), color: '#22c55e' },
+      { label: 'Avg Time to Done', value: fmt(scorecard.avg_time_to_done_hours, 'h'), color: '#6366f1' },
+      { label: 'Failure Rate', value: pct(scorecard.failure_rate), color: '#ef4444' },
+      { label: 'Total Cost', value: scorecard.total_cost_usd != null ? '$' + scorecard.total_cost_usd.toFixed(2) : '—', color: '#f59e0b' },
+      { label: 'Cost / Task', value: scorecard.cost_per_task != null ? '$' + scorecard.cost_per_task.toFixed(2) : '—', color: '#f59e0b' },
+      { label: 'Quality Score', value: fmt(scorecard.avg_quality_score), color: '#8b5cf6' }
+    ];
+
+    const kpiHtml = kpis.map(k => `
+      <div style="flex:1;min-width:140px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">${k.label}</div>
+        <div style="font-size:24px;font-weight:700;color:${k.color}">${k.value}</div>
+      </div>`).join('');
+
+    const taskSummary = `
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+        <span style="font-size:13px;color:var(--text-secondary)">📋 Total: <strong style="color:var(--text-primary)">${scorecard.tasks_total || 0}</strong></span>
+        <span style="font-size:13px;color:var(--text-secondary)">✅ Done: <strong style="color:#22c55e">${scorecard.tasks_completed || 0}</strong></span>
+        <span style="font-size:13px;color:var(--text-secondary)">🔄 In Progress: <strong style="color:#6366f1">${scorecard.tasks_in_progress || 0}</strong></span>
+        <span style="font-size:13px;color:var(--text-secondary)">❌ Failed: <strong style="color:#ef4444">${scorecard.tasks_failed || 0}</strong></span>
+        <span style="font-size:13px;color:var(--text-secondary)">🔍 Evaluations: <strong style="color:var(--text-primary)">${scorecard.evaluation_count || 0}</strong></span>
+      </div>`;
+
+    // Build timeline SVG
+    let timelineSvg = '';
+    if (timeline.length > 0) {
+      const W = 600, H = 200, pad = 40;
+      const maxVal = Math.max(1, ...timeline.map(d => Math.max(d.tasks_completed || 0, d.tasks_failed || 0)));
+      const barW = Math.max(4, Math.min(24, (W - pad * 2) / timeline.length - 4));
+      const scaleY = v => H - pad - ((v / maxVal) * (H - pad * 2));
+      const xStep = (W - pad * 2) / Math.max(1, timeline.length);
+
+      let bars = '';
+      timeline.forEach((d, i) => {
+        const x = pad + i * xStep;
+        const hC = ((d.tasks_completed || 0) / maxVal) * (H - pad * 2);
+        const hF = ((d.tasks_failed || 0) / maxVal) * (H - pad * 2);
+        bars += `<rect x="${x}" y="${H - pad - hC}" width="${barW}" height="${hC}" fill="#22c55e" rx="2" opacity="0.85"><title>${d.date}: ${d.tasks_completed || 0} completed</title></rect>`;
+        bars += `<rect x="${x + barW + 1}" y="${H - pad - hF}" width="${barW}" height="${hF}" fill="#ef4444" rx="2" opacity="0.85"><title>${d.date}: ${d.tasks_failed || 0} failed</title></rect>`;
+      });
+
+      // X-axis labels (show ~5)
+      let labels = '';
+      const step = Math.max(1, Math.floor(timeline.length / 5));
+      for (let i = 0; i < timeline.length; i += step) {
+        const x = pad + i * xStep + barW;
+        const label = (timeline[i].date || '').slice(5); // MM-DD
+        labels += `<text x="${x}" y="${H - 8}" text-anchor="middle" fill="var(--text-secondary)" font-size="10">${label}</text>`;
+      }
+
+      timelineSvg = `
+        <div style="margin-top:24px">
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:12px">Performance Timeline</div>
+          <div style="overflow-x:auto">
+            <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border)">
+              <line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--border)" stroke-width="1"/>
+              ${bars}
+              ${labels}
+              <circle cx="${W - 100}" cy="14" r="5" fill="#22c55e"/><text x="${W - 92}" y="18" fill="var(--text-secondary)" font-size="10">Completed</text>
+              <circle cx="${W - 40}" cy="14" r="5" fill="#ef4444"/><text x="${W - 32}" y="18" fill="var(--text-secondary)" font-size="10">Failed</text>
+            </svg>
+          </div>
+        </div>`;
+    }
+
+    // Quality trend sparkline
+    let qualityTrendHtml = '';
+    const qt = scorecard.quality_trend;
+    if (qt && qt.length > 1) {
+      const qW = 200, qH = 40;
+      const qMax = Math.max(1, ...qt.map(v => typeof v === 'number' ? v : v.score || 0));
+      const qMin = Math.min(...qt.map(v => typeof v === 'number' ? v : v.score || 0));
+      const range = Math.max(0.1, qMax - qMin);
+      const points = qt.map((v, i) => {
+        const val = typeof v === 'number' ? v : v.score || 0;
+        const x = (i / (qt.length - 1)) * qW;
+        const y = qH - ((val - qMin) / range) * (qH - 4) - 2;
+        return `${x},${y}`;
+      }).join(' ');
+
+      qualityTrendHtml = `
+        <div style="margin-top:24px">
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Quality Trend</div>
+          <svg width="${qW}" height="${qH}" viewBox="0 0 ${qW} ${qH}" style="background:var(--bg-secondary);border-radius:6px;border:1px solid var(--border);padding:4px">
+            <polyline points="${points}" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
+    }
+
+    el.innerHTML = `
+      <div style="padding:4px 0">
+        <div style="display:flex;flex-wrap:wrap;gap:12px">${kpiHtml}</div>
+        ${taskSummary}
+        ${timelineSvg}
+        ${qualityTrendHtml}
+      </div>`;
+  },
   destroy() {
     this._wsHandlers.forEach(([ev, fn]) => WS.off(ev, fn));
     this._wsHandlers = [];
