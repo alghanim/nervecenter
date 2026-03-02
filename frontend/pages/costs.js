@@ -489,7 +489,7 @@ Pages.costs = {
         }
         return `
           <tr>
-            <td style="color:var(--text-primary)">${Utils.esc(af.agent_id)}</td>
+            <td style="color:var(--text-primary)">${Utils.esc(af.display_name || af.agent_id)}</td>
             <td class="cost">${fmtUSD(af.current_daily_avg)}</td>
             <td class="cost">${fmtUSD(af.projected_monthly)}</td>
             <td>

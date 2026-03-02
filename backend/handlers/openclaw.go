@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/alghanim/agentboard/backend/config"
+	"github.com/alghanim/agentboard/backend/db"
 
 	"github.com/gorilla/mux"
 )
@@ -59,6 +60,12 @@ func StartAgentStatusPoller(hub interface{ Broadcast(string, interface{}) }) {
 			if prev, ok := prevStatuses[ca.Name]; !ok || prev != s.Status {
 				changed = true
 				prevStatuses[ca.Name] = s.Status
+			}
+		}
+		// Always sync status to DB
+		for _, a := range agents {
+			if a.Status != "" {
+				db.DB.Exec(`UPDATE agents SET status = $1, last_active = $2 WHERE id = $3`, a.Status, a.LastActive, a.ID)
 			}
 		}
 		if changed {

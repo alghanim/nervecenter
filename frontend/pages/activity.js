@@ -151,7 +151,7 @@ Pages.activity = {
   _activityToItem(a) {
     return {
       emoji: '🤖',
-      agentName: a.agent_id || a.agentId || 'system',
+      agentName: a.display_name || a.agent_id || a.agentId || 'system',
       type: a.action,
       content: a.details || a.action,
       timeStr: Utils.relTime(a.created_at || a.createdAt),

@@ -87,6 +87,10 @@ func UpsertAgentsFromConfig(agents []config.Agent) error {
 
 	configIDs := make([]string, 0, len(agents))
 	for _, a := range agents {
+		// Skip auto-discovered agents — only upsert agents explicitly in agents.yaml
+		if a.Team == "Discovered" {
+			continue
+		}
 		if _, err := DB.Exec(query, a.ID, a.Name, a.Emoji, a.Role, a.Team, a.TeamColor, a.IsLead, a.Model); err != nil {
 			return fmt.Errorf("upsert agent %q: %w", a.ID, err)
 		}

@@ -1,226 +1,181 @@
 # AgentBoard — Agent Registry
-# Copy this file to agents.yaml and customise it.
-#
-# Hot-reload without restart: send SIGHUP to the backend process.
-# Override config path: AGENTS_CONFIG=/path/to/agents.yaml
-#
-# Schema:
-#   name        — display name
-#   id          — unique ID used for workspace-{id} directory lookup
-#   emoji       — single emoji
-#   role        — free-form role description
-#   team        — team name (grouping)
-#   team_color  — CSS hex color for this team
-#   is_lead     — whether this agent leads their team
-#   children    — nested child agents (recursive)
-
 name: "Thunder Team"
 openclaw_dir: "/home/aalghanim/.openclaw"
 
+branding:
+  team_name: "Thunder Team"
+  accent_color: "#C5D92E"
+  theme: "light"
+
 agents:
-  - id: thunder
+  - id: main
     name: Thunder
     emoji: "⚡"
     role: Orchestrator
     team: Command
-    team_color: "#4A4A4A"
+    team_color: "#414142"
     is_lead: true
-    model: "anthropic/claude-sonnet-4-6"
+    model: "anthropic/claude-opus-4-6"
     children:
       - id: titan
-        name: titan
-        emoji: "🔱"
-        role: Operations Director
+        name: Titan
+        emoji: "🔩"
+        role: Engineering Lead
         team: Command
-        team_color: "#4A4A4A"
+        team_color: "#414142"
         is_lead: true
+        model: "anthropic/claude-opus-4-6"
         children:
           - id: forge
-            name: forge
+            name: Forge
             emoji: "🔨"
             role: Backend Lead
             team: Engineering
             team_color: "#3B82F6"
             is_lead: true
-            children:
-              - id: arc
-                name: arc
-                emoji: "🔌"
-                role: API Specialist
-                team: Engineering
-                team_color: "#3B82F6"
+            model: "anthropic/claude-sonnet-4-6"
 
           - id: pixel
-            name: pixel
-            emoji: "🎨"
+            name: Pixel
+            emoji: "🖥️"
             role: Frontend Lead
             team: Engineering
             team_color: "#3B82F6"
             is_lead: true
-            children:
-              - id: nova
-                name: nova
-                emoji: "✨"
-                role: UI Components
-                team: Engineering
-                team_color: "#3B82F6"
+            model: "anthropic/claude-sonnet-4-6"
 
           - id: glass
-            name: glass
-            emoji: "🔍"
-            role: Research & Analysis
-            team: Data
-            team_color: "#F97316"
+            name: Glass
+            emoji: "🪟"
+            role: Athlete Dashboard
+            team: Engineering
+            team_color: "#3B82F6"
+            model: "anthropic/claude-sonnet-4-6"
 
           - id: anvil
-            name: anvil
+            name: Anvil
             emoji: "⚒️"
-            role: DevOps & Deploy
+            role: RaceResult Integration
             team: Engineering
             team_color: "#3B82F6"
-
-          - id: bolt
-            name: bolt
-            emoji: "⚡"
-            role: Fast Execution
-            team: Engineering
-            team_color: "#3B82F6"
+            model: "anthropic/claude-sonnet-4-6"
 
           - id: gear
-            name: gear
+            name: Gear
             emoji: "⚙️"
             role: Automation
             team: Engineering
             team_color: "#3B82F6"
-
-          - id: onyx
-            name: onyx
-            emoji: "🖤"
-            role: Infrastructure
-            team: Platform
-            team_color: "#374151"
+            model: "google/gemini-2.5-pro"
 
       - id: sage
-        name: sage
+        name: Sage
         emoji: "🔮"
-        role: Data Insights
+        role: Data & Ops Lead
         team: Data
         team_color: "#F97316"
         is_lead: true
+        model: "anthropic/claude-opus-4-6"
         children:
           - id: scout
-            name: scout
-            emoji: "🔭"
+            name: Scout
+            emoji: "🕵️"
             role: Web Scout
             team: Data
             team_color: "#F97316"
+            model: "google/gemini-2.5-pro"
 
           - id: chrono
-            name: chrono
+            name: Chrono
             emoji: "⏱️"
-            role: Timing & Data Lead
+            role: Timing & Data
             team: Data
             team_color: "#F97316"
-            children:
-              - id: drift
-                name: drift
-                emoji: "🌊"
-                role: Stream Processing
-                team: Data
-                team_color: "#F97316"
-              - id: pulse
-                name: pulse
-                emoji: "💓"
-                role: Monitoring
-                team: Data
-                team_color: "#F97316"
-
-          - id: prism
-            name: prism
-            emoji: "🌈"
-            role: Analytics & Viz
-            team: Data
-            team_color: "#F97316"
+            model: "google/gemini-2.5-pro"
 
       - id: muse
-        name: muse
-        emoji: "🎭"
-        role: Creative Writing
+        name: Muse
+        emoji: "🎨"
+        role: Product & Design Lead
         team: Creative
         team_color: "#A855F7"
         is_lead: true
+        model: "anthropic/claude-opus-4-6"
         children:
+          - id: prism
+            name: Prism
+            emoji: "🔺"
+            role: UX Authority
+            team: Creative
+            team_color: "#A855F7"
+            model: "anthropic/claude-sonnet-4-6"
+
           - id: ink
-            name: ink
+            name: Ink
             emoji: "🖋️"
             role: Reports Lead
             team: Creative
             team_color: "#A855F7"
-            children:
-              - id: echo
-                name: echo
-                emoji: "📣"
-                role: Comms & Docs
-                team: Creative
-                team_color: "#A855F7"
+            model: "google/gemini-2.5-flash"
 
       - id: maven
-        name: maven
-        emoji: "📊"
-        role: Business Intelligence
+        name: Maven
+        emoji: "💼"
+        role: Business Lead
         team: Business
         team_color: "#10B981"
         is_lead: true
+        model: "anthropic/claude-opus-4-6"
         children:
           - id: flare
-            name: flare
-            emoji: "🔥"
+            name: Flare
+            emoji: "📣"
             role: Marketing
             team: Business
             team_color: "#10B981"
+            model: "anthropic/claude-sonnet-4-6"
+
+          - id: bolt
+            name: Bolt
+            emoji: "⚡"
+            role: Fast Execution
+            team: Business
+            team_color: "#10B981"
+            model: "google/gemini-2.5-flash"
 
           - id: ledger
-            name: ledger
-            emoji: "📒"
+            name: Ledger
+            emoji: "💰"
             role: Finance & Accounting
             team: Business
             team_color: "#10B981"
+            model: "google/gemini-2.5-flash"
+
+          - id: marketing
+            name: Marketing
+            emoji: "📊"
+            role: Marketing Strategy
+            team: Business
+            team_color: "#10B981"
+            model: "anthropic/claude-sonnet-4-6"
 
       - id: sentinel
-        name: sentinel
+        name: Sentinel
         emoji: "🛡️"
         role: QA Gate
         team: QA
         team_color: "#EF4444"
         is_lead: true
-        children:
-          - id: ghost
-            name: ghost
-            emoji: "👻"
-            role: Security Tester
-            team: QA
-            team_color: "#EF4444"
-          - id: cipher
-            name: cipher
-            emoji: "🔐"
-            role: Crypto & Auth
-            team: QA
-            team_color: "#EF4444"
-          - id: veil
-            name: veil
-            emoji: "🕵️"
-            role: Privacy & Compliance
-            team: Security
-            team_color: "#6B7280"
+        model: "anthropic/claude-sonnet-4-6"
 
-      - id: quill
-        name: quill
-        emoji: "✒️"
-        role: Content & Copy
-        team: Creative
-        team_color: "#A855F7"
+      - id: ashok
+        name: Ashok
+        emoji: "🧠"
+        role: Special Projects
+        team: Command
+        team_color: "#414142"
+        model: "anthropic/claude-opus-4-6"
 
-# Legacy directory aliases
 legacy_dirs:
   Thunder:
     - main
@@ -228,7 +183,3 @@ legacy_dirs:
     - reports
   chrono:
     - timing
-  forge:
-    - backend
-  sentinel:
-    - qa

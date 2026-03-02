@@ -104,7 +104,7 @@ Pages.dashboard = {
     const grid = document.getElementById('statsGrid');
     if (!grid) return;
 
-    const activeCount = agents.filter(a => a.status === 'active').length;
+    const activeCount = agents.filter(a => ['online', 'active', 'busy'].includes(a.status)).length;
     const stuckCount = Array.isArray(stuckTasks) ? stuckTasks.length : 0;
 
     const items = [
@@ -145,7 +145,7 @@ Pages.dashboard = {
     }
 
     const sorted = [...agents].sort((a, b) => {
-      const order = { active: 0, idle: 1, offline: 2 };
+      const order = { online: 0, active: 0, busy: 0, idle: 1, offline: 2 };
       return (order[a.status] ?? 3) - (order[b.status] ?? 3);
     });
 

@@ -43,6 +43,7 @@ type Comment struct {
 	Author    string    `json:"author"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	DisplayName *string `json:"display_name,omitempty"`
 }
 
 // Annotation represents a shared note on an agent.
@@ -52,6 +53,7 @@ type Annotation struct {
 	Author    string    `json:"author"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	DisplayName *string `json:"display_name,omitempty"`
 }
 
 // Agent represents an agent record in the DB.
@@ -78,6 +80,7 @@ type ActivityLog struct {
 	TaskID    *string   `json:"task_id,omitempty"`
 	Details   *string   `json:"details,omitempty"` // JSONB stored as string
 	CreatedAt time.Time `json:"created_at"`
+	DisplayName *string `json:"display_name,omitempty"`
 }
 
 // AgentMetrics represents daily metrics for an agent.

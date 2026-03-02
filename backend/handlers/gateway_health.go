@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -54,10 +55,22 @@ func pingEndpoint(client *http.Client, url string) (string, int64) {
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}
-	if err != nil || resp == nil || resp.StatusCode >= 500 {
-		return "down", elapsed
+	if err == nil && resp != nil && resp.StatusCode < 500 {
+		return "up", elapsed
 	}
-	return "up", elapsed
+	// Fallback: TCP dial to check if the port is open (handles loopback-only binding)
+	u := strings.TrimPrefix(strings.TrimPrefix(url, "https://"), "http://")
+	// Extract host:port
+	if idx := strings.Index(u, "/"); idx >= 0 {
+		u = u[:idx]
+	}
+	conn, dialErr := net.DialTimeout("tcp", u, 3*time.Second)
+	dialElapsed := time.Since(start).Milliseconds()
+	if dialErr != nil {
+		return "down", dialElapsed
+	}
+	conn.Close()
+	return "up", dialElapsed
 }
 
 func (h *GatewayHealthHandler) check() {

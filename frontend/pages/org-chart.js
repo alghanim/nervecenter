@@ -148,7 +148,7 @@ Pages.orgChart = {
     }
 
     const root = d3.hierarchy(rootData);
-    const treeLayout = d3.tree().nodeSize([200, 110]);
+    const treeLayout = d3.tree().nodeSize([260, 160]);
     treeLayout(root);
 
     // Extents

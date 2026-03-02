@@ -56,7 +56,7 @@ ALTER TABLE agents ADD COLUMN IF NOT EXISTS team_color VARCHAR(50);
 DO $$ BEGIN
   ALTER TABLE agents DROP CONSTRAINT IF EXISTS valid_agent_status;
   ALTER TABLE agents ADD CONSTRAINT valid_agent_status
-    CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed', 'degraded'));
+    CHECK (status IN ('online', 'offline', 'busy', 'idle', 'paused', 'killed', 'degraded', 'inactive'));
 END $$;
 
 -- Add auto_restart flag for health-check-triggered restarts

@@ -29,7 +29,7 @@ services:
       DB_NAME: agentboard
       AGENTS_CONFIG: /app/agents.yaml
       OPENCLAW_DIR: /data/openclaw
-      GATEWAY_URL: http://host.docker.internal:18789/
+      GATEWAY_URL: http://host.docker.internal:18789
       FRONTEND_DIR: /app/frontend
     volumes:
       - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:rw
