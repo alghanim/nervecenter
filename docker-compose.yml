@@ -29,12 +29,15 @@ services:
       DB_NAME: agentboard
       AGENTS_CONFIG: /app/agents.yaml
       OPENCLAW_DIR: /data/openclaw
+      GATEWAY_URL: http://host.docker.internal:18789/
       FRONTEND_DIR: /app/frontend
     volumes:
       - ${OPENCLAW_DIR:-~/.openclaw}:/data/openclaw:rw
       - ./agents.yaml:/app/agents.yaml:ro
       - ./frontend:/app/frontend:ro
       - .:/app/repo:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

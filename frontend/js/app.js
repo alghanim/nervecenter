@@ -207,6 +207,7 @@ window.Env = (function () {
     notifications: { title: 'Notifications', subtitle: 'Notification inbox' },
     incidents:     { title: 'Incidents',     subtitle: 'Incident tracking and postmortems' },
     playground:    { title: 'Playground',    subtitle: 'Chat with agents directly' },
+    health:        { title: 'Health',       subtitle: 'Gateway health monitoring' },
   };
 
   async function init() {
@@ -399,6 +400,7 @@ window.Env = (function () {
       case 'notifications': page = Pages.notifications; break;
       case 'incidents':    page = Pages.incidents; break;
       case 'playground':   page = Pages.playground; break;
+      case 'health':       page = Pages.health; break;
       default:
         content.innerHTML = `<div class="empty-state">
           <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="22" cy="22" r="14" stroke="currentColor" stroke-width="2"/><line x1="32" y1="32" x2="44" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>

@@ -82,6 +82,7 @@ func main() {
 	environmentHandler := &handlers.EnvironmentHandler{}
 	costsHandler := &handlers.CostsHandler{}
 	scorecardHandler := &handlers.ScorecardHandler{}
+	gatewayHealthHandler := &handlers.GatewayHealthHandler{}
 
 	// Agent status poller
 	go handlers.StartAgentStatusPoller(hub)
@@ -106,6 +107,7 @@ func main() {
 
 	// Health checker
 	go handlers.StartHealthChecker()
+	gatewayHealthHandler.StartGatewayHealthPoller()
 
 	// Router
 	router := mux.NewRouter()
@@ -150,6 +152,9 @@ func main() {
 	api.HandleFunc("/agents/{id}/health", healthHandler.GetAgentHealth).Methods("GET")
 	api.HandleFunc("/agents/{id}/health/check", healthHandler.ForceHealthCheck).Methods("POST")
 	api.HandleFunc("/agents/{id}/health/auto-restart", healthHandler.SetAutoRestart).Methods("POST")
+
+	// Gateway health
+	api.HandleFunc("/gateway/health", gatewayHealthHandler.GetGatewayHealth).Methods("GET")
 
 	// Git commits
 	api.HandleFunc("/agents/{id}/commits", commitsHandler.GetCommits).Methods("GET")
