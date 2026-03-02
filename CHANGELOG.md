@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-03-03] README Rewrite
+
+- Complete README rewrite: added architecture diagram, comprehensive Quick Start with agents.yaml walkthrough, full API reference (70+ endpoints in clean table format), agent-kanban integration examples, configuration reference, FAQ section, contributing guidelines
+- No feature commits in last 25 hours
+
 ## [2026-03-02] No Changes
 
 - No code changes in last 25 hours. README verified current.
