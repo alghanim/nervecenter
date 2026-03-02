@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -11,12 +13,13 @@ import (
 // GatewayHealthHandler pings the OpenClaw gateway periodically and exposes status.
 type GatewayHealthHandler struct {
 	mu           sync.RWMutex
-	status       string
+	healthStatus string
+	readyStatus  string
 	responseTime int64
 	firstUp      *time.Time
 	lastChecked  time.Time
 	history      []GatewayHealthPoint
-	targetURL    string
+	baseURL      string
 }
 
 // GatewayHealthPoint is a single check result.
@@ -28,10 +31,11 @@ type GatewayHealthPoint struct {
 
 // StartGatewayHealthPoller begins periodic pinging in a goroutine.
 func (h *GatewayHealthHandler) StartGatewayHealthPoller() {
-	h.targetURL = os.Getenv("GATEWAY_URL")
-	if h.targetURL == "" {
-		h.targetURL = "http://127.0.0.1:18789/"
+	h.baseURL = os.Getenv("GATEWAY_URL")
+	if h.baseURL == "" {
+		h.baseURL = "http://127.0.0.1:18789"
 	}
+	h.baseURL = strings.TrimRight(h.baseURL, "/")
 	h.check()
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
@@ -41,37 +45,46 @@ func (h *GatewayHealthHandler) StartGatewayHealthPoller() {
 	}()
 }
 
+// pingEndpoint hits a URL and returns status ("up"/"down") and elapsed ms.
+func pingEndpoint(client *http.Client, url string) (string, int64) {
+	start := time.Now()
+	resp, err := client.Get(url)
+	elapsed := time.Since(start).Milliseconds()
+	if resp != nil && resp.Body != nil {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}
+	if err != nil || resp == nil || resp.StatusCode >= 500 {
+		return "down", elapsed
+	}
+	return "up", elapsed
+}
+
 func (h *GatewayHealthHandler) check() {
 	client := &http.Client{Timeout: 5 * time.Second}
-	start := time.Now()
-	resp, err := client.Get(h.targetURL)
-	elapsed := time.Since(start).Milliseconds()
+
+	hStatus, hElapsed := pingEndpoint(client, h.baseURL+"/health")
+	rStatus, _ := pingEndpoint(client, h.baseURL+"/ready")
+
 	now := time.Now().UTC()
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	h.lastChecked = now
+	h.healthStatus = hStatus
+	h.readyStatus = rStatus
+	h.responseTime = hElapsed
 
-	if err != nil || resp == nil || resp.StatusCode >= 500 {
-		h.status = "down"
-		h.responseTime = elapsed
-	} else {
-		h.status = "up"
-		h.responseTime = elapsed
-		if h.firstUp == nil {
-			t := now
-			h.firstUp = &t
-		}
-	}
-	if resp != nil && resp.Body != nil {
-		resp.Body.Close()
+	if hStatus == "up" && h.firstUp == nil {
+		t := now
+		h.firstUp = &t
 	}
 
 	h.history = append(h.history, GatewayHealthPoint{
 		Time:         now,
-		ResponseTime: elapsed,
-		Status:       h.status,
+		ResponseTime: hElapsed,
+		Status:       hStatus,
 	})
 	if len(h.history) > 60 {
 		h.history = h.history[len(h.history)-60:]
@@ -89,7 +102,8 @@ func (h *GatewayHealthHandler) GetGatewayHealth(w http.ResponseWriter, r *http.R
 	}
 
 	result := map[string]interface{}{
-		"status":         h.status,
+		"healthStatus":   h.healthStatus,
+		"readyStatus":    h.readyStatus,
 		"responseTimeMs": h.responseTime,
 		"uptimeSeconds":  uptimeSeconds,
 		"lastChecked":    h.lastChecked,

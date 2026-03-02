@@ -7,28 +7,33 @@ Pages.health = {
 
   async render(container) {
     container.innerHTML = `
-      <div id="healthStatus" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:24px">
+      <div id="healthStatus" style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px">
         <div class="card" style="text-align:center;padding:32px 16px">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:12px">Gateway Status</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:12px">Gateway Health</div>
           <div id="healthIndicator" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;background:#666">?</div>
-          <div id="healthLabel" style="font-size:18px;font-weight:600;color:var(--text-primary)">Checking…</div>
+          <div id="healthLabel" style="font-size:18px;font-weight:600;color:#414142">Checking…</div>
         </div>
         <div class="card" style="text-align:center;padding:32px 16px">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:12px">Response Time</div>
-          <div id="healthResponseTime" style="font-size:36px;font-weight:700;color:var(--text-primary)">—</div>
-          <div style="font-size:12px;color:var(--text-tertiary)">ms</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:12px">Ready Status</div>
+          <div id="readyIndicator" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;background:#666">?</div>
+          <div id="readyLabel" style="font-size:18px;font-weight:600;color:#414142">Checking…</div>
         </div>
         <div class="card" style="text-align:center;padding:32px 16px">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:12px">Uptime</div>
-          <div id="healthUptime" style="font-size:36px;font-weight:700;color:var(--text-primary)">—</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:12px">Response Time</div>
+          <div id="healthResponseTime" style="font-size:36px;font-weight:700;color:#414142">—</div>
+          <div style="font-size:12px;color:#414142">ms</div>
         </div>
         <div class="card" style="text-align:center;padding:32px 16px">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:12px">Last Checked</div>
-          <div id="healthLastChecked" style="font-size:36px;font-weight:700;color:var(--text-primary)">—</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:12px">Uptime</div>
+          <div id="healthUptime" style="font-size:36px;font-weight:700;color:#414142">—</div>
+        </div>
+        <div class="card" style="text-align:center;padding:32px 16px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:12px">Last Checked</div>
+          <div id="healthLastChecked" style="font-size:36px;font-weight:700;color:#414142">—</div>
         </div>
       </div>
       <div class="card" style="padding:24px">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:16px">Response Time History (last 60 checks)</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#414142;margin-bottom:16px">Response Time History (last 60 checks)</div>
         <div id="healthChart" style="display:flex;align-items:flex-end;gap:3px;height:120px"></div>
       </div>
       <style>
@@ -49,18 +54,21 @@ Pages.health = {
       if (!resp.ok) throw new Error('fetch failed');
       const data = await resp.json();
 
-      const isUp = data.status === 'up';
-      const color = isUp ? '#C5D92E' : '#E53935';
-      const label = isUp ? 'UP' : 'DOWN';
-
+      // Health status card
+      const hUp = data.healthStatus === 'up';
+      const hColor = hUp ? '#C5D92E' : '#E53935';
       const indicator = document.getElementById('healthIndicator');
-      if (indicator) {
-        indicator.style.background = color;
-        indicator.textContent = isUp ? '✓' : '✗';
-        indicator.className = 'health-pulse';
-      }
+      if (indicator) { indicator.style.background = hColor; indicator.textContent = hUp ? '✓' : '✗'; indicator.className = 'health-pulse'; }
       const labelEl = document.getElementById('healthLabel');
-      if (labelEl) { labelEl.textContent = label; labelEl.style.color = color; }
+      if (labelEl) { labelEl.textContent = hUp ? 'UP' : 'DOWN'; labelEl.style.color = hColor; }
+
+      // Ready status card
+      const rUp = data.readyStatus === 'up';
+      const rColor = rUp ? '#C5D92E' : '#E53935';
+      const rIndicator = document.getElementById('readyIndicator');
+      if (rIndicator) { rIndicator.style.background = rColor; rIndicator.textContent = rUp ? '✓' : '✗'; rIndicator.className = 'health-pulse'; }
+      const rLabel = document.getElementById('readyLabel');
+      if (rLabel) { rLabel.textContent = rUp ? 'UP' : 'DOWN'; rLabel.style.color = rColor; }
 
       const rtEl = document.getElementById('healthResponseTime');
       if (rtEl) rtEl.textContent = data.responseTimeMs ?? '—';
