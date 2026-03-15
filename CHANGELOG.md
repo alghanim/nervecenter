@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-03-16] No Changes
+
+- No feature commits in last 25 hours (1 docs-only commit `fade78e` from previous Quill run)
+- README verified current — comprehensive: architecture, 70+ API endpoints, FAQ, Quick Start, agents.yaml config, env vars, contributing guide
+
 ## [2026-03-15] No Changes
 
 - No feature commits in last 25 hours
