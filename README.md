@@ -420,3 +420,7 @@ Please follow [Conventional Commits](https://www.conventionalcommits.org/) for c
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE) for details.
+
+## Links
+
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/nervecenter)
