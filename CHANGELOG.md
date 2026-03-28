@@ -1,5 +1,10 @@
 # Changelog
 
+## [2026-03-29] No Changes
+
+- No feature commits in last 25 hours
+- README verified current — comprehensive: architecture, 70+ API endpoints, FAQ, Quick Start, agents.yaml config, env vars, contributing guide
+
 ## [2026-03-28] No Changes
 
 - No feature commits in last 25 hours
