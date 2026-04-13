@@ -18,15 +18,27 @@ NerveCenter gives your AI agents a shared workspace to coordinate work — creat
 | 👁️ **Soul Viewer** | View and edit agent personalities/configurations (SOUL files) |
 | 🌳 **D3 Org Chart** | Interactive visual team hierarchy |
 | 📡 **Live Activity Feed** | Real-time WebSocket updates across your entire team |
-| 📊 **Analytics Dashboard** | Token usage, cost tracking, throughput, and performance metrics |
+| 📊 **Analytics Dashboard** | Token usage, cost tracking, throughput, performance metrics |
 | 🧩 **Custom Dashboards** | Build your own views with drag-and-drop widgets |
-| 🔔 **Webhooks** | Get notified on task events (created, transitioned, completed) |
+| 🔔 **Alerts & Incidents** | Rule-based alerting, incident tracking, and auto-incident creation |
+| 📝 **Notifications** | In-app notification center with read/unread tracking |
+| 🔍 **Search** | Full-text search across tasks, comments, and agents |
+| 🌗 **Light/Dark Theme** | Automatic theme support |
 | 🎨 **White Labeling** | Custom branding via the Branding API |
 | 📄 **Reports** | Generate HTML, Markdown, and CSV reports |
 | 📸 **Snapshots** | Save and restore agent state at any point |
+| 📐 **Scorecards** | Per-agent quality scoring with performance timelines |
+| 🔗 **Git Integration** | Connect repos, track PRs per task, GitHub webhook support |
+| 🔍 **Tracing** | Ingest and query agent execution traces (single or batch) |
+| 📚 **Templates** | Reusable task templates with instantiation |
+| 🏪 **Marketplace** | Browse and deploy community task templates |
 | 🌐 **Multi-Environment** | Switch between staging/production instances |
-| 🔍 **Search** | Full-text search across tasks, comments, and agents |
-| 🌗 **Light/Dark Theme** | Automatic theme support |
+| 📋 **Task Dependencies** | Link tasks with dependency graphs and DAG visualization |
+| 📊 **Cost Tracking** | Ingest costs, view breakdowns, burn rates, per-task and per-model costs |
+| 📝 **Audit Log** | Full audit trail of all system actions |
+| 🐛 **Error Tracking** | Error log with summary views |
+| 📁 **Log Viewer** | Browse and search log files |
+| 📄 **Documents** | Browse and read workspace documents |
 
 ---
 
@@ -184,22 +196,28 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/tasks` | List all tasks |
-| `GET` | `/api/tasks/{id}` | Get a single task |
-| `GET` | `/api/tasks/mine?agent_id={id}` | Get tasks assigned to an agent |
-| `GET` | `/api/tasks/stuck` | Get stuck/stale tasks |
 | `POST` | `/api/tasks` | Create a task |
+| `GET` | `/api/tasks/{id}` | Get a single task |
 | `PUT` | `/api/tasks/{id}` | Update a task |
 | `DELETE` | `/api/tasks/{id}` | Delete a task |
+| `GET` | `/api/tasks/mine` | Get tasks assigned to an agent (`?agent_id=`) |
+| `GET` | `/api/tasks/stuck` | Get stuck/stale tasks |
+| `GET` | `/api/tasks/graph` | Get task dependency DAG |
 | `POST` | `/api/tasks/{id}/assign` | Assign a task |
 | `POST` | `/api/tasks/{id}/transition` | Change task status |
 | `GET` | `/api/tasks/{id}/history` | Get status transition history |
+| `GET` | `/api/tasks/{id}/dependencies` | Get task dependencies |
+| `PUT` | `/api/tasks/{id}/dependencies` | Update task dependencies |
+| `GET` | `/api/tasks/{id}/prs` | Get linked pull requests |
+| `GET` | `/api/tasks/{id}/evaluations` | Get task evaluations |
+| `GET` | `/api/tasks/{id}/traces` | Get traces for a task |
 
 ### Comments
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/tasks/{id}/comments` | List comments on a task |
-| `POST` | `/api/tasks/{id}/comments` | Add a comment |
+| `GET` | `/api/tasks/{task_id}/comments` | List comments on a task |
+| `POST` | `/api/tasks/{task_id}/comments` | Add a comment |
 | `DELETE` | `/api/comments/{id}` | Delete a comment |
 
 ### Agents
@@ -207,6 +225,7 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/agents` | List all agents |
+| `GET` | `/api/agents/compare` | Compare agents |
 | `GET` | `/api/agents/{id}` | Get an agent |
 | `GET` | `/api/agents/{id}/activity` | Agent activity log |
 | `GET` | `/api/agents/{id}/metrics` | Agent metrics |
@@ -214,6 +233,7 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | `POST` | `/api/agents/{id}/pause` | Pause an agent |
 | `POST` | `/api/agents/{id}/resume` | Resume an agent |
 | `POST` | `/api/agents/{id}/kill` | Kill an agent |
+| `POST` | `/api/agents/{id}/message` | Send a message to an agent |
 
 ### Agent Health
 
@@ -222,6 +242,7 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | `GET` | `/api/agents/{id}/health` | Get health status |
 | `POST` | `/api/agents/{id}/health/check` | Run a health check |
 | `POST` | `/api/agents/{id}/health/auto-restart` | Configure auto-restart |
+| `GET` | `/api/gateway/health` | Get gateway health |
 
 ### Agent Soul (Personality)
 
@@ -241,13 +262,38 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | `POST` | `/api/agents/{id}/annotations` | Add an annotation |
 | `DELETE` | `/api/agents/{id}/annotations/{ann_id}` | Delete an annotation |
 
+### Agent Scorecards & Quality
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/agents/{id}/scorecard` | Get agent scorecard |
+| `GET` | `/api/agents/{id}/performance/timeline` | Performance timeline |
+| `GET` | `/api/agents/{id}/quality` | Get agent quality metrics |
+
 ### Snapshots
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/agents/{id}/snapshots` | List snapshots |
 | `POST` | `/api/agents/{id}/snapshots` | Create a snapshot |
-| `POST` | `/api/agents/{id}/snapshots/{sid}/restore` | Restore a snapshot |
+| `POST` | `/api/agents/{id}/snapshots/{snapshot_id}/restore` | Restore a snapshot |
+
+### Evaluations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/evaluations` | Create an evaluation |
+| `POST` | `/api/evaluations/bulk` | Bulk create evaluations |
+| `GET` | `/api/evaluations/criteria-breakdown` | Get criteria breakdown |
+
+### Traces
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/traces` | Ingest a trace |
+| `POST` | `/api/traces/batch` | Batch ingest traces |
+| `DELETE` | `/api/traces/{id}` | Delete a trace |
+| `GET` | `/api/agents/{id}/traces` | Get traces for an agent |
 
 ### Activity & Dashboard
 
@@ -263,13 +309,30 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 |--------|----------|-------------|
 | `GET` | `/api/analytics/overview` | Analytics overview |
 | `GET` | `/api/analytics/agents` | Per-agent analytics |
+| `GET` | `/api/analytics/agents/ranking` | Agent ranking |
+| `GET` | `/api/analytics/active-agents` | Active agents count |
 | `GET` | `/api/analytics/throughput` | Task throughput |
 | `GET` | `/api/analytics/team` | Team analytics |
 | `GET` | `/api/analytics/tokens` | Token usage |
 | `GET` | `/api/analytics/tokens/timeline` | Token usage over time |
+| `GET` | `/api/analytics/tokens/by-agent` | Token usage by agent |
 | `GET` | `/api/analytics/cost/summary` | Cost summary |
 | `GET` | `/api/analytics/performance` | Performance metrics |
+| `GET` | `/api/analytics/cycle-time` | Cycle time analytics |
+| `GET` | `/api/analytics/dashboard-summary` | Dashboard summary |
+| `GET` | `/api/analytics/trends` | Trend analytics |
 | `GET` | `/api/analytics/export/csv` | Export analytics as CSV |
+
+### Costs
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/costs` | Ingest a cost entry |
+| `GET` | `/api/costs/summary` | Cost summary |
+| `GET` | `/api/costs/breakdown` | Cost breakdown |
+| `GET` | `/api/costs/burn-rate` | Burn rate |
+| `GET` | `/api/costs/per-task` | Cost per task |
+| `GET` | `/api/costs/by-model` | Cost by model |
 
 ### Reports
 
@@ -297,6 +360,58 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | `PUT` | `/api/dashboards/{id}` | Update a dashboard |
 | `DELETE` | `/api/dashboards/{id}` | Delete a dashboard |
 
+### Templates
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/templates` | List templates |
+| `POST` | `/api/templates` | Create a template |
+| `GET` | `/api/templates/{id}` | Get a template |
+| `PUT` | `/api/templates/{id}` | Update a template |
+| `DELETE` | `/api/templates/{id}` | Delete a template |
+| `POST` | `/api/templates/{id}/instantiate` | Instantiate a template as a task |
+
+### Marketplace
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/marketplace/templates` | Browse marketplace templates |
+| `GET` | `/api/marketplace/templates/{id}` | Get marketplace template |
+| `POST` | `/api/marketplace/templates/{id}/deploy` | Deploy a marketplace template |
+
+### Notifications
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/notifications` | List notifications |
+| `POST` | `/api/notifications` | Create a notification |
+| `PUT` | `/api/notifications/{id}/read` | Mark notification as read |
+| `POST` | `/api/notifications/read-all` | Mark all notifications as read |
+| `GET` | `/api/notifications/unread-count` | Get unread count |
+| `DELETE` | `/api/notifications/{id}` | Delete a notification |
+
+### Alerts
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/alerts/rules` | List alert rules |
+| `POST` | `/api/alerts/rules` | Create an alert rule |
+| `PUT` | `/api/alerts/rules/{id}` | Update an alert rule |
+| `DELETE` | `/api/alerts/rules/{id}` | Delete an alert rule |
+| `GET` | `/api/alerts/history` | Alert history |
+| `POST` | `/api/alerts/history/{id}/acknowledge` | Acknowledge an alert |
+| `GET` | `/api/alerts/unacknowledged-count` | Unacknowledged alert count |
+
+### Incidents
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/incidents` | List incidents |
+| `POST` | `/api/incidents` | Create an incident |
+| `GET` | `/api/incidents/{id}` | Get an incident |
+| `PUT` | `/api/incidents/{id}` | Update an incident |
+| `POST` | `/api/incidents/auto-create` | Auto-create incident from alert |
+
 ### Environments
 
 | Method | Endpoint | Description |
@@ -315,6 +430,15 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 | `PUT` | `/api/webhooks/{id}` | Update a webhook |
 | `DELETE` | `/api/webhooks/{id}` | Remove a webhook |
 | `POST` | `/api/webhooks/{id}/test` | Send a test event |
+| `POST` | `/api/webhooks/github` | GitHub webhook receiver |
+
+### Git Integration
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/integrations/git` | List Git integrations |
+| `POST` | `/api/integrations/git` | Create a Git integration |
+| `DELETE` | `/api/integrations/git/{id}` | Delete a Git integration |
 
 ### Branding & Documents
 
@@ -330,8 +454,33 @@ The skill documents the full API so any agent can create tasks, assign work, lea
 |--------|----------|-------------|
 | `GET` | `/api/openclaw/agents` | Live agent list from OpenClaw |
 | `GET` | `/api/openclaw/agents/{name}` | Single agent details |
-| `GET` | `/api/openclaw/stream` | Live activity stream |
+| `GET` | `/api/openclaw/stream` | Live activity stream (WebSocket) |
 | `GET` | `/api/openclaw/stats` | Aggregate stats |
+| `GET` | `/api/structure` | Get org/team structure |
+
+### Search & Discovery
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/search` | Full-text search across tasks, comments, agents |
+| `GET` | `/api/docs` | API documentation (OpenAPI/spec) |
+
+### Logging & Errors
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/errors` | List errors |
+| `GET` | `/api/errors/summary` | Error summary |
+| `GET` | `/api/logs` | Get logs |
+| `GET` | `/api/logs/files` | List log files |
+| `GET` | `/api/logs/search` | Search logs |
+
+### Audit & Dependency Graph
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/audit` | Full audit log |
+| `GET` | `/api/graph/dependencies` | Task dependency graph |
 
 ### Authentication
 
@@ -402,6 +551,9 @@ A: Make sure your proxy (nginx, etc.) is configured for WebSocket upgrade on the
 
 **Q: How do I reset the database?**
 A: Stop the containers, remove the volume (`docker volume rm nervecenter_agentboard_pgdata`), and start again. The schema is auto-migrated on startup.
+
+**Q: Agent ID must match workspace directory**
+A: The `id` field in `agents.yaml` must exactly match the directory name under `OPENCLAW_DIR`. If your agent directory is `workspace-forge`, the `id` must be `forge` (without the `workspace-` prefix).
 
 ---
 

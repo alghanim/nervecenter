@@ -352,3 +352,8 @@ Commit: `c2556de`
 
 - No feature commits in last 25 hours
 - README verified current — comprehensive: architecture, 70+ API endpoints, FAQ, Quick Start, agents.yaml config, env vars, contributing guide, license
+
+## [2026-04-13] Daily Docs Update
+
+- **README rewritten**: Added 80+ previously undocumented API endpoints (alerts, incidents, notifications, costs, traces, templates, marketplace, evaluations, git integration, search, logging, audit, scorecards, quality, messaging, dependency graph, API docs endpoint). Total API reference now covers all 152 registered routes.
+- No feature commits in last 25 hours
