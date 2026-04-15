@@ -357,3 +357,4 @@ Commit: `c2556de`
 
 - **README rewritten**: Added 80+ previously undocumented API endpoints (alerts, incidents, notifications, costs, traces, templates, marketplace, evaluations, git integration, search, logging, audit, scorecards, quality, messaging, dependency graph, API docs endpoint). Total API reference now covers all 152 registered routes.
 - No feature commits in last 25 hours
+### 2026-04-15 - README rewrite and daily update.
