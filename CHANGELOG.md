@@ -1,5 +1,15 @@
 # Changelog
 
+## [2026-04-20] README Refresh · No Feature Changes
+
+- No product feature commits landed in the last 25 hours beyond the previous Quill docs maintenance commit
+- Rewrote `README.md` to be source-accurate and newcomer-friendly
+- Added a working Docker Compose quick start plus local Go dev instructions
+- Replaced the template-only `agents.yaml` explanation with a real multi-agent example and alias guidance
+- Expanded the feature guide to cover kanban, soul viewer, org chart, activity feed, analytics, search, WebSocket, branding, theming, alerts, logs, traces, and marketplace surfaces
+- Rebuilt the API reference into grouped tables covering auth, tasks, agents, analytics, alerts, documents, integrations, incidents, templates, and admin key routes
+- Expanded the FAQ with the common setup failures: `OPENCLAW_DIR`, legacy workspace names, auth, ephemeral JWT secrets, default password fallback, and port conflicts
+
 ## [2026-03-30] No Changes
 
 - No feature commits in last 25 hours
