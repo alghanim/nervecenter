@@ -2,7 +2,7 @@
 
 ![Go](https://img.shields.io/badge/backend-Go-00ADD8?logo=go&logoColor=white) ![Postgres](https://img.shields.io/badge/database-PostgreSQL-336791?logo=postgresql&logoColor=white) ![WebSocket](https://img.shields.io/badge/realtime-WebSocket-0EA5E9) ![OpenClaw](https://img.shields.io/badge/integrates-OpenClaw-111827)
 
-AgentBoard is a real-time command center for OpenClaw-based AI teams. It combines kanban, live agent visibility, workspace-file inspection, analytics, and operational tooling in one browser UI so an orchestrator can actually run a multi-agent team without juggling ten terminals.
+AgentBoard is a real-time command center for OpenClaw-based AI teams. It combines kanban, live agent visibility, workspace-file inspection, analytics, and operational tooling in one browser UI so an orchestrator can actually run a multi-agent team without juggling ten terminals. In the product UI it is also branded as **NerveCenter**.
 
 ## What it is
 
@@ -132,6 +132,15 @@ If you want the shortest possible description: it feels like Jira, Grafana, a wi
 - environment switching
 - API key management
 
+## Prerequisites
+
+Before you start, have these ready:
+
+- Docker + Docker Compose **or** Go + PostgreSQL for local backend dev
+- a real OpenClaw data directory, usually `~/.openclaw`
+- an `agents.yaml` whose IDs match your workspaces
+- a non-default UI password and a stable `JWT_SECRET`
+
 ## Quick Start
 
 ### Option A, Docker Compose (recommended)
@@ -143,7 +152,7 @@ cp .env.example .env
 cp agents.yaml.example agents.yaml
 ```
 
-Edit `.env` and set at least:
+Edit `.env` and set at least these values. Important: the current `.env.example` does **not** include `AGENTBOARD_PASSWORD` or `JWT_SECRET`, so add them manually after copying the file.
 
 ```env
 DB_PASSWORD=change-me
@@ -188,6 +197,37 @@ go run .
 ```
 
 The Go server serves the static frontend directly. Default port is `8891`.
+
+### Minimum environment reference
+
+| Variable | Required | Why it matters |
+|---|---|---|
+| `OPENCLAW_DIR` | Yes | Lets AgentBoard read workspaces, session files, and live agent metadata. Use an **absolute path**. |
+| `AGENTS_CONFIG` | Usually | Points the backend at your `agents.yaml`. |
+| `DB_PASSWORD` | Docker: yes | Used by PostgreSQL and the backend connection. |
+| `AGENTBOARD_PASSWORD` or `AGENTBOARD_PASSWORD_HASH` | Yes outside demos | Controls web login for write actions. |
+| `JWT_SECRET` | Strongly recommended | Keeps login tokens stable across restarts. |
+| `PORT` | Optional | Defaults to `8891`. |
+| `FRONTEND_DIR` | Optional | Needed only if you serve the static frontend from a custom path. |
+
+### Smoke test
+
+After startup:
+
+```bash
+# 1) Process health
+curl http://localhost:8891/health
+
+# 2) Login for a bearer token
+curl -s -X POST http://localhost:8891/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"password":"change-me-too"}'
+
+# 3) Read something useful
+curl -s http://localhost:8891/api/agents | jq '.[0]'
+```
+
+If step 3 returns an empty list, the usual culprits are `OPENCLAW_DIR`, `agents.yaml`, or mismatched workspace IDs.
 
 ## `agents.yaml`, explained with a real example
 
@@ -537,6 +577,9 @@ You probably forgot `JWT_SECRET`. Without it, AgentBoard generates an ephemeral 
 ### Why am I seeing the default password warning
 If `AGENTBOARD_PASSWORD` and `AGENTBOARD_PASSWORD_HASH` are both unset, the app falls back to `admin`. Set one of them immediately outside local dev.
 
+### I copied `.env.example`, why can I still not log in
+Because the template currently omits `AGENTBOARD_PASSWORD` and `JWT_SECRET`. Add both manually, then restart the backend.
+
 ### Docker Compose starts, but the OpenClaw volume is wrong
 Use an absolute path in `.env`. Tilde expansion is a frequent foot-gun in container setups, especially when the shell and Compose disagree.
 
@@ -561,4 +604,4 @@ Suggested flow:
 
 ## License
 
-This project is intended to be MIT-licensed, matching the existing project docs. If you publish or redistribute it, add the top-level `LICENSE` file alongside the repo contents so the legal terms are explicit.
+MIT. The project UI and repo docs already describe AgentBoard / NerveCenter as MIT-licensed. Keep a top-level `LICENSE` file in the repository so the legal terms stay explicit for downstream users.

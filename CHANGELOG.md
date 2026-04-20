@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-04-21] README Tightening · No Feature Changes
+
+- No product feature commits landed in the last 25 hours beyond the previous Quill docs maintenance commit
+- Refreshed `README.md` again for first-run clarity and source accuracy
+- Added a prerequisites section plus a minimum environment-variable reference table
+- Clarified that `.env.example` currently omits `AGENTBOARD_PASSWORD` and `JWT_SECRET`, so Quick Start now calls that out explicitly
+- Added a smoke-test sequence (`/health`, `/api/auth/login`, `/api/agents`) to help brand new users verify their setup fast
+- Kept the API reference, kanban heartbeat example, FAQ, and licensing guidance aligned with the live codebase
+
 ## [2026-04-20] README Refresh · No Feature Changes
 
 - No product feature commits landed in the last 25 hours beyond the previous Quill docs maintenance commit
